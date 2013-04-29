@@ -386,6 +386,7 @@ var Settings = {
     var key = input.name;
 
     var settings = window.navigator.mozSettings;
+    //XXX should we check data-ignore here?
     if (!key || !settings || event.type != 'change')
       return;
 
@@ -578,10 +579,10 @@ window.addEventListener('load', function loadSettings() {
   window.removeEventListener('load', loadSettings);
   window.addEventListener('change', Settings);
 
-  /*navigator.addIdleObserver({
+  navigator.addIdleObserver({
     time: 3,
     onidle: Settings.loadPanelStylesheetsIfNeeded.bind(Settings)
-  });*/
+  });
 
   Settings.init();
   handleRadioAndCardState();
@@ -590,8 +591,8 @@ window.addEventListener('load', function loadSettings() {
       'js/utils.js',
       'js/airplane_mode.js',
       'js/battery.js',
-      'js/app_storage.js',
-      'js/media_storage.js',
+      'shared/js/async_storage.js',
+      'js/storage.js',
       'shared/js/mobile_operator.js',
       'js/connectivity.js',
       'js/security_privacy.js'
@@ -666,12 +667,6 @@ window.addEventListener('load', function loadSettings() {
           }
         });
         setTimeout(Settings.updateLanguagePanel);
-        break;
-      case 'mediaStorage':        // full media storage status + panel startup
-        MediaStorage.initUI();
-        break;
-      case 'deviceStorage':       // full device storage status
-        AppStorage.update();
         break;
       case 'battery':             // full battery status
         Battery.update();
