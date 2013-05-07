@@ -7,7 +7,6 @@
     "name": "The Gaia Team",
     "url": "https://github.com/mozilla-b2g/gaia"
   },
-  "fullscreen": true,
   "permissions": {
     "storage":{},
     "device-storage:pictures":{ "access": "readwrite" },
