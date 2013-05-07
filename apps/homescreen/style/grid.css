@@ -35,7 +35,7 @@
 
 .apps ol > li {
   position: relative;
-  width: 25%;
+  width: 20%; /* five a line */
   display: inline-block;
   float: left;
   text-align: center;

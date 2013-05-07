@@ -1,11 +1,11 @@
 'use strict';
 
 var GridManager = (function() {
-  var MAX_ICONS_PER_PAGE = 4 * 4;
+  var MAX_ICONS_PER_PAGE = 5 * 3;
   var PREFERRED_ICON_SIZE = 60;
   var SAVE_STATE_TIMEOUT = 100;
-  var BASE_WIDTH = 320;
-  var BASE_HEIGHT = 480;
+  var BASE_WIDTH = 1280;
+  var BASE_HEIGHT = 800;
   var DEVICE_HEIGHT = window.innerHeight;
   var SCALE_RATIO = window.innerWidth / BASE_WIDTH;
   var AVAILABLE_SPACE = DEVICE_HEIGHT - (BASE_HEIGHT * SCALE_RATIO);
@@ -1056,7 +1056,6 @@ var GridManager = (function() {
     // if there isn't, we will return the maximum available size.
     if (preferredSize === Number.MAX_VALUE)
       preferredSize = max;
-
     var url = icons[preferredSize];
     if (!url) {
       return getDefaultIcon(app);
