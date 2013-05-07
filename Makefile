@@ -32,6 +32,7 @@ GAIA_OPTIMIZE?=0
 HIDPI?=*
 DOGFOOD?=0
 TEST_AGENT_PORT?=8789
+GAIA_APPS_BLACKLIST?=camera calendar fm communications costcontrol email sms marketplace.firefox.com m.here.com
 
 # Enable compatibility to run in Firefox Desktop
 BROWSER?=$(DEBUG)
@@ -408,6 +409,7 @@ define run-js-command
 	const HOMESCREEN = "$(HOMESCREEN)"; const GAIA_PORT = "$(GAIA_PORT)";       \
 	const GAIA_APP_SRCDIRS = "$(GAIA_APP_SRCDIRS)";                             \
 	const GAIA_LOCALES_PATH = "$(GAIA_LOCALES_PATH)";                           \
+	const GAIA_APPS_BLACKLIST = "$(GAIA_APPS_BLACKLIST)";												\
 	const LOCALES_FILE = "$(subst \,\\,$(LOCALES_FILE))";                       \
 	const BUILD_APP_NAME = "$(BUILD_APP_NAME)";                                 \
 	const PRODUCTION = "$(PRODUCTION)";                                         \
