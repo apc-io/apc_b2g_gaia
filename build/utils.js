@@ -125,13 +125,17 @@ function getJSON(file) {
   }
 }
 
-function makeWebappsObject(dirs) {
+function makeWebappsObject(dirs, blacklist) {
   return {
     forEach: function(fun) {
       let appSrcDirs = dirs.split(' ');
+      let bl = (blacklist ? blacklist.split(' ') : []);
       appSrcDirs.forEach(function parseDirectory(directoryName) {
         let directories = getSubDirectories(directoryName);
         directories.forEach(function readManifests(dir) {
+          if (bl.indexOf(dir) !== -1) {
+            return;
+          }
           let manifestFile = getFile(GAIA_DIR, directoryName, dir,
               'manifest.webapp');
           let updateFile = getFile(GAIA_DIR, directoryName, dir,
@@ -177,8 +181,9 @@ if (DOGFOOD === '0' && PRODUCTION === '0') {
 const Gaia = {
   engine: GAIA_ENGINE,
   sharedFolder: getFile(GAIA_DIR, 'shared'),
-  webapps: makeWebappsObject(GAIA_APP_SRCDIRS),
-  externalWebapps: makeWebappsObject(externalAppsDirs.join(' ')),
+  webapps: makeWebappsObject(GAIA_APP_SRCDIRS, GAIA_APPS_BLACKLIST),
+  externalWebapps: makeWebappsObject(externalAppsDirs.join(' '),
+                   GAIA_APPS_BLACKLIST),
   aggregatePrefix: 'gaia_build_',
   distributionDir: GAIA_DISTRIBUTION_DIR
 };
