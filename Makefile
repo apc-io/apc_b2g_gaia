@@ -20,6 +20,18 @@
 ###############################################################################
 -include local.mk
 
+## XXX: Defaults for gaia-local repo ###
+GAIA_APP_SRCDIRS=apps
+HIDPI=1
+MOZILLA_OFFICIAL=1
+
+# Env specific
+# GAIA_DISTRIBUTION_DIR=
+
+# We should use this for showcase
+# GAIA_OPTIMIZE=
+########################################
+
 # Headless bot does not need the full output of wget
 # and it can cause crashes in bot.io option is here so
 # -nv can be passed and turn off verbose output.
@@ -32,7 +44,7 @@ GAIA_OPTIMIZE?=0
 HIDPI?=*
 DOGFOOD?=0
 TEST_AGENT_PORT?=8789
-GAIA_APPS_BLACKLIST?=camera calendar fm communications costcontrol email sms marketplace.firefox.com m.here.com
+GAIA_APPS_BLACKLIST?=bluetooth camera calendar fm communications costcontrol email sms hoststubtest mochitest packstubtest
 
 # Enable compatibility to run in Firefox Desktop
 BROWSER?=$(DEBUG)
