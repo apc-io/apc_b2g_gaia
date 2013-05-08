@@ -34,7 +34,15 @@ Bookmark.prototype = {
 
     // The third parameter is received in window_manager without whitespaces
     // so we decice replace them for &nbsp;
-    window.open(this.url, '_blank', JSON.stringify(features));
+    // window.open(this.url, '_blank', JSON.stringify(features));
+    // Customized workaround of wrapper UI
+    new MozActivity({
+        name: 'view',
+        data: {
+          type: 'url',
+          url: this.url
+        }
+    });
   },
 
   uninstall: function bookmark_uninstall() {
