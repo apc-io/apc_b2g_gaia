@@ -667,8 +667,7 @@ var Browser = {
   },
 
   updateTabsCount: function browser_updateTabsCount() {
-    this.tabsBadge.innerHTML = Object.keys(this.tabs).length +
-      '<span id="more-tabs">&#x203A;</span>';
+    // todo, use Object.keys(this.tabs).length to update UI
   },
 
   updateSecurityIcon: function browser_updateSecurityIcon() {
@@ -1629,7 +1628,6 @@ var Browser = {
 
   showAwesomeScreen: function browser_showAwesomeScreen() {
     this.results.classList.add('hidden');
-    this.tabsBadge.innerHTML = '';
     // Ensure the user cannot interact with the browser until the
     // transition has ended, this will not be triggered unless the
     // use is navigating from the tab screen.
@@ -1681,7 +1679,6 @@ var Browser = {
     // screen, it should be visible in the gutter, but that currently triggers
     // https://bugzilla.mozilla.org/show_bug.cgi?id=777781
     this.hideCurrentTab();
-    this.tabsBadge.innerHTML = '';
 
     var multipleTabs = Object.keys(this.tabs).length > 1;
     var ul = document.createElement('ul');

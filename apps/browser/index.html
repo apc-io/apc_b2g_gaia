@@ -38,13 +38,20 @@
     <div id="main-screen">
 
       <menu type="toolbar" id="toolbar-start">
+        <button type="button" value="" id="back-button" alt="Back"
+          title="" disabled="true"></button>
+        <button type="button" value="" id="forward-button" alt="Forward"
+          title="" disabled="true"></button>
         <form id="url-bar" novalidate>
           <input type="image" id="ssl-indicator" value="" />
           <input type="text" id="url-input" placeholder="Enter Search or Address"
                  data-l10n-id="enter-search-or-address" x-inputmode="verbatim"/>
           <input type="image" id="url-button" value="" />
         </form>
-        <span id="tabs-badge"> 1&#x203A;</span>
+        <button type="button" id="settings-button"></button>
+        <button type="button" id="tabs-badge"></button>
+        <button type="button" value="" id="bookmark-button" alt="Bookmark"
+          title=""></button>
         <button id="awesomescreen-cancel-button"></button>
         <div id="throbber"></div>
       </menu>
@@ -113,20 +120,10 @@
       </div>
     </div>
 
-    <menu type="toolbar" id="toolbar-end">
-      <button type="button" value="" id="back-button" alt="Back"
-              title="" disabled="true"></button>
-      <button type="button" value="" id="forward-button" alt="Forward"
-              title="" disabled="true"></button>
-      <button type="button" value="" id="bookmark-button" alt="Bookmark"
-              title=""></button>
-    </menu>
-
     <div id="tray">
       <!-- 
       <menu type="toolbar" id="tray-toolbar">
         <button type="button" id="new-tab-button"></button>
-        <button type="button" id="settings-button"></button>
       </menu>
       <div id="tabs-list"></div> 
       -->
