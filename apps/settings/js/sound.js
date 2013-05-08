@@ -210,11 +210,13 @@
   assignButtonsActions();
 
   var button = document.getElementById('call-tone-selection');
-  button.onclick = function() {
-    for (var key in lists) {
-      activateCurrentElementFor(lists[key]);
-    }
-    document.location.hash = 'sound-selection';
-  };
+  if (button) {
+    button.onclick = function() {
+      for (var key in lists) {
+        activateCurrentElementFor(lists[key]);
+      }
+      document.location.hash = 'sound-selection';
+    };
+  }
 })();
 
