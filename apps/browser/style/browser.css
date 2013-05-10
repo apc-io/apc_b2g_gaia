@@ -29,7 +29,13 @@ input[type="image"] {
   transform: translateX(calc(-100% + 5rem));
 }
 
-.tabs-screen #tabs-badge {
+.tabs-screen #throbber,
+.tabs-screen #url-bar,
+.tabs-screen #back-button,
+.tabs-screen #forward-button,
+.tabs-screen #tabs-badge,
+.tabs-screen #settings-button,
+.tabs-screen #bookmark-button {
   display: none;
 }
 
@@ -37,10 +43,11 @@ input[type="image"] {
   display: block;
 }
 
-.awesome-screen #throbber {
-  display: none;
-}
-
+.awesome-screen #throbber,
+.awesome-screen #back-button,
+.awesome-screen #forward-button,
+.awesome-screen #settings-button,
+.awesome-screen #bookmark-button,
 .awesome-screen #tabs-badge {
   display: none;
 }
@@ -205,23 +212,8 @@ input[type="image"] {
 }
 
 #tabs-badge {
-  font-family: 'MozTT', sans-serif;
-  position: absolute;
-  right: 0;
-  top: 0;
-  font-size: 2.3rem;
-  color: white;
-  display: block;
-  width: 4.4rem;
-  height: 5rem;
-  line-height: 5rem;
-  text-align: center;
-  cursor: pointer;
-  -moz-user-select: none;
-}
-
-#tabs-badge:active, #tabs-badge:hover {
-  color: #AAA;
+  /* a temporary background image */
+  background-image: url("images/menu.png");
 }
 
 #more-tabs {
@@ -235,6 +227,8 @@ input[type="image"] {
   top: 0;
   left: 0;
   right: 0;
+  display: flex;
+  flex-direction: row;
 }
 
 #throbber {
@@ -264,7 +258,6 @@ input[type="image"] {
   background-repeat: no-repeat;
   background-position: right;
   background-size: auto 5rem;
-  padding-right: 6.5rem;
 }
 
 .tabs-screen #toolbar-start {
@@ -272,7 +265,6 @@ input[type="image"] {
   background-repeat: no-repeat, no-repeat;
   background-position: top right, right;
   background-size: auto 5rem;
-  padding-right: 6.5rem;
 }
 
 .tabs-screen #frames {
@@ -294,7 +286,7 @@ input[type="image"] {
   padding: 0 0 0 0.5rem;
   background-color: #fff;
   font-weight: 600;
-  width: calc(100% - 1.5rem);
+  flex: 1;
 }
 
 #url-button {
@@ -392,7 +384,7 @@ input::-moz-focus-inner {
 }
 
 #forward-button[disabled] {
-  display: none;
+  /*display: none;*/
 }
 
 #bookmark-button {
@@ -408,7 +400,7 @@ input::-moz-focus-inner {
   width: 100%;
   position: absolute;
   top: 5rem;
-  bottom: 4.5rem;
+  bottom: 0;
   background: white;
 }
 
