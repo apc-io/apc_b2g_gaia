@@ -44,7 +44,7 @@ GAIA_OPTIMIZE?=0
 HIDPI?=*
 DOGFOOD?=0
 TEST_AGENT_PORT?=8789
-GAIA_APPS_BLACKLIST?=bluetooth camera calendar fm communications costcontrol email sms hoststubtest mochitest packstubtest
+GAIA_APPS_BLACKLIST?=bluetooth camera calendar clock fm communications costcontrol email sms hoststubtest mochitest packstubtest
 
 # Enable compatibility to run in Firefox Desktop
 BROWSER?=$(DEBUG)
