@@ -132,8 +132,8 @@ section {
 
 /* thumbnails in regular thumbnail list view */
 #thumbnails.list {
-  top: 0;
-  bottom: 0;
+  top: 5rem;
+  bottom: -4rem;
 }
 
 /* thumbnails in thumbnail select view where there is a top bar */
@@ -343,7 +343,7 @@ a.button.disabled {
 }
 
 footer {
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 1);
   height: 4rem;
   position: absolute;
   bottom: 0;
@@ -357,20 +357,26 @@ footer {
   background-image: url('images/iconaction_done_30x30.png') !important;
 }
 
-#thumbnails-camera-button {
-  position: absolute;
-  width: 50%;
+#thumbnails-top > a {
+  position: static;
+  float: right;
   height: 100%;
-  left: 0;
+  width: 10rem;
+  background-position: center center;
+  background-repeat: no-repeat;
+  background-size: 3rem auto;
+  border-right: 0.1rem solid #FFF;
+}
+
+#thumbnails-top > a:first-child {
+  border: none;
+}
+
+#thumbnails-camera-button {
   background-image: url('images/iconaction_camera_30x30.png');
-  border-right: 0.1rem solid #000;
 }
 
 #thumbnails-select-button {
-  position: absolute;
-  width: 50%;
-  height: 100%;
-  left: 50%;
   background-image: url('images/iconaction_select_30x30.png');
 }
 
