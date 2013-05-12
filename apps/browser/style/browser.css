@@ -124,19 +124,20 @@ input[type="image"] {
 
 #tabs-list li a {
   display: block;
-  height: 6.5rem;
+  height: 18rem;
   -moz-user-select: none;
-  padding: 1rem;
+  padding: 2rem;
 }
 
 #tabs-list li {
   margin: 0;
-  height: 8.5rem;
+  height: 22rem;
   border-bottom: 0.1rem solid #54575c;
   font-family: 'MozTT', sans-serif;
   overflow: hidden;
   position: relative;
-  width: 100%;
+  width: 50%;
+  display:inline-block;
 }
 
 #tabs-list li a.active {
@@ -145,22 +146,22 @@ input[type="image"] {
 
 #tabs-list .preview {
   display: block;
-  width: 9rem;
-  height: 6.5rem;
+  width: 30rem;
+  height: 18rem;
   background-color: rgba(255, 255, 255, 0.3);
   background-size: cover;
   float:left;
   border-radius: 0.5rem;
   pointer-events: none;
-  margin-right: 1rem;
+  margin-right: 2rem;
 }
 
 #tabs-list span {
   pointer-events: none;
   display: block;
-  height: 6.5rem;
+  height: 15rem;
   top: 0;
-  margin: 0 5rem 0 0;
+  margin: 3rem 5rem 0 0;
   overflow: hidden;
   text-overflow: ellipsis;
 }
