@@ -6,6 +6,7 @@
   position: absolute;
   transition: opacity 0.5s;
   display: block;
+  background-color: rgba(0, 0, 0, 0.6);
 }
 
 #value-selector[hidden] {
