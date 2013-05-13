@@ -31,6 +31,16 @@ const LandingPage = (function() {
     evt.stopImmediatePropagation();
   });
 
+  landingTime.addEventListener('click', function configure(evt) {
+    var activity = new MozActivity({
+      name: 'configure',
+      data: {
+        target: 'device',
+        section: 'dateTime'
+      }
+    });
+  });
+
   document.addEventListener('mozvisibilitychange', function mozVisChange() {
     if (document.mozHidden === false) {
       startClock();
