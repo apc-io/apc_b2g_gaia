@@ -382,3 +382,66 @@ html[dir="rtl"] section[role="region"] > header:first-child > a .icon:after {
 html[dir="rtl"] section[role="region"] > header:first-child .icon.icon-back {
   background-image: url(headers/images/icons/back-rtl.png);
 }
+
+
+
+@media (min-width: 1280px) and (orientation: landscape), (min-width: 800px) and (orientation: portrait) {
+  section[role="region"] > header:first-child > button,
+  section[role="region"] > header:first-child > a {
+    position: absolute;
+    left: 0;
+    width: 10.2rem;
+    height: 5rem;
+    background: url(headers/images/ui/separator-large.png) no-repeat 10rem center / auto 4.8rem;
+    overflow: hidden;
+  }
+
+  section[role="region"] > header:first-child > button .icon:after,
+  section[role="region"] > header:first-child > a .icon:after {
+    width: 10rem;
+  }
+
+  section[role="region"] > header:first-child > button .icon,
+  section[role="region"] > header:first-child > a .icon  {
+    background-size: auto 4rem;
+    background-position: 3rem;
+    width: 10rem;
+  }
+
+  section[role="region"] > header:first-child h1 {
+    margin: 0 0 0 12.7rem;
+  }
+
+  section[role="region"] > header:first-child menu[type="toolbar"] {
+    padding: 0 2.5rem;
+  }
+
+
+  /* Since we need the left-padding without affecting position of last-child,
+     :after is used here to draw the separator instead. */
+  section.skin-dark[role="region"] > header:first-child menu[type="toolbar"] a:last-child,
+  .skin-dark section[role="region"] > header:first-child menu[type="toolbar"] a:last-child,
+  section.skin-dark[role="region"] > header:first-child menu[type="toolbar"] button:last-child,
+  .skin-dark section[role="region"] > header:first-child menu[type="toolbar"] button:last-child {
+    background-image: none;
+    overflow: visible;
+  }
+
+  section[role="region"] > header:first-child menu[type="toolbar"] a:last-child:after,
+  section[role="region"] > header:first-child menu[type="toolbar"] button:last-child:after {
+    display: block;
+    position: absolute;
+    content: '\00a0';
+    width: 0.2rem;
+    left: -2.5rem;
+    top: 0;
+    background: url("headers/images/ui/separator.png") no-repeat scroll left center / auto 3.4rem transparent;
+  }
+
+  section[role="region"].skin-dark > header:first-child menu[type="toolbar"] a:last-child:after,
+  section[role="region"].skin-dark > header:first-child menu[type="toolbar"] button:last-child:after,
+  .skin-dark section[role="region"] > header:first-child menu[type="toolbar"] a:last-child:after,
+  .skin-dark section[role="region"] > header:first-child menu[type="toolbar"] button:last-child:after {
+    background-image: url("headers/images/ui/dark/separator.png");
+  }
+}

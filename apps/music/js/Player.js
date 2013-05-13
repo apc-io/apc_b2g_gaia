@@ -49,6 +49,11 @@ var PlayerView = {
     return this._audio = document.getElementById('player-audio');
   },
 
+  get list() {
+    delete this._list;
+    return this._list = document.getElementById('player-list-container');
+  },
+
   get isPlaying() {
     return this._isPlaying;
   },
@@ -72,6 +77,8 @@ var PlayerView = {
       // Also, show or hide the Now Playing button depending on
       // whether content is queued
       TitleBar.playerIcon.hidden = (this._dataSource.length < 1);
+
+      this.updateList();
     }
   },
 
@@ -552,6 +559,13 @@ var PlayerView = {
         (remainingTime > 0) ? '-' + formatTime(remainingTime) : '---:--';
   },
 
+  updateList: function pv_updateList() {
+    this.list.innerHTML = '';
+    for (var i = 0; i < this.dataSource.length; i++) {
+      this.list.appendChild(createListElement('song', this.dataSource[i], i));
+    }
+  },
+
   handleEvent: function pv_handleEvent(evt) {
     var target = evt.target;
       if (!target)
@@ -626,6 +640,10 @@ var PlayerView = {
 
           musicdb.updateMetadata(songData.name, songData.metadata);
           this.setRatings(newRating);
+        }
+
+        if (target.dataset.option == 'song') {
+          this.play(target.dataset.index);
         }
 
         break;

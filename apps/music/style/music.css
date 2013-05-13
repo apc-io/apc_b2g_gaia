@@ -421,19 +421,11 @@ body.picker-mode #title-player {
   /* We set a background URL here when the thumbnail loads */
 }
 
-.main-tile {
-  width: 66%;
-  height: 0;
-  padding-bottom: 66%;
-  background-color: black;
-  overflow: hidden;
-}
-
 .tile:after {
   display:block;
   width: 100%;
   height: 100%;
-  border:0.1rem solid black;
+  border: 0.1rem solid black;
   -moz-box-sizing: border-box;
   content: ' ';
   top: 0;
@@ -442,17 +434,7 @@ body.picker-mode #title-player {
   pointer-events: none;
 }
 
-.sub-tile {
-  width: 33%;
-  height: 0;
-  padding-bottom: 33%;
-  font-weight: lighter;
-  background-color: #303030;
-  overflow: hidden;
-}
-
-.main-tile:last-child,
-.sub-tile:last-child {
+.tile:last-child {
   margin-bottom: 4rem;
 }
 
@@ -475,6 +457,7 @@ body.picker-mode #title-player {
   width: 100%;
   height: auto;
   pointer-events: none;
+  background-color: rgba(0, 0, 0, 0.5);
 }
 
 .tile-title-artist,
@@ -489,7 +472,6 @@ body.picker-mode #title-player {
   overflow: hidden;
   text-overflow: ellipsis;
   text-shadow: black 0.1rem 0.1rem;
-  background-color: rgba(0, 0, 0, 0.5);
 }
 
 .tile-title-artist {
@@ -502,15 +484,6 @@ body.picker-mode #title-player {
   font-size: 1.4rem;
 }
 
-.main-tile-title {
-  font-size: 1.9rem;
-}
-
-.sub-tile-title {
-  padding: 0.15rem 0.5rem;
-  width: calc(100% - 1rem);
-  color: rgba(255, 255, 255, 0.8);
-}
 
 .float-left {
   position: relative;
@@ -526,52 +499,52 @@ body.picker-mode #title-player {
 
 .default-album-0 {
   background-image: url('./images/AlbumArt1_small.png');
-  background-size: 100% 100%;
+  background-size: cover;
 }
 
 .default-album-1 {
   background-image: url('./images/AlbumArt2_small.png');
-  background-size: 100% 100%;
+  background-size: cover;
 }
 
 .default-album-2 {
   background-image: url('./images/AlbumArt3_small.png');
-  background-size: 100% 100%;
+  background-size: cover;
 }
 
 .default-album-3 {
   background-image: url('./images/AlbumArt4_small.png');
-  background-size: 100% 100%;
+  background-size: cover;
 }
 
 .default-album-4 {
   background-image: url('./images/AlbumArt5_small.png');
-  background-size: 100% 100%;
+  background-size: cover;
 }
 
 .default-album-5 {
   background-image: url('./images/AlbumArt6_small.png');
-  background-size: 100% 100%;
+  background-size: cover;
 }
 
 .default-album-6 {
   background-image: url('./images/AlbumArt7_small.png');
-  background-size: 100% 100%;
+  background-size: cover;
 }
 
 .default-album-7 {
   background-image: url('./images/AlbumArt8_small.png');
-  background-size: 100% 100%;
+  background-size: cover;
 }
 
 .default-album-8 {
   background-image: url('./images/AlbumArt9_small.png');
-  background-size: 100% 100%;
+  background-size: cover;
 }
 
 .default-album-9 {
   background-image: url('./images/AlbumArt10_small.png');
-  background-size: 100% 100%;
+  background-size: cover;
 }
 
 #player-cover {
@@ -1146,7 +1119,8 @@ form[role="search"] button {
 }
 
 form[role="search"] .icon.icon-close {
-  background: url(/shared/style/headers/images/icons/close.png) no-repeat scroll center center transparent;
+  background: url(/shared/style/headers/images/icons/close.png) no-repeat scroll transparent center center / 3rem;
+
   display: block;
   width: 2rem;
   height: 3.7rem;
@@ -1157,4 +1131,228 @@ form[role="search"] .icon.icon-close {
 
 .search-highlight {
   background-color: rgb(0, 138, 170);
+}
+
+#player-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+#player-list-container {
+  display: none;
+}
+
+
+@media (min-width: 1280px) and (orientation: landscape) {
+  /* tiles */
+  .tile {
+    position: relative;
+    float: left;
+    left: 0.5%;
+    width: 16.5%;
+    padding-bottom: 16.5%;
+  }
+
+  .tile:nth-child(12n+1), .tile:nth-child(12n+4) {
+    width: 33%;
+    padding-bottom: 33%;
+  }
+
+  .tile:nth-child(12n+1) {
+    float: left;
+  }
+
+  .tile:nth-child(12n+4) {
+    float: right;
+    left: -0.5%;
+
+  }
+
+  .tile:after  {
+    border: 0.2rem solid black;
+  }
+
+  .tile:last-child {
+    margin-bottom: 7rem;
+  }
+
+  .tile-title-bar {
+    height: 6rem;
+  }
+
+  .tile:nth-child(12n+1) .tile-title-bar,
+  .tile:nth-child(12n+4) .tile-title-bar {
+    height: 9rem;
+  }
+
+  .tile-title-artist {
+    padding: 1.5rem 0 0 1.5rem;
+    font-size: 2.4rem;
+    height: 3rem;
+    line-height: 3rem;
+    width: calc(100% - 3rem);
+  }
+
+  .tile:nth-child(12n+1) .tile-title-artist,
+  .tile:nth-child(12n+4) .tile-title-artist {
+    padding: 1.5rem 0 0 3rem;
+    font-size: 3.2rem;
+    height: 4rem;
+    line-height: 4rem;
+    width: calc(100% - 4.5rem);
+  }
+
+  .tile .tile-title-album {
+    display: none;
+  }
+
+  .tile:nth-child(12n+1) .tile-title-album,
+  .tile:nth-child(12n+4) .tile-title-album {
+    padding: 0 0 0 3rem;
+    margin-right: 1.5rem;
+    font-size: 2.4rem;
+    height: 3rem;
+    line-height: 3rem;
+    width: calc(100% - 4.5rem);
+    display: block;
+  }
+
+
+  /* tab buttons */
+  #tabs {
+    height: 7rem;
+  }
+
+  #tabs-mix, #tabs-playlists, #tabs-artists, #tabs-albums {
+    background-size: 4rem auto;
+    width: 25%;
+  }
+
+  #tabs-songs {
+    display: none;
+  }
+
+
+
+  /* player */
+  #player-container {
+    width: calc(100% - 45rem);
+  }
+
+  #player-list-container {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 45rem;
+    height: 100%;
+    background: -moz-linear-gradient(center top , #404040 0%, #202020 100%) repeat scroll 0 0 transparent;
+    overflow-y: auto;
+  }
+
+  #player-cover {
+    width: 50rem;
+    height: 50rem;
+    top: calc((100% - 50rem - 13rem) / 2);
+    left: calc((100% - 50rem) / 2);
+  }
+
+  #player-seek {
+    position: absolute;
+    bottom: 7rem;
+    height: 6rem;
+  }
+  #player-controls {
+    position: absolute;
+    bottom: 0rem;
+    height: 7rem;
+  }
+
+  #player-controls-previous,
+  #player-controls-play,
+  #player-controls-next,
+  #player-album-repeat,
+  #player-album-shuffle {
+    background-size: 4rem;
+    width: 20%;
+  }
+
+  #player-album-repeat,
+  #player-album-shuffle {
+    border-radius: 0;
+    margin: 0;
+    top: 0;
+    height: 100%;
+  }
+
+  #player-cover-caption {
+    top: -10rem;
+    height: 10rem;
+  }
+
+  #player-cover-artist {
+    padding: 1.5rem 0 0 0;
+    font-size: 3.2rem;
+    line-height: 3.2rem;
+    height: 4rem;
+    width: calc(100% - 4.5rem);
+  }
+
+  #player-cover-album {
+    padding: 0 0 0 0;
+    font-size: 2.4rem;
+    line-height: 2.4rem;
+    height: 4.5rem;
+    width: calc(100% - 4.5rem);
+  }
+
+  #player-cover-buttons {
+    height: 6rem;
+    bottom: calc(-100% + 10rem);
+  }
+
+  #player-album-rating {
+    width: 80%;
+    left: 10%;
+  }
+
+  .rating-star {
+    background-size: 4rem;
+  }
+
+  #player-seek-elapsed, #player-seek-remaining {
+    line-height: 2.4rem;
+    font-size: 2.4rem;
+    top: calc(50% - 1.2rem);
+    width: calc(48% - 25rem - 2%);
+  }
+
+  #player-seek-elapsed {
+    color: #F8B62D;
+  }
+
+  #player-seek-remaining {
+    color: #FFFFFF;
+  }
+
+  #player-seek-bar {
+    width: 50rem;
+  }
+
+  #player-seek {
+    background-size: 100% 2.4rem;
+  }
+
+  #player-seek-bar-indicator {
+    background-size: auto 2.4rem;
+  }
+
+  #player-list-container .list-item {
+    width: calc(100% - 3rem);
+  }
+
+  #player-list-container .list-song-index {
+    display: none;
+  }
+
 }
