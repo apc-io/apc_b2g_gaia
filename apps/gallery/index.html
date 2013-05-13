@@ -24,6 +24,7 @@
   <body role="application">
     <section role="region" id="thumbnail-list-view" class="hidden skin-organic">
       <header id="thumbnails-top">
+        <h1 id="thumbnail-list-view-title" data-l10n-id="gallery"></h1>
         <a id="thumbnails-camera-button" class="button"></a>
         <a id="thumbnails-select-button" class="button"></a>
       </header>
@@ -41,7 +42,11 @@
       </footer>
     </section>
 
-    <section role="region" id="fullscreen-view" class="hidden">
+    <section role="region" id="fullscreen-view" class="skin-organic hidden">
+      <header id="fullscreen-top">
+        <button id="fullscreen-cancel-button"><span class="icon icon-back"></span></button>
+        <h1 id="fullscreen-view-title" data-l10n-id="gallery"></h1>
+      </header>
       <div id="frames">
         <!-- the current photo plus next and previous waiting in the wings -->
         <div id="frame1" class="frame"></div>
@@ -148,10 +153,10 @@
 
       <!-- buttons for selecting the type of edit to perform -->
       <footer id="edit-toolbar">
-        <a id="edit-exposure-button" class="button" data-l10n-id="exposure"></a>
-        <a id="edit-crop-button" class="button" data-l10n-id="crop"></a>
-        <a id="edit-effect-button" class="button" data-l10n-id="effects"></a>
-        <a id="edit-border-button" class="button" data-l10n-id="borders"></a>
+        <a id="edit-exposure-button" class="button"></a>
+        <a id="edit-crop-button" class="button"></a>
+        <a id="edit-effect-button" class="button"></a>
+        <a id="edit-border-button" class="button"></a>
       </footer>
     </section>
 

@@ -131,6 +131,7 @@ function init() {
   // Clicking on the cancel button goes from thumbnail select mode
   // back to thumbnail list mode
   $('thumbnails-cancel-button').onclick = setView.bind(null, thumbnailListView);
+ $('fullscreen-cancel-button').onclick = setView.bind(null, thumbnailListView);
 
   // Clicking on the pick back button cancels the pick activity.
   $('pick-back-button').onclick = cancelPick;

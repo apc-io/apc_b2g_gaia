@@ -45,7 +45,10 @@ section {
   overflow: hidden;
   font-size: 2.1rem;
 }
-
+#thumbnail-list-view-title{
+  width: calc(100% - 23rem);
+  display: inline-block;
+}
 /*
  * The overlay is where we display messages like Scanning, No Photos,
  * No SD card and SD Card in Use along with instructions for resolving
@@ -188,10 +191,6 @@ section {
   padding-bottom: calc((100% - 3px) / 3 );
 }
 
-.thumbnail:nth-child(3n) {
-  margin-right: 0;
-}
-
 .thumbnail.selected {
   outline: solid #00aacc 0.3rem;
   outline-offset: -0.3rem;
@@ -206,21 +205,30 @@ section {
 }
 
 @media (orientation: landscape) {
-  /* 4 thumbnails for each row in landscape mode. */
+  /* 6 thumbnails for each row in landscape mode. */
   .thumbnail {
-    width: calc((100% - 3px) / 4 );
-    padding-bottom: calc((100% - 3px) / 4 );
+    width: 21rem;
+    padding-bottom: 21rem;
+    margin-right: 0.4rem;
+    margin-bottom: 0.4rem;
   }
-
-  .thumbnail:nth-child(3n) {
-    margin-right: 1px;
-  }
-
-  .thumbnail:nth-child(4n) {
+  .thumbnail:nth-child(6n) {
     margin-right: 0;
   }
 }
 
+@media (orientation: portrait) {
+  /* 6 thumbnails for each row in landscape mode. */
+  .thumbnail {
+    width: 19.7rem;
+    padding-bottom: 19.7rem;
+    margin-right: 0.4rem;
+    margin-bottom: 0.4rem;
+  }
+  .thumbnail:nth-child(4n) {
+    margin-right: 0;
+  }
+}
 /* since fullscreen-view is fullscreen, it needs its own background color */
 #fullscreen-view {
   background-color: #444;
@@ -344,7 +352,7 @@ a.button.disabled {
 
 footer {
   background: rgba(0, 0, 0, 1);
-  height: 4rem;
+  height: 7rem;
   position: absolute;
   bottom: 0;
   left: 0;
@@ -365,14 +373,19 @@ footer {
   background-position: center center;
   background-repeat: no-repeat;
   background-size: 3rem auto;
-  border-right: 0.1rem solid #FFF;
 }
 
-#thumbnails-top > a:first-child {
-  border: none;
+#thumbnails-top > a:last-child:before {
+  content: "";
+  margin-top:1rem;
+  height: calc(100% - 2rem);
+  width: 0.2rem;
+  background-image: url('images/separator.png');
+  display: block;
 }
 
 #thumbnails-camera-button {
+  display:none;
   background-image: url('images/iconaction_camera_30x30.png');
 }
 
@@ -384,8 +397,8 @@ footer {
   position: absolute;
   width: 50%;
   height: 100%;
-  left: 0;
-  background-image: url('images/iconaction_delete_30x30.png');
+  left: 50%;
+  background-image: url('images/iconaction_delete_40x40.png');
   border-right: 0.1rem solid #000;
 }
 
@@ -393,12 +406,12 @@ footer {
   position: absolute;
   width: 50%;
   height: 100%;
-  left: 50%;
-  background-image: url('images/iconaction_share_30x30.png');
+  left: 0;
+  background-image: url('images/iconaction_share_40x40.png');
 }
 
 #fullscreen-toolbar {
-  height: 4rem;
+  height: 7rem;
   position: absolute;
   bottom: 0;
   left: 0;
@@ -407,47 +420,43 @@ footer {
 }
 
 #fullscreen-view.toolbarhidden #fullscreen-toolbar {
-  transform: translate(0, 4rem);
+  transform: translate(0, 7rem);
 }
 
 #fullscreen-back-button {
   position: absolute;
-  width: 20%;
+  width: 25%;
   height: 100%;
   left: 0;
-  background-image: url('images/iconaction_camera_gridview_30x30.png');
+  background-image: url('images/iconaction_camera_gridview_40x40.png');
 }
 
 #fullscreen-camera-button {
-  position: absolute;
-  width: 20%;
-  height: 100%;
-  left: 20%;
-  background-image: url('images/iconaction_camera_30x30.png');
+  display:none;
 }
 
 #fullscreen-edit-button {
   position: absolute;
-  width: 20%;
+  width: 25%;
   height: 100%;
-  left: 40%;
-  background-image: url('images/iconaction_camera_editphoto_30x30.png');
+  left: 25%;
+  background-image: url('images/iconaction_camera_editphoto_40x40.png');
 }
 
 #fullscreen-share-button {
   position: absolute;
-  width: 20%;
+  width: 25%;
   height: 100%;
-  left: 60%;
-  background-image: url('images/iconaction_share_30x30.png');
+  left: 50%;
+  background-image: url('images/iconaction_share_40x40.png');
 }
 
 #fullscreen-delete-button {
   position: absolute;
-  width: 20%;
+  width: 25%;
   height: 100%;
-  left: 80%;
-  background-image: url('images/iconaction_delete_30x30.png');
+  left: 75%;
+  background-image: url('images/iconaction_delete_40x40.png');
 }
 
 #pick-top {
@@ -506,7 +515,7 @@ footer {
   top: 10px;
   left: 10px;
   width: calc(100% - 2rem);  /* I can't do right: 1rem here. Bug? */
-  height: calc(100% - 2rem);  /* can't just set bottom: 1rem here */
+  height: calc(100% - 10rem);  /* can't just set bottom: 1rem here */
 }
 
 #edit-crop-canvas {
@@ -521,8 +530,8 @@ footer {
   position: absolute;
   left: 0;
   width: 100%;
-  height: 5rem;
-  bottom: 4rem;
+  height: 10rem;
+  bottom: 7rem;
   background: #555;
 }
 
@@ -704,23 +713,27 @@ a.filter-faded {
 
 /* If the button is selected, it has a different background */
 #edit-toolbar > .button.selected {
-  background: #02252C;
+  background-color: #02252C;
 }
 
 #edit-exposure-button {
   left: 0;
+  background-image: url('images/iconaction_gallery_exposure_40x40.png');
 }
 
 #edit-crop-button {
   left: 25%;
+  background-image: url('images/iconaction_gallery_crop_40x40.png');
 }
 
 #edit-effect-button {
-  left: 50%
+  left: 50%;
+  background-image: url('images/iconaction_gallery_effects_40x40.png');
 }
 
 #edit-border-button {
-  left: 75%
+  left: 75%;
+  background-image: url('images/iconaction_gallery_borders_40x40.png');
 }
 
 /*
