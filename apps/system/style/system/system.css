@@ -540,6 +540,7 @@ iframe.backgroundWindow {
   height: calc(100% - 2rem);
   visibility: hidden;
   pointer-events: none;
+  background-color: rgba(0,0,0,0.6);
 }
 
 #screen.active-statusbar #dialog-overlay {
@@ -566,7 +567,7 @@ iframe.backgroundWindow {
 #screen.authentication-dialog #dialog-overlay,
 #screen.authentication-dialog #authentication-dialog,
 #screen.crash-dialog #dialog-overlay,
-#screen.crash-dialog #crash-dialog
+#screen.crash-dialog #crash-dialog,
 #screen.modal-dialog #dialog-overlay,
 #screen.modal-dialog #modal-dialog,
 #screen.popup #popup-container,

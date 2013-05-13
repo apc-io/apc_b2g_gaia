@@ -22,9 +22,8 @@
   background: #fafafa url(images/ui/default.png) repeat-x left bottom;
   border: 1px solid #9f9f9f;
   border-radius: 0.3rem;
-  font-size: 1.6rem;
-  font-family: 'MozTT', Sans-serif;
-  font-weight: 600;
+  font-size: 2.1rem;
+  font-family: 'Open Sans', Sans-serif;
   line-height: 3.8rem;
   color: #333;
   text-align: center;
@@ -154,7 +153,7 @@
 }
 
 [role="dialog"] .buttons-list label {
-  font: 1.4rem/1em "MozTT", Sans-serif;
+  font: 1.4rem/1em "Open Sans", Sans-serif;
   text-transform: uppercase;
   display: block;
   padding-left: 0.5rem;
