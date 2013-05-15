@@ -85,7 +85,7 @@ var SimLock = {
     if (!conn)
       return false;
 
-    if (LockScreen.locked)
+    if (LockScreen.locked.state)
       return false;
 
     // FTU has its specific SIM PIN UI
