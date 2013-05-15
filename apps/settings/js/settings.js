@@ -687,8 +687,13 @@ window.addEventListener('load', function loadSettings() {
     // load panel (+ dependencies) if necessary -- this should be synchronous
     lazyLoad(newPanel);
 
-    oldPanel.className = 'previous';
-    newPanel.className = 'current';
+    if (newPanel.getAttribute('role') === 'dialog') {
+      oldPanel.className = 'current';
+      newPanel.className = 'current';
+    } else {
+      oldPanel.className = 'previous';
+      newPanel.className = 'current';
+    }
     switch (newPanel.id) {
       case 'about-licensing':
         // Workaround for bug 825622, remove when fixed
