@@ -51,19 +51,36 @@ ul {
   background: linear-gradient(to bottom, #222 0%,#000 100%);
 }
 li {
-  height: 12.1rem;
+  width: 29.6rem;
+  height: 37.5rem;
+  margin-right: 0.4rem;
+  float:left;
   overflow: hidden;
   position: relative;
   list-style-type: none;
 }
+@media (orientation: portrait) { 
+  li {
+    width: 64.1rem;
+    height: 20rem;
+    margin-right: 0rem;
+    margin-bottom: 0.1rem;
+  }
+}  
+
 li .inner {
-  height: 12rem;
-  margin: 0 1.9rem 0 0;
-  border-bottom: 0.1rem solid;
+  width: 29.6rem;
   border-color:rgba(255,255,255, 0.1);
 }
+@media (orientation: portrait) { 
+  li .inner {
+    width: 64.1rem;
+    display: table;
+  }
+}
+  
 .unwatched {
-  background: url(images/unwatched.png) no-repeat;
+  background: url(images/unwatched@165px.png) no-repeat;
   position: absolute;
   bottom: 0;
   width: 0.4rem;
@@ -72,30 +89,50 @@ li .inner {
 li .img {
   background-repeat: no-repeat;
   background-position: center center;
-  height: 12rem;
-  width: 21rem;
+  height: 16.5rem;
+  width: 29.6rem;
+  background-size: cover;
   overflow: hidden;
   left: 0;
   margin: 0;
   padding: 0;
 }
+@media (orientation: portrait) { 
+  .unwatched {
+    background: url(images/unwatched@200px.png) no-repeat;
+  }
+  li .img {
+    height: 20rem;
+    width: 35.6rem;
+    float:left;
+  }
+}  
 li .details {
-  line-height: 1.6rem;
-  position: absolute;
+  line-height: 3rem;
   margin: 1.6rem 0;
-  font-size: 1.4rem;
+  font-size: 2.8rem;
   color: #fff;
-  width: calc(100% - 24rem);
+  width: 100%;
   height: 9.3rem;
   top: 0;
   right: 1.8rem;
   visibility: hidden;
+}
+@media (orientation: portrait) { 
+  li .details {
+    width: 28rem;
+    margin-left:0.5rem;
+    display: table-cell;
+    vertical-align: middle;
+  }
 }
 li .details[data-visible] {
   visibility: visible;
 }
 li .after span:last-child {
   color: #95a3a6;
+  display: block;
+  width: 100%;
 }
 
 /* All of the main views fill the screen */
@@ -132,22 +169,25 @@ li .after span:last-child {
   left: 0;
   right: 0;
   /* top and bottom are set depending on view below */
-  padding: 0;
+  padding: 3rem 0 0 4rem;
   margin: 0;
   overflow-y: scroll;
   overflow-x: hidden;
+  top: 5rem;
+  bottom: 0;
   /*
    * the body background is black, but remind the UA of that here to
    * keep the thumbnail view opaque if possible.
    */
   background-color: black;
 }
-
-/* thumbnails in thumbnail select view where there is a top bar */
-#thumbnails.select,
-#thumbnails.pick {
-  top: 50px;
-  bottom: 0;
+@media (orientation: portrait) { 
+  #thumbnails {
+     padding: 3rem 8rem 0 8rem;
+  }
+} 
+#thumbnails :nth-child(4n) {
+  margin-right: 0rem;
 }
 
 .thumbnail.selected {
@@ -277,13 +317,25 @@ body.hidden *[data-l10n-id] {
 }
 
 header {
-  background: rgba(0, 0, 0, 0.6) !important;
+  background: rgba(0, 0, 0, 1) !important;
+  width: calc(100% - 10rem);
+  display: inline-block !important;
 }
 
 header h1 {
   font-size: 2.5rem !important;
   line-height: 5rem !important;
-  margin: 0 0 0 3.4rem !important;
+  margin: 0 0 0 4.5rem !important;
+  width: 29.6rem;
+  text-align: center !important;
+}
+
+@media (orientation: portrait) { 
+  header h1 {
+    margin: 0 0 0 9rem !important;
+    width: 35.6rem;
+    text-align: left !important;
+  }
 }
 
 /* the indeterminate progress bar displayed while scanning */
@@ -340,7 +392,7 @@ a.button.disabled {
 }
 
 footer {
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 1);
   height: 40px;
   position: absolute;
   bottom: 0;
@@ -360,12 +412,24 @@ footer {
 
 #thumbnails-select-button {
   position: absolute;
-  width: 50%;
-  height: 100%;
-  left: 50%;
+  top: 0;
+  left: calc(100% - 10rem);
+  display:inline-block;
+  width: 10rem;
+  height: 5rem;
+  z-index:10;
+  background-position: center center;
+  background-size: 3rem auto;
   background-image: url('images/iconaction_select_30x30.png');
 }
-
+#thumbnails-select-button:before {
+  content: "";
+  margin-top:1rem;
+  height: calc(100% - 2rem);
+  width: 0.2rem;
+  background-image: url('images/separator.png');
+  display: block;
+} 
 #thumbnails-delete-button {
   position: absolute;
   width: 50%;
