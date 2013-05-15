@@ -4,6 +4,7 @@
 
 /* Main dialog setup */
 form[role="dialog"][data-type="value-selector"] {
+  -moz-box-sizing: border-box;
   background: url(value_selector/images/ui/pattern.png) repeat left top, url(value_selector/images/ui/gradient.png) no-repeat left top;
   background-size: auto auto, 100% 100%;
   /* We can't use shortand with background size because is not implemented yet:
@@ -11,13 +12,13 @@ form[role="dialog"][data-type="value-selector"] {
   overflow: hidden;
   position: absolute;
   z-index: 100;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  top: calc(50% - 24rem);
+  left: calc(50% - 39rem);
+  width: 78rem;
+  height: 48rem;
   padding: 0 0 7rem;
-  font-family: "MozTT", Sans-serif;
-  font-size: 0;
+  font-family: "Open Sans", Sans-serif;
+  font-size: 2rem;
   /* Using font-size: 0; we avoid the unwanted visual space (about 3px)
   created by white-spaces and break lines in the code betewen inline-block elements */
   color: #fff;
@@ -43,7 +44,7 @@ form[role="dialog"][data-type="value-selector"] > section {
 }
 
 form[role="dialog"][data-type="value-selector"] h1 {
-  font: 1.6rem/1em 'MozTT', Sans-serif;
+  font: 2.1rem/1em 'Open Sans', Sans-serif;
   color: #fff;
   border-bottom: 0.1rem solid #616262;
   background: url(value_selector/images/ui/alpha.png) repeat 0 0;
@@ -80,9 +81,8 @@ form[role="dialog"][data-type="value-selector"] menu button {
   border-radius: 0.3rem;
   outline: none;
   border: none;
-  font-size: 1.6rem;
-  font-family: 'MozTT', Sans-serif;
-  font-weight: 600;
+  font-size: 2.1rem;
+  font-family: 'Open Sans', Sans-serif;
   line-height: 3.8rem;
   color: #fff;
   text-shadow: -1px -1px 0 #830b0b;
