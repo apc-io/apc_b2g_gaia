@@ -14,7 +14,8 @@ var ids = ['thumbnail-list-view', 'thumbnails-bottom',
            'close', 'play', 'playHead', 'timeSlider', 'elapsedTime',
            'video-title', 'duration-text', 'elapsed-text', 'bufferedTime',
            'slider-wrapper', 'throbber', 'delete-video-button',
-           'picker-header', 'picker-close', 'picker-title', 'picker-done'];
+           'picker-header', 'picker-close', 'picker-title', 'picker-done',
+           'videos-header', 'videos-title'];
 
 ids.forEach(function createElementRef(name) {
   dom[toCamelCase(name)] = document.getElementById(name);
@@ -67,6 +68,8 @@ var FROMCAMERA = /^DCIM\/\d{3}MZLLA\/VID_\d{4}\.3gp$/;
 function init() {
 
   initDB();
+  // remove picker header
+  dom.thumbnailListView.removeChild(dom.pickerHeader);
 
   // binding options button
   dom.thumbnailsVideoButton.addEventListener('click', launchCameraApp);
@@ -1027,6 +1030,9 @@ if (acm) {
 var pendingPick;
 
 function showPickView() {
+  // remove video header
+  dom.thumbnails.removeChild('pickerHeader');
+
   dom.thumbnails.classList.add('pick');
   dom.pickerHeader.classList.remove('hidden');
   dom.pickerDone.classList.remove('hidden');
