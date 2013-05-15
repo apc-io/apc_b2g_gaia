@@ -21,14 +21,17 @@
   <body role="application" class="skin-dark">
 
     <section role="region" id="thumbnail-list-view">
-      <header id="picker-header" class="hidden">
+      <header id="videos-header">
+        <h1 id="videos-title" data-l10n-id="videos"></h1>
+      </header>
+
+       <header id="picker-header" class="hidden">
         <a href="#" id="picker-close"><span class="icon icon-back">back</span></a>
         <h1 id="picker-title" data-l10n-id="pick-title"></h1>
       </header>
-
-      <footer id="thumbnails-bottom">
+      <a id="thumbnails-select-button" class="button"></a>
+      <footer id="thumbnails-bottom" class="hidden">
         <a id="thumbnails-video-button" class="button"></a>
-        <a id="thumbnails-select-button" class="button"></a>
       </footer>
     </section>
 
