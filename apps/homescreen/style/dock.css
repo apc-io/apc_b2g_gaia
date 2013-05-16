@@ -10,7 +10,7 @@
 }
 
 #footer .dockWrapper {
-  width: 175%;
+  width: 160%;
   height: 100%;
 }
 
@@ -26,13 +26,13 @@
 #footer li {
   height: 100%;
   position: relative;
-  width: calc(100% / 7);
+  width: calc(100% / 8);
   float: left;
   text-align: center;
 }
 
 #footer > div.scrollable li {
-	width: 7.2rem;
+	width: 23.2rem;
 }
 
 /* Container -> icon + label */
