@@ -91,6 +91,9 @@ function init() {
   });
 
   dom.thumbnailsCancelButton.addEventListener('click', hideSelectView);
+
+  var cv = new CardsView(dom.thumbnails);
+  cv.start();
 }
 
 function showSelectView() {
