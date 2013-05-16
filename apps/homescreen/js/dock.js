@@ -6,7 +6,7 @@ var DockManager = (function() {
   var container, dock;
 
   var MAX_NUM_ICONS = 7;
-  var maxNumAppInViewPort = 4, maxOffsetLeft;
+  var maxNumAppInViewPort = 5, maxOffsetLeft;
 
   var windowWidth = window.innerWidth;
   var duration = 300;
