@@ -58,6 +58,7 @@ li {
   overflow: hidden;
   position: relative;
   list-style-type: none;
+  margin-bottom: 0.4rem;
 }
 @media (orientation: portrait) { 
   li {
@@ -149,7 +150,7 @@ li .after span:last-child {
 }
 
 #delete-video-button span {
-  background: transparent url(images/delete.png) no-repeat center center / 3rem;
+  background: transparent url(images/delete.png) no-repeat center center / 4rem;
 }
 
 #delete-video-button:active {
@@ -314,6 +315,7 @@ body.hidden *[data-l10n-id] {
 
 .icon.icon-done {
   background-image: url('images/iconaction_done_30x30.png') !important;
+  background-size: 4rem 4rem;
 }
 
 header {
@@ -408,6 +410,7 @@ footer {
   height: 100%;
   left: 0%;
   background-image: url('images/iconaction_video_30x30.png');
+  background-size: 4rem 4rem;
 }
 
 #thumbnails-select-button {
@@ -421,6 +424,7 @@ footer {
   background-position: center center;
   background-size: 3rem auto;
   background-image: url('images/iconaction_select_30x30.png');
+  background-size: 4rem 4rem;
 }
 #thumbnails-select-button:before {
   content: "";
@@ -436,6 +440,7 @@ footer {
   height: 100%;
   left: 0;
   background-image: url('images/iconaction_delete_30x30.png');
+  background-size: 4rem 4rem;
   border-right: 1px solid #000;
 }
 
@@ -445,6 +450,7 @@ footer {
   height: 100%;
   left: 50%;
   background-image: url('images/iconaction_share_30x30.png');
+  background-size: 4rem 4rem;
 }
 
 #thumbnails-single-delete-button {
@@ -453,6 +459,7 @@ footer {
   height: 100%;
   left: 0;
   background-image: url('images/iconaction_delete_30x30.png');
+  background-size: 4rem 4rem;
   border-right: 1px solid #000;
 }
 
@@ -462,6 +469,7 @@ footer {
   height: 100%;
   left: 50%;
   background-image: url('images/iconaction_share_30x30.png');
+  background-size: 4rem 4rem;
 }
 
 header .icon:after {
