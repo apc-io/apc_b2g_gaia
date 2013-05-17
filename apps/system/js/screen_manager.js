@@ -438,7 +438,7 @@ var ScreenManager = {
       this._setIdleTimeout(0);
     // The screen should be turn off with shorter timeout if
     // it was never unlocked.
-    } else if (LockScreen.locked.state) {
+    } else if (LockScreen.locked) {
       this._setIdleTimeout(10, true);
       var self = this;
       var stopShortIdleTimeout = function scm_stopShortIdleTimeout() {

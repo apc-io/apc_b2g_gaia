@@ -1611,7 +1611,7 @@ var WindowManager = (function() {
       case 'status-active':
       case 'attentionscreenhide':
       case 'will-unlock':
-        if (LockScreen.locked.state)
+        if (LockScreen.locked)
           return;
         if (inlineActivityFrames.length) {
           setVisibilityForInlineActivity(true);
@@ -1684,7 +1684,7 @@ var WindowManager = (function() {
           resetDeviceLockedTimer();
 
           if (normalAudioChannelActive && evt.detail.channel !== 'normal' &&
-              LockScreen.locked.state) {
+              LockScreen.locked) {
             deviceLockedTimer = setTimeout(function setVisibility() {
               setVisibilityForCurrentApp(false);
             }, 3000);

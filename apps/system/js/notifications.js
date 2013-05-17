@@ -280,7 +280,7 @@ var NotificationScreen = {
     this.updateStatusBarIcon(true);
 
     // Notification toaster
-    if (this.lockscreenPreview || !LockScreen.locked.state) {
+    if (this.lockscreenPreview || !LockScreen.locked) {
       this.toaster.dataset.notificationID = detail.id;
 
       this.toaster.classList.add('displayed');
@@ -299,7 +299,7 @@ var NotificationScreen = {
     // Adding it to the lockscreen if locked and the privacy setting
     // does not prevent it.
     if (typeof(LockScreen) !== 'undefined' &&
-        LockScreen.locked.state && this.lockscreenPreview) {
+        LockScreen.locked && this.lockscreenPreview) {
       var lockScreenNode = notificationNode.cloneNode(true);
       this.lockScreenContainer.insertBefore(lockScreenNode,
                                this.lockScreenContainer.firstElementChild);

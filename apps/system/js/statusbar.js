@@ -396,7 +396,7 @@ var StatusBar = {
       window.addEventListener('moznetworkupload', this);
       window.addEventListener('moznetworkdownload', this);
 
-      if (!LockScreen.locked.state) {
+      if (!LockScreen.locked) {
         // Start refreshing the clock only if it's visible
         this.clock.start(this.update.time.bind(this));
       }
