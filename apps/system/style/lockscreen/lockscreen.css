@@ -576,6 +576,219 @@ button::-moz-focus-inner {
     opacity 0.5s ease;
 }
 
+@media (min-width: 1000px) {
+  #lockscreen-icon-container {
+    right: -4rem;
+    width: 10rem;
+    height: 100%;
+    bottom: 0;
+    background-image: none;
+    pointer-events: auto;
+  }
+  .lockscreen-icon-left {
+    right: 2rem;
+    left: 0;
+    bottom: 26%;
+  }
+  .lockscreen-icon-right {
+    right: 2rem;
+    left: 0;
+    top: 26%;
+  }
+  .lockscreen-icon-right > .lockscreen-icon,
+  .lockscreen-icon-left > .lockscreen-icon {
+    margin-left: 1rem;
+    margin-top: 8.5rem
+  }
+  #lockscreen-area-unlock > div {
+    background-image: url('./images/icon_lock.png');
+    background-size: auto;
+  }
+
+  #lockscreen-area-camera > div {
+    background-image: url('./images/icon_music.png');
+    background-size: auto;
+  }
+  #lockscreen-area-unlock {
+    z-index: 2;
+  }
+  #lockscreen-area-camera {
+    z-index: 0;
+  }
+
+  #lockscreen-area-handle,
+  .lockscreen-icon-area {
+    transition: transform 0.5s ease;
+  }
+
+  #lockscreen-area-unlock.touched > div {
+    background-image: url('./images/icon_unlock.png');
+  }
+
+  .touched #lockscreen-area-camera,
+  .touched #lockscreen-area-unlock {
+    z-index: 0;
+  }
+
+  #lockscreen-area-camera.touched,
+  #lockscreen-area-unlock.touched {
+    z-index: 3;
+    transform: translateX(-2rem);
+  }
+
+  .touched #lockscreen-area-handle {
+    transform: translateX(-2rem);
+  }
+
+  #lockscreen-area-handle {
+    z-index: 1;
+    top:0;
+    right: 0;
+    width: 10rem;
+    height: 100%;
+    bottom: 0;
+    background-image: url('images/tab_bg.png');
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: auto;
+    pointer-events: none;
+  }
+  .lockscreen-icon-area {
+    opacity: 1;
+    background-image: url(images/tab.png);
+    height: 24.2rem;
+    left: -4rem;
+    width: 10rem;
+  }
+  .lockscreen-icon {
+    border-radius: 0;
+    border: 0;
+    background-color: transparent;
+  }
+  #lockscreen-connstate {
+    visibility: hidden;
+  }
+  .locked #windows {
+    transition: transform 0.5s ease;
+    transform: translateX(100%);
+    top: 0;
+    height:100%;
+    max-height: 100%;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: 50% 50%;
+  }
+
+  #windows.touched {
+    transition: none;
+  }
+
+  .lockscreen-icon-area:active > .lockscreen-icon {
+    background-color: transparent;
+  }
+
+  .triggered #lockscreen-area-handle,
+  .triggered #lockscreen-area-camera,
+  .triggered #lockscreen-area-unlock {
+    transition: transform 0.5s ease !important;
+    transform: translateX(-1280px) !important;
+    opacity: 1 !important;
+  }
+
+  #lockscreen-clock-numbers {
+    font-weight: 400;
+    font-size: 10.6rem;
+    text-shadow: 0px 0px 15px #111111;
+    color: #000;
+  }
+
+  #lockscreen-clock-meridiem {
+    color: #000;
+    font-size: 10rem;
+    text-shadow: 0px 0px 15px #111111;
+  }
+
+  #lockscreen-date {
+    font-size: 4.8rem;
+    color: #000;
+    text-shadow: 0px 0px 15px #111111;
+    line-height: 0.6;
+  }
+
+  #windows.triggered {
+    transform: translateX(0%) !important;
+  }
+
+  #music-overlay {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    transform: translateX(100%);
+    transition: transform 0.5s ease;
+    background-image: url('images/music_screenshot.png');
+  }
+
+  #lockscreen-header {
+    margin-left: 15rem;
+    margin-top: 15rem;
+    z-index: 0;
+  }
+
+  #notifications-lockscreen-container {
+    width: 52rem !important;
+    left: 13rem !important;
+    top: 43rem !important;
+  }
+
+  #notifications-lockscreen-container {
+    background-image: none;
+    background: rgba(255,255,255,0.6) !important;
+  }
+
+  #music-overlay.show {
+    /* 1 level higher than 'over-lockscreen' */
+    z-index: 2050 !important;
+    display: block;
+  }
+
+  #music-overlay.touched {
+    transition: none;
+  }
+
+  #music-overlay.triggered {
+    transform: translateX(0%) !important;
+  }
+
+  .triggered #lockscreen-icon-container {
+    transform: translateY(0) !important;
+  }
+
+  .elastic .lockscreen-icon-area {
+    animation: none !important;
+  }
+
+  .elastic #lockscreen-icon-container {
+    animation: none !important;
+  }
+
+  .elastic #lockscreen-area-handle,
+  .elastic #lockscreen-area-unlock {
+    animation: lockscreen-hint 1s 1 !important;
+  }
+
+  @keyframes lockscreen-hint {
+    0%, 100% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(-2rem);
+    }
+  }
+}
+
 .touched #lockscreen-icon-container {
   transition: none;
 }

@@ -58,6 +58,7 @@ if (Object.prototype.unwatch !== unwatch) {
 }
 
 var LockScreenView = {
+  pressedIcon: null,
   /**
    * Object reference to LockScreen data object
    */
@@ -158,7 +159,21 @@ var LockScreenView = {
         'obj': lockscreen, 'prop': 'background',
         'callback': (function(id, oldval, val) {
           this.updateBackground(val);
-          this.overlay.classList.remove('uninit');
+
+
+          // FIXME: workaround for can't show lockscreen until you lock/unlock
+          // again in settings app.
+          var self = this;
+          window.setTimeout(function() {
+            self.appsWindow.style.transition = 'none';
+            self.appsWindow.style.transform = 'translateX(0%)';
+            window.setTimeout(function() {
+              self.appsWindow.style.transform = 'translateX(100%)';
+                          self.appsWindow.style.transform = '';
+              self.appsWindow.style.transition = '';
+              self.overlay.classList.remove('uninit');
+            },1000);
+          },1000);
         })
       },
       {
@@ -172,15 +187,22 @@ var LockScreenView = {
     });
 
     this.lockscreen = lockscreen;
+    this.appsWindow.dataset.zIndexLevel = 'over-lockscreen';
 
     /* Status changes */
     window.addEventListener('screenchange', this);
+    window.addEventListener('click', this);
 
     /* Gesture */
-    this.area.addEventListener('mousedown', this);
+    //this.area.addEventListener('mousedown', this);
     this.areaCamera.addEventListener('click', this);
     this.areaUnlock.addEventListener('click', this);
-    this.iconContainer.addEventListener('mousedown', this);
+    //this.iconContainer.addEventListener('mousedown', this);
+
+    if (this.lockscreen.largeScreen) {
+      this.areaCamera.addEventListener('mousedown', this);
+      this.areaUnlock.addEventListener('mousedown', this);
+    }
 
     /* Unlock & camera panel clean up */
     this.overlay.addEventListener('transitionend', this);
@@ -203,14 +225,16 @@ var LockScreenView = {
         break;
 
       case 'click':
-        if (evt.target === this.areaUnlock) {
+        if (evt.target === this.areaUnlock && !this.lockscreen.largeScreen) {
           this.lockscreen.launchUnlock();
-        } else if (evt.target === this.areaCamera) {
+        } else if (evt.target === this.areaCamera && !this.lockscreen.largeScreen) {
           this.lockscreen.launchCamera();
         } else if (evt.target.dataset.key) {
           // Cancel the default action of <a>
           evt.preventDefault();
           this.lockscreen.handlePassCodeInput(evt.target.dataset.key);
+        } else if (evt.target !== this.areaCamera && evt.target !== this.areaUnlock) {
+          this.playElastic();
         }
         break;
       case 'mousedown':
@@ -230,6 +254,8 @@ var LockScreenView = {
 
         overlay.classList.remove('elastic');
         this.lockscreen.setElasticEnabled(false);
+        this.pressedIcon = target;
+        this.pressedIcon.classList.add('touched');
 
         this._touch = {
           touched: false,
@@ -247,6 +273,20 @@ var LockScreenView = {
         this._touch.initX = evt.pageX;
         this._touch.initY = evt.pageY;
         overlay.classList.add('touched');
+        if (this.lockscreen.largeScreen) {
+          this.appsWindow.classList.add('touched');
+          if (target === this.areaUnlock) {
+            if ('WindowManager' in window) {
+              var app = WindowManager.getCurrentDisplayedApp();
+              if (app && 'setVisible' in app.iframe) {
+                app.iframe.setVisible(true);
+              }
+            }
+          } else if (target === this.areaCamera) {
+            this.musicOverlay.classList.add('touched');
+            this.musicOverlay.classList.add('show');
+          }
+        }
         break;
 
       case 'mousemove':
@@ -258,9 +298,18 @@ var LockScreenView = {
         window.removeEventListener('mouseup', this);
 
         this.handleMove(evt.pageX, evt.pageY);
-        this.handleGesture();
+        this.handleGesture(this.pressedIcon);
         delete this._touch;
         this.overlay.classList.remove('touched');
+        if (this.lockscreen.largeScreen) {
+          var self = this;
+          this.appsWindow.classList.remove('touched');
+          this.musicOverlay.classList.remove('touched');
+          this.appsWindow.addEventListener('transitionend', function removeMusicTouched() {
+            self.appsWindow.removeEventListener('transitionend', removeMusicTouched);
+            self.musicOverlay.classList.remove('show');
+          });
+        }
 
         break;
 
@@ -311,23 +360,50 @@ var LockScreenView = {
 
       var overlay = this.overlay;
       overlay.classList.add('touched');
+      if (this.lockscreen.largeScreen) {
+        this.appsWindow.classList.add('touched');
+      }
     }
 
     var dy = pageY - touch.initY;
+    var dx = pageX - touch.initX;
     var ty = Math.max(- this.HANDLE_MAX, dy);
     var base = - ty / this.HANDLE_MAX;
     // mapping position 20-100 to opacity 0.1-0.5
     var opacity = base <= 0.2 ? 0.1 : base * 0.5;
     touch.ty = ty;
+    touch.dx = dx;
 
-    this.iconContainer.style.transform = 'translateY(' + ty + 'px)';
-    this.areaCamera.style.opacity =
-      this.areaUnlock.style.opacity = opacity;
+    if (!this.lockscreen.largeScreen) {
+      this.iconContainer.style.transform = 'translateY(' + ty + 'px)';
+      this.areaCamera.style.opacity =
+        this.areaUnlock.style.opacity = opacity;
+    } else {
+      // 40 is offset for handle grey background
+      var winTrans = document.body.clientWidth + dx + 10;
+      this.pressedIcon.style.transform = 'translateX(' + dx + 'px)';
+      this.areaHandle.style.transform = 'translateX(' + dx + 'px)';
+      this.appsWindow.style.transform = 'translateX(' + winTrans + 'px)';
+      this.musicOverlay.style.transform = 'translateX(' + winTrans + 'px)';
+    }
+
   },
 
-  handleGesture: function lsv_handleGesture() {
+  handleGesture: function lsv_handleGesture(targetElement) {
+    var self = this;
     var touch = this._touch;
-    if (touch.ty < -50) {
+    var target, unlockThreshold;
+
+    targetElement.classList.remove('touched')
+    if (!this.lockscreen.largeScreen) {
+      target = touch.ty;
+      unlockThreshold = -50;
+    } else {
+      target = touch.dx;
+      unlockThreshold = document.body.clientWidth / 3 * -1;
+    }
+
+    if (target < unlockThreshold) {
       this.areaHandle.style.transform =
         this.areaHandle.style.opacity =
         this.iconContainer.style.transform =
@@ -337,13 +413,31 @@ var LockScreenView = {
         this.areaUnlock.style.transform =
         this.areaUnlock.style.opacity = '';
       this.overlay.classList.add('triggered');
+      if (!this.lockscreen.largeScreen) {
+        this.triggeredTimeoutId =
+          setTimeout(this.unloadPanel.bind(this), this.TRIGGERED_TIMEOUT);
+      } else {
+        this.appsWindow.classList.add('triggered');
+        this.musicOverlay.classList.add('triggered');
+        this.appsWindow.addEventListener('transitionend', function triggerUnlock() {
+          self.appsWindow.removeEventListener('transitionend', triggerUnlock);
+          self.lockscreen.unlock();
+          if (targetElement === self.areaCamera) {
+            self.lockscreen.launchMusic();
+          }
+        })
+      }
 
-      this.triggeredTimeoutId =
-        setTimeout(this.unloadPanel.bind(this), this.TRIGGERED_TIMEOUT);
-    } else if (touch.ty > -10) {
+    } else if (target > -10) {
       touch.touched = false;
       this.unloadPanel();
-      this.playElastic();
+
+      if (!this.lockscreen.largeScreen) {
+        this.playElastic();
+      } else {
+        this.pressedIcon = null;
+        return;
+      }
 
       var self = this;
       var container = this.iconContainer;
@@ -356,6 +450,7 @@ var LockScreenView = {
       this.unloadPanel();
       this.lockscreen.setElasticEnabled(true);
     }
+    this.pressedIcon = null;
   },
 
   getAllElements: function lsv_getAllElements() {
@@ -381,6 +476,9 @@ var LockScreenView = {
 
     this.connstateLine1 = this.connstate.firstElementChild;
     this.connstateLine2 = this.connstate.lastElementChild;
+
+    this.appsWindow = document.querySelector('#windows');
+    this.musicOverlay = document.querySelector('#music-overlay');
   },
 
   loadPanel: function lsv_loadPanel(panel, callback) {
@@ -436,6 +534,13 @@ var LockScreenView = {
         self.areaHandle.classList.remove('triggered');
         self.areaCamera.classList.remove('triggered');
         self.areaUnlock.classList.remove('triggered');
+
+        if (self.lockscreen.largeScreen) {
+          self.appsWindow.classList.remove('triggered');
+          self.appsWindow.style.transform = '';
+          self.musicOverlay.classList.remove('triggered');
+          self.musicOverlay.style.transform = '';
+        }
 
         clearTimeout(self.triggeredTimeoutId);
         self.lockscreen.setElasticEnabled(true);
@@ -551,7 +656,7 @@ var LockScreenView = {
   },
 
   onLockChanged: function lsv_onLockChanged(id, oldval, val) {
-    if (val.instant) {
+    if (val.instant || this.lockscreen.largeScreen) {
       this.overlay.classList.add('no-transition');
     } else {
       this.overlay.classList.remove('no-transition');
@@ -560,6 +665,7 @@ var LockScreenView = {
     this.lockscreen.panel = 'main';
 
     if (!val.state) {
+      this.appsWindow.dataset.zIndexLevel = 'app';
       this.mainScreen.classList.remove('locked');
       if (oldval.state !== val.state && !val.instant &&
           this.lockscreen.unlockSoundEnabled) {
@@ -569,10 +675,16 @@ var LockScreenView = {
 
       this.mainScreen.focus();
     } else {
+      this.appsWindow.dataset.zIndexLevel = 'over-lockscreen';
       this.overlay.focus();
       this.mainScreen.classList.add('locked');
       screen.mozLockOrientation('portrait-primary');
     }
+    this.appsWindow.style.transform = '';
+    this.overlay.classList.remove('triggered');
+    this.appsWindow.classList.remove('triggered');
+    this.musicOverlay.style.transform = '';
+    this.musicOverlay.classList.remove('triggered');
   },
 
   onPasscodeStatusChanged: function lsv_onPasscodeChanged(id, oldval, val) {
@@ -608,6 +720,7 @@ var LockScreenView = {
     for (var i = 0; i < panels.length; i++) {
       panels[i].style.backgroundImage = url;
     }
+    this.appsWindow.style.backgroundImage = url;
   },
 
   onElasticChanged: function lsv_onElasticChanged(id, oldval, value) {
@@ -653,6 +766,7 @@ var LockScreen = {
   background: null,
   screenEnabled: true,
   elastic: false,
+  largeScreen: false,
 
   /*
   * Boolean return true when initialized.
@@ -748,6 +862,15 @@ var LockScreen = {
 
     /* blocking holdhome and prevent Cards View from show up */
     window.addEventListener('holdhome', this, true);
+
+    var mediaQuery = window.matchMedia('(min-width: 1000px)');
+    var self = this;
+    function queryChanged(mq) {
+      self.largeScreen = mq.matches;
+      self.setElasticEnabled(!self.largeScreen);
+    };
+    mediaQuery.addListener(queryChanged);
+    queryChanged(mediaQuery);
 
     /* mobile connection state on lock screen */
     if (this.conn && this.conn.voice) {
@@ -966,6 +1089,18 @@ var LockScreen = {
     this.setElasticEnabled(true);
   },
 
+  launchMusic: function ls_launchMusic() {
+    var a = new MozActivity({
+      name: 'browse',
+      data: {
+        type: 'music'
+      }
+    });
+    a.onerror = function ls_launchMusicError() {
+      console.log('MozActivity: music launch error' + arguments);
+    };
+  },
+
   launchCamera: function ls_launchCamera() {
     if (this.passCodeEnabled && this._passCodeTimeoutCheck) {
       // Go to secure camera panel
@@ -1118,7 +1253,8 @@ var LockScreen = {
   },
 
   setElasticEnabled: function ls_setElasticEnabled(val) {
-    if (this.enabled && this.locked.state && this.screenEnabled && val) {
+    if (this.enabled && this.locked.state &&
+        !this.largeScreen && this.screenEnabled && val) {
       this.elastic = true;
     } else {
       this.elastic = false;

@@ -15,6 +15,12 @@
     "audio-channel-content":{}
   },
   "activities": {
+    "browse": {
+      "filters": {
+        "type": "music"
+       },
+      "disposition": "window"
+    },
     "pick": {
       "filters": {
         "type": ["audio/*", "audio/mpeg", "audio/ogg", "audio/mp4"]
