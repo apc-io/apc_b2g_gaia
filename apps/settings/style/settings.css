@@ -85,6 +85,51 @@ section[role="region"] > header > a {
 }
 
 /******************************************************************************
+ * Setting panels: full-size <section role="dialog"> blocks
+ */
+
+/* Setting panels: full-size <section role="dialog"> blocks */
+section[role="dialog"] {
+  position: absolute;
+  top: calc(50% - 15rem);
+  left: 20%;
+  width: 60%;
+  height: 30rem;
+  border: 0;
+  background: url(images/document_bg.png);
+  overflow: hidden;
+  display: none;
+  box-shadow: 10px 10px 5px #888;
+  z-index: 1;
+}
+
+section[role="dialog"].previous {
+  display: none;
+}
+
+section[role="dialog"].current {
+  display: block;
+}
+
+/**
+ * Headers should not scroll with the rest of the page, except for #root.
+ */
+section[role="dialog"] > header {
+  position: absolute;
+}
+
+section[role="dialog"] > div {
+  position: absolute;
+  top: 5rem;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: calc(100% - 5rem);
+  overflow-y: scroll;
+}
+
+/******************************************************************************
  * Explanation texts
  */
 
