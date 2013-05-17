@@ -577,12 +577,7 @@ var Settings = {
 window.addEventListener('load', function loadSettings() {
   window.removeEventListener('load', loadSettings);
   window.addEventListener('change', Settings);
-
-  navigator.addIdleObserver({
-    time: 3,
-    onidle: Settings.loadPanelStylesheetsIfNeeded.bind(Settings)
-  });
-
+  
   Settings.init();
   handleRadioAndCardState();
 
@@ -755,6 +750,8 @@ window.addEventListener('load', function loadSettings() {
       updateCallSubpanelItem(evt.settingValue);
     });
   }
+
+  var breadcrumb = Breadcrumb(document.getElementById('breadcrumb'));
 
   // startup
   window.addEventListener('hashchange', showPanel);

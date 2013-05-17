@@ -66,6 +66,23 @@ section[role="region"] > header > a {
   display: none;
 }
 
+/******************************************************************************
+ * Breadcrumb
+ */
+
+#breadcrumb {
+  position: absolute;
+  top: 0;
+  left: 40rem;
+  width: calc(100% - 40rem);
+  height: 5rem;
+  z-index: 15;
+  display: block;
+}
+
+#breadcrumb nav h1 {
+  display: inline;
+}
 
 /******************************************************************************
  * Explanation texts
