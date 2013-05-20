@@ -5,7 +5,7 @@
 /* Main dialog setup */
 form[role="dialog"][data-type="value-selector"] {
   -moz-box-sizing: border-box;
-  background: url(value_selector/images/ui/pattern.png) repeat left top, url(value_selector/images/ui/gradient.png) no-repeat left top;
+  background: url(../themes/default/images/DarkGray_bg.jpg) repeat left top, url(value_selector/images/ui/gradient.png) no-repeat left top;
   background-size: auto auto, 100% 100%;
   /* We can't use shortand with background size because is not implemented yet:
   https://bugzilla.mozilla.org/show_bug.cgi?id=570326; */
@@ -58,7 +58,7 @@ form[role="dialog"][data-type="value-selector"] menu {
   margin: 0;
   padding: 1.5rem;
   border-top: solid 1px rgba(255, 255, 255, 0.1);
-  background: #2d2d2d url(value_selector/images/ui/pattern.png) repeat left top;
+  background: #2d2d2d url(../themes/default/images/DeeplyGray_bg.jpg) repeat left top;
   display: block;
   overflow: hidden;
   position: absolute;
