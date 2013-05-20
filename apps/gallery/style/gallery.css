@@ -397,7 +397,7 @@ footer {
   position: absolute;
   width: 50%;
   height: 100%;
-  left: 50%;
+  left: 0;
   background-image: url('images/iconaction_delete_40x40.png');
   border-right: 0.1rem solid #000;
 }
@@ -406,7 +406,7 @@ footer {
   position: absolute;
   width: 50%;
   height: 100%;
-  left: 0;
+  left: 50%;
   background-image: url('images/iconaction_share_40x40.png');
 }
 
