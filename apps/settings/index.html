@@ -179,16 +179,18 @@
             <input type="text" data-ignore name="ssid" />
           </li>
           <li>
-            <p data-l10n-id="security">Security</p>
-            <p class="fake-select">
-              <button class="icon icon-dialog">empty</button>
-              <select>
-                <option data-l10n-id="securityNone">none</option>
-                <option>WEP</option>
-                <option selected>WPA-PSK</option>
-                <option>WPA-EAP</option>
-              </select>
-            </p>
+            <label>
+              <div class="fake-select">
+                <span class="icon icon-dialog">empty</span>
+                <select>
+                  <option data-l10n-id="securityNone">none</option>
+                  <option>WEP</option>
+                  <option selected>WPA-PSK</option>
+                  <option>WPA-EAP</option>
+                </select>
+              </div>
+            </label>
+            <a data-l10n-id="security">Security</a>
           </li>
           <li class="identity">
             <p data-l10n-id="identity">identity</p>
@@ -433,6 +435,60 @@
       -->
     </section>
 
+    <!-- Personalization :: Digital Photo Frame -->
+    <section role="region" id="photoFrame">
+      <!--
+      <header>
+        <a href="#root"><span class="icon icon-back">back</span></a>
+        <h1 data-l10n-id="photoFrame"> Digital photo frame </h1>
+      </header>
+
+      <div>
+        <ul>
+          <li id="photoFrame-status">
+            <label>
+              <input type="checkbox" data-type="switch" name="photoFrame.enabled"/>
+              <span></span>
+            </label>
+          </li>
+          <li hidden id="photoFrame-source">
+            <label>
+              <div class="fake-select">
+                <span class="icon icon-dialog">empty</span>
+                <select name="photoFrame.source">
+                  <option value="wallpaper" data-l10n-id="wallpaper" selected>Wallpaper</option>
+                  <option value="sdcard" data-l10n-id="sdcard">SD card</option>
+                </select>
+              </div>
+            </label>
+            <a data-l10n-id="photoFrame-source">Photo source</a>
+          </li>
+          <li hidden id="photoFrame-duration">
+            <label>
+              <div class="fake-select">
+                <span class="icon icon-dialog">empty</span>
+                <select name="photoFrame.duration" data-value-type="integer">
+                  <option value="2"   data-l10n-id="two-seconds" selected>2 seconds</option>
+                  <option value="5"   data-l10n-id="five-seconds">  5 seconds</option>
+                  <option value="10"  data-l10n-id="ten-seconds">   10 seconds</option>
+                  <option value="20"  data-l10n-id="twenty-seconds">20 seconds</option>
+                  <option value="30"  data-l10n-id="thirty-seconds">30 seconds</option>
+                  <option value="60"  data-l10n-id="one-minute">  1 minute</option>
+                  <option value="120" data-l10n-id="two-minutes"> 2 minutes</option>
+                  <option value="300" data-l10n-id="five-minutes">5 minutes</option>
+                  <option value="600" data-l10n-id="ten-minutes">10 minutes</option>
+                </select>
+              </div>
+            </label>
+            <a data-l10n-id="photoFrame-duration">Timer</a>
+          </li>
+        </ul>
+      </div>
+
+      <script src="js/photoFrame.js"></script>
+      -->
+    </section>
+
     <!-- Personalization :: Sound :: Sound Selection -->
     <section role="dialog" id="sound-selection">
       <!--
@@ -488,14 +544,14 @@
         </header>
         <ul>
           <li class="sound-setting">
-            <p data-l10n-id="ringer-and-notification-sound">Ringer & Notifications</p>
+            <a data-l10n-id="ringer-and-notification-sound">Ringer & Notifications</a>
             <label>
               <input type="range" name="audio.volume.notification" step="1" min="0" value="15" max="15">
               <span class="range-icons volume"></span>
             </label>
           </li>
           <li class="sound-setting">
-            <p data-l10n-id="alarm-sound">Alarm</p>
+            <a data-l10n-id="alarm-sound">Alarm</a>
             <label>
               <input type="range" name="audio.volume.alarm" step="1" min="0" value="15" max="15">
               <span class="range-icons volume"></span>
@@ -583,17 +639,19 @@
             </label>
           </li>
           <li id="screen-timeout">
-            <p data-l10n-id="screen-timeout">Screen Timeout</p>
-            <p class="fake-select">
-              <button class="icon icon-dialog">empty</button>
-              <select name="screen.timeout" data-value-type="integer">
-                <option value="60"  data-l10n-id="one-minute" selected>1 minute</option>
-                <option value="120" data-l10n-id="two-minutes"> 2 minutes</option>
-                <option value="300" data-l10n-id="five-minutes">5 minutes</option>
-                <option value="600" data-l10n-id="ten-minutes">10 minutes</option>
-                <option value="0"   data-l10n-id="never">Never</option>
-              </select>
-            </p>
+            <label>
+              <div class="fake-select">
+                <span class="icon icon-dialog">empty</span>
+                <select name="screen.timeout" data-value-type="integer">
+                  <option value="60"  data-l10n-id="one-minute" selected>1 minute</option>
+                  <option value="120" data-l10n-id="two-minutes"> 2 minutes</option>
+                  <option value="300" data-l10n-id="five-minutes">5 minutes</option>
+                  <option value="600" data-l10n-id="ten-minutes">10 minutes</option>
+                  <option value="0"   data-l10n-id="never">Never</option>
+                </select>
+              </div>
+            </label>
+            <a data-l10n-id="screen-timeout">Screen Timeout</a>
           </li>
         </ul>
       </div>
@@ -644,18 +702,22 @@
         </header>
         <ul id="timezone">
           <li>
-            <p data-l10n-id="tz-region">Region</p>
-            <p class="fake-select">
-              <button class="icon icon-dialog">empty</button>
-              <select id="timezone-region"></select>
-            </p>
+            <label>
+              <div class="fake-select">
+                <span class="icon icon-dialog">empty</span>
+                <select id="timezone-region"></select>
+              </div>
+            </label>
+            <a data-l10n-id="tz-region">Region</a>
           </li>
           <li>
-            <p data-l10n-id="tz-city">City</p>
-            <p class="fake-select">
-              <button class="icon icon-dialog">empty</button>
-              <select id="timezone-city"></select>
-            </p>
+            <label>
+              <div class="fake-select">
+                <span class="icon icon-dialog">empty</span>
+                <select id="timezone-city"></select>
+              </div>
+            </label>
+            <a data-l10n-id="tz-city">City</a>
           </li>
         </ul>
       </div>
@@ -686,28 +748,32 @@
             <p id="region-time">06:54 PM</p>
           </li>
           <li>
-            <p data-l10n-id="language">Language</p>
-            <p class="fake-select">
-              <button class="icon icon-dialog">Language</button>
-              <select name="language.current"></select>
-            </p>
+            <label>
+              <div class="fake-select">
+                <span class="icon icon-dialog">Language</span>
+                <select name="language.current"></select>
+              </div>
+            </label>
+            <a data-l10n-id="language">Language</a>
           </li>
           <li hidden>
-            <p data-l10n-id="region">Region</p>
-            <p class="fake-select">
-              <button class="icon icon-dialog">empty</button>
-              <select name="region.current">
-                <option value="BR">Brasil</option>
-                <option value="CO">Columbia</option>
-                <option value="ES">España</option>
-                <option value="FR">France</option>
-                <option value="PT">Portugal</option>
-                <option value="TW">Taiwan</option>
-                <option value="UK">United Kingdom</option>
-                <option value="US">United States</option>
-                <option value="VZ">Venezuela</option>
-              </select>
-            </p>
+            <label>
+              <div class="fake-select">
+                <span class="icon icon-dialog">empty</span>
+                <select name="region.current">
+                  <option value="BR">Brasil</option>
+                  <option value="CO">Columbia</option>
+                  <option value="ES">España</option>
+                  <option value="FR">France</option>
+                  <option value="PT">Portugal</option>
+                  <option value="TW">Taiwan</option>
+                  <option value="UK">United Kingdom</option>
+                  <option value="US">United States</option>
+                  <option value="VZ">Venezuela</option>
+                </select>
+              </div>
+            </label>
+            <a data-l10n-id="region">Region</a>
           </li>
         </ul>
       </div>
@@ -910,24 +976,26 @@
             <a data-l10n-id="passcode-lock">Passcode Lock</a>
           </li>
           <li class="passcode-enabled" id="passcode-timeout-row">
-            <p data-l10n-id="require-passcode">Require passcode</p>
-            <p class="fake-select">
-              <button class="icon icon-dialog">empty</button>
-              <select name="lockscreen.passcode-lock.timeout">
-                <option value="0" data-l10n-id="immediately" selected>Immediately</option>
-                <option value="5" data-l10n-id="after-five-seconds">After 5 seconds</option>
-                <option value="15" data-l10n-id="after-fifteen-seconds">After 15 seconds</option>
-                <option value="30" data-l10n-id="after-thirty-seconds">After 30 seconds</option>
-                <option value="60" data-l10n-id="after-one-minute">After 1 minute</option>
-                <option value="120" data-l10n-id="after-two-minutes">After 2 minutes</option>
-                <option value="300" data-l10n-id="after-five-minutes">After 5 minutes</option>
-                <option value="600" data-l10n-id="after-ten-minutes">After 10 minutes</option>
-                <option value="900" data-l10n-id="after-fifteen-minutes">After 15 minutes</option>
-                <option value="1800" data-l10n-id="after-thirty-minutes">After 30 minutes</option>
-                <option value="3600" data-l10n-id="after-one-hour">After 1 hour</option>
-                <option value="14400" data-l10n-id="after-four-hours">After 4 hours</option>
-              </select>
-            </p>
+            <label>
+              <div class="fake-select">
+                <span class="icon icon-dialog">empty</span>
+                <select name="lockscreen.passcode-lock.timeout">
+                  <option value="0" data-l10n-id="immediately" selected>Immediately</option>
+                  <option value="5" data-l10n-id="after-five-seconds">After 5 seconds</option>
+                  <option value="15" data-l10n-id="after-fifteen-seconds">After 15 seconds</option>
+                  <option value="30" data-l10n-id="after-thirty-seconds">After 30 seconds</option>
+                  <option value="60" data-l10n-id="after-one-minute">After 1 minute</option>
+                  <option value="120" data-l10n-id="after-two-minutes">After 2 minutes</option>
+                  <option value="300" data-l10n-id="after-five-minutes">After 5 minutes</option>
+                  <option value="600" data-l10n-id="after-ten-minutes">After 10 minutes</option>
+                  <option value="900" data-l10n-id="after-fifteen-minutes">After 15 minutes</option>
+                  <option value="1800" data-l10n-id="after-thirty-minutes">After 30 minutes</option>
+                  <option value="3600" data-l10n-id="after-one-hour">After 1 hour</option>
+                  <option value="14400" data-l10n-id="after-four-hours">After 4 hours</option>
+                </select>
+              </div>
+            </label>
+            <a data-l10n-id="require-passcode">Require passcode</a>
           </li>
           <li class="passcode-enabled">
             <label>
@@ -1354,15 +1422,17 @@
         </header>
         <ul>
           <li>
-            <p data-l10n-id="check-for-updates">Check for Updates</p>
-            <p class="fake-select">
-              <button class="icon icon-dialog">empty</button>
-              <select name="app.update.interval">
-                <option value="86400"   data-l10n-id="check-update-daily" selected>Daily</option>
-                <option value="604800"  data-l10n-id="check-update-weekly">Weekly</option>
-                <option value="2592000" data-l10n-id="check-update-monthly">Monthly</option>
-              </select>
-            </p>
+            <label>
+              <div class="fake-select">
+                <span class="icon icon-dialog">empty</span>
+                <select name="app.update.interval">
+                  <option value="86400"   data-l10n-id="check-update-daily" selected>Daily</option>
+                  <option value="604800"  data-l10n-id="check-update-weekly">Weekly</option>
+                  <option value="2592000" data-l10n-id="check-update-monthly">Monthly</option>
+                </select>
+              </div>
+            </label>
+            <a data-l10n-id="check-for-updates">Check for Updates</a>
           </li>
           <li>
             <label>
@@ -1441,16 +1511,18 @@
             <a data-l10n-id="powerSaveMode">Power Save Mode</a>
           </li>
           <li>
-            <p data-l10n-id="turnOnAuto">Turn on automatically</p>
-            <p class="fake-select">
-              <button class="icon icon-dialog">empty</button>
-              <select name="powersave.threshold">
-                <option value="0.05" data-l10n-id="powerSave-threshold" data-l10n-args='{"level":  "5"}'> 5% battery left</option>
-                <option value="0.15" data-l10n-id="powerSave-threshold" data-l10n-args='{"level": "15"}'>15% battery left</option>
-                <option value="0.25" data-l10n-id="powerSave-threshold" data-l10n-args='{"level": "25"}'>25% battery left</option>
-                <option value="0" data-l10n-id="never">Never</option>
-              </select>
-            </p>
+            <label>
+              <div class="fake-select">
+                <span class="icon icon-dialog">empty</span>
+                <select name="powersave.threshold">
+                  <option value="0.05" data-l10n-id="powerSave-threshold" data-l10n-args='{"level":  "5"}'> 5% battery left</option>
+                  <option value="0.15" data-l10n-id="powerSave-threshold" data-l10n-args='{"level": "15"}'>15% battery left</option>
+                  <option value="0.25" data-l10n-id="powerSave-threshold" data-l10n-args='{"level": "25"}'>25% battery left</option>
+                  <option value="0" data-l10n-id="never">Never</option>
+                </select>
+              </div>
+            </label>
+            <a data-l10n-id="turnOnAuto">Turn on automatically</a>
           </li>
           <li class="description" data-l10n-id="powerSave-explanation">
             Turning on Power Save Mode turns off the phone’s Data, Bluetooth, and
@@ -1476,7 +1548,7 @@
         </header>
         <ul>
           <li>
-            <progress id="apps-space-bar" min="0" value="0" max="100"></progress>
+            <progress id="apps-space-bar" min="0" value="50" max="100"></progress>
           </li>
 
           <li>
@@ -1484,12 +1556,14 @@
               <span id="apps-total-space"></span>
             </a>
           </li>
-          <li>
+          <li id="used-space">
+            <span class="stackedbar-color"></span>
             <a data-l10n-id="apps-used-space"> Used
               <span id="apps-used-space"></span>
             </a>
           </li>
-          <li>
+          <li id="left-space">
+            <span class="stackedbar-color"></span>
             <a data-l10n-id="apps-free-space"> Left
               <span id="apps-free-space"></span>
             </a>
@@ -1512,7 +1586,7 @@
       </header>
 
       <div>
-        <ul>
+        <ul id="media-storage-summary">
           <li>
             <div id="space-stackedbar"></div>
           </li>
@@ -1645,9 +1719,13 @@
       -->
     </section>
 
+    <section role="region" id="blank">
+    </section>
+
     <section role="region" id="breadcrumb">
       <header>
         <nav class="breadcrumb-container">
+          <a class="breadcrumb-placeholder"></a>
         </nav>
       </header>
     </section>
@@ -1665,6 +1743,10 @@
         </header>
         <ul>
           <li>
+            <small id="wifi-desc" class="menu-item-desc" data-l10n-id="fullStatus-disconnected">offline</small>
+            <a id="menuItem-wifi" class="menu-item" href="#wifi" data-l10n-id="wifi">Wi-Fi</a>
+          </li>
+          <li>
             <label>
               <input type="checkbox" data-type="switch" name="ril.radio.disabled" class="uninit"/>
               <span></span>
@@ -1678,14 +1760,6 @@
             </label>
             <a id="menuItem-gps" class="menu-item" data-l10n-id="geolocation">Geolocation</a>
           </li>
-          <li>
-            <small id="wifi-desc" class="menu-item-desc" data-l10n-id="fullStatus-disconnected">offline</small>
-            <a id="menuItem-wifi" class="menu-item" href="#wifi" data-l10n-id="wifi">Wi-Fi</a>
-          </li>
-          <li>
-            <small id="bluetooth-desc" class="menu-item-desc"></small>
-            <a id="menuItem-bluetooth" class="menu-item" href="#bluetooth" data-l10n-id="bluetooth">Bluetooth</a>
-          </li>
         </ul>
 
         <!-- Main :: Personalization -->
@@ -1693,6 +1767,9 @@
           <h2 data-l10n-id="personalization">Personalization</h2>
         </header>
         <ul>
+          <li>
+            <a id="menuItem-photoFrame" class="menu-item" href="#photoFrame" data-l10n-id="photoFrame">Digital photo frame</a>
+          </li>
           <li>
             <a id="menuItem-sound" class="menu-item" href="#sound" data-l10n-id="sound">Sound</a>
           </li>
@@ -1734,11 +1811,7 @@
         <ul>
           <li>
             <small id="phoneLock-desc" class="menu-item-desc"></small>
-            <a id="menuItem-phoneLock" class="menu-item" href="#phoneLock" data-l10n-id="phoneLock">Phone Lock</a>
-          </li>
-          <li>
-            <small id="doNotTrack-desc" class="menu-item-desc"></small>
-            <a id="menuItem-doNotTrack" class="menu-item" href="#doNotTrack" data-l10n-id="doNotTrack">Do Not Track</a>
+            <a id="menuItem-phoneLock" class="menu-item" href="#phoneLock" data-l10n-id="screenLock">Screen Lock</a>
           </li>
         </ul>
 
@@ -1770,6 +1843,8 @@
           </li>
         </ul>
       </div>
+    </section>
+    <section id="dialog-overlay" hidden>
     </section>
   </body>
 </html>

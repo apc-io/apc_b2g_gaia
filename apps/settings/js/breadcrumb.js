@@ -7,7 +7,7 @@ var Breadcrumb = function(_root) {
     var prevHash = null;
     var curHash = document.location.hash;
 
-    if (curHash === '#root')
+    if (curHash === '#root' || curHash === '')
       return;
 
     if (hashQueue.length > 0) {
@@ -39,12 +39,12 @@ var Breadcrumb = function(_root) {
   };
 
   var back = function(level) {
+    var allItems =
+      Array.prototype.slice.call(breadcrumbContainer.querySelectorAll('.item'));
     for (var i = 0; i < level; i++) {
       hashQueue.pop();
-      breadcrumbContainer.removeChild(breadcrumbContainer.lastElementChild);
-
-      if (hashQueue.length > 0)
-        breadcrumbContainer.removeChild(breadcrumbContainer.lastElementChild);
+      var lastItem = allItems.shift();
+      breadcrumbContainer.removeChild(lastItem);
     }
   };
   var forward = function(hash) {
@@ -52,21 +52,29 @@ var Breadcrumb = function(_root) {
     setTimeout(function() {
       hashQueue.push(hash);
 
-      var header = document.querySelector(hash + " h1");
+      var header = document.querySelector(hash + ' h1');
       var item = createItem(hash, header.textContent);
 
-      if (hashQueue.length > 1) {
-        var span = document.createElement('h1');
-        span.textContent = '>'
-        breadcrumbContainer.appendChild(span);
-      }
-      breadcrumbContainer.appendChild(item);
+      /* We use flex:row-reverse in the container. Thus we need to find the
+       * first item and insert the new item before it istead of simply appending
+       * to the end. The best selector to get the first item is
+       * '.item:first-of-type'. However, it does not work for some
+       * reason. So we use an alternative '.item:nth-child(2)' here.
+       */
+      var curFirstItem = _root.querySelector('.item:nth-child(2)');
+
+      breadcrumbContainer.insertBefore(item, curFirstItem);
     });
   };
   var reset = function(hash) {
     hashQueue = [];
-    while (breadcrumbContainer.firstElementChild)
-      breadcrumbContainer.removeChild(breadcrumbContainer.firstElementChild);
+
+    var allItems =
+      Array.prototype.slice.call(breadcrumbContainer.querySelectorAll('.item'));
+    allItems.forEach(function(item) {
+      breadcrumbContainer.removeChild(item);
+    });
+
     if (hash)
       forward(hash);
   };
@@ -75,10 +83,11 @@ var Breadcrumb = function(_root) {
     // <a><h1></h1></a>
     var link = document.createElement('a');
     var header = document.createElement('h1');
-    
+
+    link.classList.add('item');
     link.href = hash;
     header.textContent = title;
-    
+
     link.appendChild(header);
     return link;
   };

@@ -12,14 +12,10 @@ ul {
 
 ul li {
   position: relative;
-  border-bottom: 0.1rem solid #e6e6e3;
+  border-bottom: 0.1rem solid #c9caca;
   color: #000;
   -moz-box-sizing: border-box;
   min-height: 6rem;
-}
-
-ul li.sound-setting {
-  min-height: 7.9rem;
 }
 
 ul li > a,
@@ -30,9 +26,9 @@ ul li > span {
   color: #000;
   -moz-box-sizing: border-box;
   height: 6rem;
-  font-size: 1.9rem;
+  font-size: 2.4rem;
   line-height: 6rem;
-  padding: 0 3rem;
+  padding: 0 5rem;
 }
 
 ul li.active,
@@ -65,8 +61,17 @@ ul > li > progress + span {
 /* description + value on the same line */
 ul li > a span {
   position: absolute;
-  right: 3rem;
+  right: 10rem;
+  font-size: 2.1rem;
   color: #505859;
+}
+
+ul li > label a span,
+ul li > label ~ a span {
+  position: absolute;
+  right: 10rem;
+  font-size: 2.1rem;
+  color: #2ea7e0;
 }
 
 /* text ellipsis */
@@ -80,12 +85,12 @@ ul li > * {
 /* sublines */
 ul li > small {
   position: absolute;
-  left: 3rem;
+  left: 5rem;
   right: 3rem;
   top: 50%;
   padding-top: 0.4rem;
   font-size: 1.4rem;
-  color: #505859;
+  color: #6d6d6d;
   /* click/tap events should be caught by the <a> element below the <small> */
   pointer-events: none;
 }
@@ -103,6 +108,17 @@ ul li > small:not(:empty) + span {
 
 
 /******************************************************************************
+ * date, time inputs
+ */
+
+ul li > label input[type="date"],
+ul li > label input[type="time"] {
+  font-size: 2.1rem;
+  color: #2ea7e0;
+}
+
+
+/******************************************************************************
  * Boolean inputs
  */
 
@@ -110,8 +126,8 @@ ul li button,
 ul li a[role="button"] {
   position: relative;
   top: 1.1rem;
-  left: 3rem;
-  width: calc(100% - 6rem);
+  left: 5rem;
+  width: calc(100% - 15rem);
 }
 
 /* custom styles for boolean inputs (see /shared/style/switches.css) */
@@ -130,7 +146,7 @@ ul li > label:not([for]) {
 ul li > label:not([for]) > span,
 ul li > label:not([for]) > input[data-type="switch"] + span {
   left: auto;
-  right: 3rem;
+  right: 10rem;
 }
 
 ul li > label:not([for]) ~ a {
@@ -150,7 +166,7 @@ ul li p {
   font-size: 1.9rem;
   font-weight: 400;
   margin: 0;
-  padding: 1rem 3rem 1.2rem;
+  padding: 1rem 5rem 1.2rem;
 }
 
 ul li p + label:not([for]) {
@@ -181,12 +197,11 @@ input[type=range]:-moz-focusring {
 }
 
 ul li > label input[type="range"] {
-  position: relative;
+  position: absolute;
   top: calc(50% - 1.5rem);
-  left: 6.5rem;
-  right: 8.5rem;
+  right: 14rem;
   height: 3rem;
-  width: calc(100% - 15rem);
+  width: 21.6rem;
 }
 
 input[type=range]::-moz-range-track {
@@ -211,17 +226,6 @@ input[type=range]::-moz-range-thumb {
 
 input[type=range]:active::-moz-range-thumb {
   border: solid 0.4rem #01c5ed;
-}
-
-ul li.sound-setting > label input[type="range"] {
-  margin: 0 auto;
-  width: calc(100% - 6rem);
-  left: 3rem;
-}
-
-ul li#brightness-manual > label input[type="range"] {
-  margin: 0 auto;
-  width: calc(100% - 13rem);
 }
 
 /**
@@ -333,9 +337,9 @@ ul li p + select {
  * Fake select boxes
  */
 .fake-select {
-  position: relative;
-  display: block;
-  padding: 1.1rem 3rem;
+  position: absolute;
+  top: calc(50% - 1.9rem);
+  right: 10rem;
   margin: 0;
   height: 3.8rem;
 }
@@ -345,11 +349,10 @@ ul li p + select {
   vertical-align: top;
 }
 
-.fake-select > button {
-  display: block;
-  top: 0;
-  left: 0;
-  width: 100%;
+.fake-select > span {
+  font-size: 2.1rem;
+  color: #2ea7e0;
+  line-height: 3.8rem;
 }
 
 .fake-select > select {
@@ -401,15 +404,16 @@ dl > * {
 }
 
 dl dt {
-  padding-left: 3rem;
+  padding-left: 5rem;
+  padding-right: 10rem;
   font-weight: 500;
   border-bottom: 0.1rem solid black;
 }
 
 dl dd {
   margin: 0;
-  padding: 1rem 3rem;
-  border-bottom: 0.1rem solid #e6e6e3; /* same as "ul li" */
+  padding: 1rem 10rem 1rem 5rem;
+  border-bottom: 0.1rem solid #c9caca; /* same as "ul li" */
 }
 
 
