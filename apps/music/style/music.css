@@ -1246,7 +1246,7 @@ form[role="search"] .icon.icon-close {
     right: 0;
     width: 45rem;
     height: 100%;
-    background: -moz-linear-gradient(center top , #404040 0%, #202020 100%) repeat scroll 0 0 transparent;
+    background: -moz-linear-gradient(center bottom , #3e3e3e 0%, #646464 100%) repeat scroll 0 0 transparent;
     overflow-y: auto;
   }
 
@@ -1448,6 +1448,7 @@ form[role="search"] .icon.icon-close {
   #player-container {
     width: 100%;
     height: 100%;
+    background: -moz-linear-gradient(center bottom , #3e3e3e 0%, #646464 100%) repeat scroll 0 0 transparent;
   }
 
   #player-list-container {
@@ -1457,7 +1458,7 @@ form[role="search"] .icon.icon-close {
     width: 50rem;
     left: calc((100% - 50rem) / 2);
     height: calc(100% - 50rem - 23rem); /*9+1+6+7*/
-    background: -moz-linear-gradient(center top , #404040 0%, #202020 100%) repeat scroll 0 0 transparent;
+    background: none;
     overflow-y: auto;
   }
 
@@ -1469,14 +1470,14 @@ form[role="search"] .icon.icon-close {
     top: calc(100% - 63rem);
     width: 50rem;
     height: 4rem;
-    background: -moz-linear-gradient(bottom, transparent, black);
+    background: -moz-linear-gradient(bottom, transparent, #232121);
     z-index: 100;
     pointer-events: none;
   }
 
   #player-list-container:after {
     top: calc(100% - 17rem);
-    background: -moz-linear-gradient(top, transparent, black);
+    background: -moz-linear-gradient(top, transparent, #0f0f0f);
   }
 
   #player-cover {
