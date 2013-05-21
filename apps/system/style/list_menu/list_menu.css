@@ -1,19 +1,31 @@
-#listmenu {
+#listmenu-overlay {
   visibility: hidden;
+  transform: visibility 0.6s ease;
+  background-color: rgba(0, 0, 0, 0.6);
+  width: 100%;
+  height: calc(100% - 2rem);
+  position: absolute;
+  top: 2rem;
+  left: 0;
 }
 
-#listmenu.visible {
+#listmenu-overlay.visible {
   visibility: visible;
 }
 
-#listmenu menu,
-#listmenu.visible menu.slidedown {
-  transition: transform 0.3s ease;
-  transform: translateY(100%);
+#listmenu-overlay.visible #listmenu:not(.closing) {
+  transform: translateY(0);
 }
 
-#listmenu.visible menu {
-  transform: translateY(0);
+#listmenu {
+  transform: translateY(80rem);
+  transition: transform 0.3s ease;
+}
+
+#listmenu-overlay.visible #listmenu.closing,
+#listmenu-overlay #listmenu.closing {
+  transform: translateY(80rem);
+  transition: transform 0.3s ease;
 }
 
 #listmenu menu button.icon,

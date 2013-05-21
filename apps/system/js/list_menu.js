@@ -4,6 +4,11 @@
 'use strict';
 
 var ListMenu = {
+  get overlay() {
+    delete this.overlay;
+    return this.overlay = document.getElementById('listmenu-overlay');
+  },
+
   get element() {
     delete this.element;
     return this.element = document.getElementById('listmenu');
@@ -15,7 +20,7 @@ var ListMenu = {
   },
 
   get visible() {
-    return this.element.classList.contains('visible');
+    return this.overlay.classList.contains('visible');
   },
 
   // Listen to click event only
@@ -116,8 +121,8 @@ var ListMenu = {
     if (this.visible)
       return;
 
-    this.container.classList.remove('slidedown');
-    this.element.classList.add('visible');
+    this.element.classList.remove('closing');
+    this.overlay.classList.add('visible');
   },
 
   hide: function lm_hide(callback) {
@@ -125,17 +130,18 @@ var ListMenu = {
       return;
 
     var self = this;
-    var container = this.container;
-    container.addEventListener('transitionend', function list_hide() {
-      container.removeEventListener('transitionend', list_hide);
-      self.element.classList.remove('visible');
+    var element = this.element;
+    element.addEventListener('transitionend', function list_hide() {
+      element.removeEventListener('transitionend', list_hide);
+      self.overlay.classList.remove('visible');
+      element.classList.remove('closing');
 
       if (callback)
         setTimeout(callback);
     });
 
     setTimeout(function() {
-      container.classList.add('slidedown');
+      element.classList.add('closing');
     });
   },
 

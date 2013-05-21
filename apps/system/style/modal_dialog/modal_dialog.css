@@ -1,3 +1,48 @@
+#value-selector {
+  visibility: hidden;
+  transition: visibility 0.2s ease;
+}
+
+#value-selector.visible {
+  visibility: visible;
+}
+
+#select-option-popup,
+#time-picker-popup,
+#spin-date-picker-popup,
+#value-selector.closing #select-option-popup,
+#value-selector.closing #time-picker-popup,
+#value-selector.closing #spin-date-picker-popup {
+  transform: translateY(80rem);
+}
+
+#select-option-popup,
+#time-picker-popup,
+#spin-date-picker-popup {
+  transform: translateY(80rem);
+  transition: transform 0.3s ease;
+}
+
+#value-selector.visible:not(.closing) #select-option-popup,
+#value-selector.visible:not(.closing) #time-picker-popup,
+#value-selector.visible:not(.closing) #spin-date-picker-popup {
+  transform: translateY(0);
+}
+
+#screen.modal-dialog #dialog-overlay.closing #modal-dialog {
+  transform: translateY(80rem);
+}
+
+#screen.modal-dialog.closing #dialog-overlay.closing {
+  visibility: hidden;
+}
+
+#modal-dialog {
+  transform: translateY(80rem);
+  transition: transform 0.3s ease;
+  height: 100%;
+}
+
 #modal-dialog-alert,
 #modal-dialog-confirm,
 #modal-dialog-prompt,
@@ -6,6 +51,16 @@
 #modal-dialog-error,
 #modal-dialog-select-one {
   display: none;
+}
+
+#modal-dialog-alert.visible,
+#modal-dialog-confirm.visible,
+#modal-dialog-prompt.visible,
+#authentication-dialog.visible,
+#authentication-dialog-http.visible,
+#modal-dialog-error.visible,
+#modal-dialog-select-one.visible {
+  display: block;
 }
 
 #authentication-dialog input,
@@ -21,13 +76,8 @@
 
 #screen.modal-dialog #modal-dialog,
 #screen.authentication-dialog #authentication-dialog,
-#authentication-dialog-http.visible,
-#modal-dialog-alert.visible,
-#modal-dialog-confirm.visible,
-#modal-dialog-prompt.visible,
-#modal-dialog-error.visible,
-#modal-dialog-select-one.visible {
-  display: block;
+#value-selector[data-visible="true"] {
+  transform: translateY(0);
 }
 
 #modal-dialog-error {
