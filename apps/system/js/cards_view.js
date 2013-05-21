@@ -457,9 +457,9 @@ var CardsView = (function() {
   var outViewPortEvent = new CustomEvent('outviewport');
 
   // Scale for current card
-  var CC_SCALE = 0.8;
+  var CC_SCALE = 0.56;
   // Scale for current card's siblings
-  var SC_SCALE = 0.6;
+  var SC_SCALE = 0.42;
   // Opacity value for current card's siblings
   var SC_OPA = 0.4;
   var CARD_TRANSITION = '-moz-transform .3s, opacity .3s';
