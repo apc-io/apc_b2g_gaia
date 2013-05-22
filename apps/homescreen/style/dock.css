@@ -1,5 +1,5 @@
 #footer {
-  min-height: 7.5rem;
+  min-height: 16rem;
   width: 100%;
   position: fixed;
   bottom: 0;
@@ -55,4 +55,19 @@
 
 #footer li > div > *:not(img) {
   display: none;
+}
+
+@media (min-width: 1280px) and (orientation: landscape) {
+  #footer {
+    height: 16rem;
+  }
+
+  #footer ol {
+    margin-top: 2.5rem;
+  }
+
+  #footer li > div > img {
+    width: 10rem;
+    height: 10rem;
+  }
 }
