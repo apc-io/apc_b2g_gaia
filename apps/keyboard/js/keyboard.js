@@ -220,14 +220,14 @@ const ignoredFormElementTypes = {
 
 // Special key codes
 const BASIC_LAYOUT = -1;
-const ALTERNATE_LAYOUT = -2;
-const SWITCH_KEYBOARD = -3;
-const TOGGLE_CANDIDATE_PANEL = -4;
+const SWITCH_KEYBOARD = -2;
+const TOGGLE_CANDIDATE_PANEL = -3;
 
 const specialCodes = [
   KeyEvent.DOM_VK_BACK_SPACE,
   KeyEvent.DOM_VK_CAPS_LOCK,
   KeyEvent.DOM_VK_RETURN,
+  KeyEvent.DOM_VK_CONTROL,
   KeyEvent.DOM_VK_ALT,
   KeyEvent.DOM_VK_SPACE
 ];
@@ -586,11 +586,13 @@ function modifyLayout(keyboardName) {
     // Alternate layout key
     // This gives the author the ability to change the alternate layout
     // key contents
-    var alternateLayoutKey = '?123';
+    var alternateLayoutKey = '123';
     if (layout['alternateLayoutKey']) {
       alternateLayoutKey = layout['alternateLayoutKey'];
     }
 
+    var alternateLayoutKeyPos = 0;
+    var alternateLayoutKeyRatio = 1;
     // This gives the author the ability to change the basic layout
     // key contents
     var basicLayoutKey = 'ABC';
@@ -599,19 +601,19 @@ function modifyLayout(keyboardName) {
     }
 
     if (!layout['disableAlternateLayout']) {
-      space.ratio -= 2;
+      space.ratio -= alternateLayoutKeyRatio;
       if (layoutPage === LAYOUT_PAGE_DEFAULT) {
-        row.splice(c, 0, {
-          keyCode: ALTERNATE_LAYOUT,
+        row.splice(alternateLayoutKeyPos, 0, {
+          keyCode: KeyEvent.DOM_VK_CONTROL,
           value: alternateLayoutKey,
-          ratio: 2
+          ratio: alternateLayoutKeyRatio
         });
 
       } else {
-        row.splice(c, 0, {
+        row.splice(alternateLayoutKeyPos, 0, {
           keyCode: BASIC_LAYOUT,
           value: basicLayoutKey,
-          ratio: 2
+          ratio: alternateLayoutKeyRatio
         });
       }
       c += 1;
@@ -645,40 +647,42 @@ function modifyLayout(keyboardName) {
 
         // adds . and , to both sides of the space bar
       case 'text':
+        var startPos = c + 1;
         var overwrites = layout.textLayoutOverwrite || {};
-        var next = c + 1;
+        var nextPos = startPos + 1;
         if (overwrites['.'] !== false) {
           space.ratio -= 1;
-          next = c + 2;
         }
-        if (overwrites[','] !== false)
+        if (overwrites[','] !== false) {
           space.ratio -= 1;
-
-        if (overwrites[',']) {
-          row.splice(c, 0, {
-            value: overwrites[','],
-            ratio: 1,
-            keyCode: overwrites[','].charCodeAt(0)
-          });
-        } else if (overwrites[','] !== false) {
-          row.splice(c, 0, {
-            value: ',',
-            ratio: 1,
-            keyCode: 44
-          });
+          nextPos = startPos + 1;
         }
 
         if (overwrites['.']) {
-          row.splice(next, 0, {
+          row.splice(startPos, 0, {
             value: overwrites['.'],
             ratio: 1,
             keyCode: overwrites['.'].charCodeAt(0)
           });
         } else if (overwrites['.'] !== false) {
-          row.splice(next, 0, {
+          row.splice(startPos, 0, {
             value: '.',
             ratio: 1,
             keyCode: 46
+          });
+        }
+
+        if (overwrites[',']) {
+          row.splice(nextPos, 0, {
+            value: overwrites[','],
+            ratio: 1,
+            keyCode: overwrites[','].charCodeAt(0)
+          });
+        } else if (overwrites[','] !== false) {
+          row.splice(nextPos, 0, {
+            value: ',',
+            ratio: 1,
+            keyCode: 44
           });
         }
 
@@ -1263,18 +1267,14 @@ function endPress(target, coords, touchId) {
     setLayoutPage(LAYOUT_PAGE_DEFAULT);
     break;
 
-  case ALTERNATE_LAYOUT:
-    // Switch to numbers+symbols page
+  case KeyEvent.DOM_VK_CONTROL:
+    // Switch to numbers page
     setLayoutPage(LAYOUT_PAGE_SYMBOLS_I);
     break;
 
   case KeyEvent.DOM_VK_ALT:
-    // alternate between pages 1 and 2 of SYMBOLS
-    if (layoutPage === LAYOUT_PAGE_SYMBOLS_I) {
-      setLayoutPage(LAYOUT_PAGE_SYMBOLS_II);
-    } else {
-      setLayoutPage(LAYOUT_PAGE_SYMBOLS_I);
-    }
+    // Switch to symbols page
+    setLayoutPage(LAYOUT_PAGE_SYMBOLS_II);
     break;
 
     // Switch language (keyboard)
