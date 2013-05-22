@@ -95,7 +95,8 @@ var Browser = {
       'toolbar-start', 'url-bar', 'url-input', 'url-button', 'awesomescreen',
       'back-button', 'forward-button', 'bookmark-button', 'ssl-indicator',
       'tabs-badge', 'throbber', 'frames', 'main-screen', 'crashscreen',
-      'bookmark-menu', 'bookmark-entry-sheet', 'awesomescreen-cancel-button',
+      'bookmark-menu', 'bookmark-entry-sheet', 'homescreen-entry-sheet',
+      'awesomescreen-cancel-button',
       'startscreen', 'top-site-thumbnails', 'no-top-sites', 'tray'];
 
     // Loop and add element with camel style name to Modal Dialog attribute.
@@ -116,6 +117,7 @@ var Browser = {
       this.tray,
       this.bookmarkMenu,
       this.bookmarkEntrySheet,
+      this.homescreenEntrySheet,
       document.getElementById('settings'),
       document.getElementById('modal-dialog-alert'),
       document.getElementById('modal-dialog-prompt'),
@@ -152,9 +154,10 @@ var Browser = {
       'about-browser-button', 'clear-history-button', 'close-tab',
       'try-reloading', 'bookmark-menu-add', 'bookmark-menu-remove',
       'bookmark-menu-cancel', 'bookmark-menu-edit',
-      'bookmark-entry-sheet-cancel', 'bookmark-entry-sheet-done',
+      'bookmark-entry-sheet-done',
       'bookmark-title', 'bookmark-url', 'bookmark-previous-url',
       'bookmark-menu-add-home', 'new-tab-button',
+      'homescreen-entry-sheet-done', 'homescreen-title', 'homescreen-url',
       'clear-private-data-button', 'results', 'tab-panels'
     ];
 
@@ -213,9 +216,9 @@ var Browser = {
      this.bookmarkMenuEdit.addEventListener('click',
        this.showBookmarkEntrySheet.bind(this));
      this.bookmarkMenuAddHome.addEventListener('click',
+       this.showHomescreenEntrySheet.bind(this));
+     this.homescreenEntrySheetDone.addEventListener('click',
        this.addLinkToHome.bind(this));
-     this.bookmarkEntrySheetCancel.addEventListener('click',
-       this.hideBookmarkEntrySheet.bind(this));
      this.bookmarkEntrySheetDone.addEventListener('click',
        this.saveBookmark.bind(this));
      this.awesomescreenCancelButton.addEventListener('click',
@@ -224,6 +227,10 @@ var Browser = {
        this.followLink.bind(this));
      this.clearPrivateDataButton.addEventListener('click',
        this.clearPrivateData.bind(this));
+
+    this.closeMenuWhenClickOutside(this.bookmarkMenu);
+    this.closeMenuWhenClickOutside(this.bookmarkEntrySheet);
+    this.closeMenuWhenClickOutside(this.homescreenEntrySheet);
 
     this.tabsSwipeMngr.browser = this;
      ['mousedown', 'pan', 'tap', 'swipe'].forEach(function(evt) {
@@ -815,6 +822,15 @@ var Browser = {
       }).bind(this));
   },
 
+  closeMenuWhenClickOutside: function browser_closeActionMenu(section) {
+    section.addEventListener('click', function hideActionMenu(evt) {
+      var targetId = evt.target.id;
+      if (targetId === section.id) {
+        section.classList.add('hidden');
+      }
+    });
+  },
+
   // Adaptor to show menu while press bookmark star
   showBookmarkMenu: function browser_showBookmarkMenu() {
     this.showActionMenu(this.currentTab.url);
@@ -841,7 +857,7 @@ var Browser = {
     }).bind(this));
   },
 
-  showBookmarkEntrySheet: function browser_showBookmarkEntrySheet() {
+  showBookmarkEntrySheet: function browser_showBookmarkEntrySheet(evt) {
     if (!this.currentTab.url)
       return;
     this.hideBookmarkMenu();
@@ -877,23 +893,37 @@ var Browser = {
     this.hideBookmarkEntrySheet();
   },
 
-  addLinkToHome: function browser_addLinkToHome() {
+  showHomescreenEntrySheet: function browser_showHomescreenEntrySheet() {
     if (!this.currentTab.url)
       return;
+    this.homescreenTitle.value = this.currentTab.title;
+    this.homescreenUrl.value = this.currentTab.url;
+    this.homescreenEntrySheet.classList.remove('hidden');
+    this.hideBookmarkMenu();
+  },
 
+  hideHomescreenEntrySheet: function browser_hideHomescreenEntrySheet() {
+    this.homescreenEntrySheet.classList.add('hidden');
+  },
+
+  addLinkToHome: function browser_addLinkToHome() {
     Places.getPlace(this.currentTab.url, (function(place) {
+      var name = this.homescreenTitle.value;
+      var url = this.homescreenUrl.value;
+      var icon = place.iconUri;
+
       new MozActivity({
         name: 'save-bookmark',
         data: {
           type: 'url',
-          url: this.currentTab.url,
-          name: this.currentTab.title,
-          icon: place.iconUri,
+          name: name,
+          url: url,
+          icon: icon,
           useAsyncPanZoom: true
         }
       });
     }).bind(this));
-    this.hideBookmarkMenu();
+    this.hideHomescreenEntrySheet();
   },
 
   refreshButtons: function browser_refreshButtons() {

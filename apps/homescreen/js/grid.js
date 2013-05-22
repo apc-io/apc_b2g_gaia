@@ -28,6 +28,7 @@ var GridManager = (function() {
   var numberOfSpecialPages = 0, landingPage, prevLandingPage, nextLandingPage;
   var pages = [];
   var currentPage = 1;
+  var lastAppInstallingPage = 1;
 
   var saveStateTimeout = null;
 
@@ -981,6 +982,7 @@ var GridManager = (function() {
     rememberIcon(icon);
 
     var index = getFirstPageWithEmptySpace();
+    lastAppInstallingPage = index;
 
     if (index < pages.length) {
       pages[index].appendIcon(icon);
@@ -1124,6 +1126,10 @@ var GridManager = (function() {
     });
   }
 
+  function getLastAppInstallingPage() {
+    return lastAppInstallingPage;
+  }
+
   return {
     /*
      * Initializes the grid manager
@@ -1239,6 +1245,8 @@ var GridManager = (function() {
 
     exitFromEditMode: exitFromEditMode,
 
-    ensurePanning: ensurePanning
+    ensurePanning: ensurePanning,
+
+    getLastAppInstallingPage: getLastAppInstallingPage
   };
 })();

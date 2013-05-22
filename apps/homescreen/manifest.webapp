@@ -45,8 +45,8 @@
         "type": "url",
         "url": { "required":true, "regexp":"/^https?:/" }
       },
-      "disposition": "inline",
-      "href": "/save-bookmark.html",
+      "disposition": "window",
+      "href": "/index.html",
       "returnValue": true
     }
   }

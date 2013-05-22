@@ -58,7 +58,43 @@ const Homescreen = (function() {
       }
       DragDropManager.init();
       Wallpaper.init();
+      handleWebActivity();
     });
+  }
+
+  function handleWebActivity() {
+    if (navigator.mozSetMessageHandler) {
+      navigator.mozSetMessageHandler('activity', function onActivity(activity) {
+        switch (activity.source.name) {
+          case 'save-bookmark':
+          var bookmarkSaved = function sb_bookmarkSaved() {
+            activity.postResult('saved');
+          };
+          var addBookmarkCancelled = function sb_addBookmarkCancelled() {
+            activity.postError('cancelled');
+          };
+
+          var data = activity.source.data;
+          if (data.type === 'url') {
+            var options = {
+              data: data,
+              onsaved: bookmarkSaved,
+              oncancelled: addBookmarkCancelled
+            };
+            BookmarkEditor.init(options);
+            BookmarkEditor.save();
+            document.addEventListener('mozvisibilitychange',
+              function changed() {
+                if (document.mozHidden) {
+                  BookmarkEditor.close();
+                }
+              }
+            );
+          }
+          break;
+        }
+      });
+    }
   }
 
   function exitFromEditMode() {
@@ -87,6 +123,8 @@ const Homescreen = (function() {
         case Message.Type.ADD_BOOKMARK:
           var app = new Bookmark(message.data);
           GridManager.install(app);
+          var index = GridManager.getLastAppInstallingPage();
+          GridManager.goToPage(index);
           break;
       }
     }
