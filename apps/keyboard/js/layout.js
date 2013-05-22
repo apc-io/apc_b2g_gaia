@@ -31,24 +31,31 @@ const Keyboards = {
     ]
   },
   symbolLayout: {
+    width: 14,
     keys: [
       [
         { value: '`' }, { value: '~' }, { value: '_' }, { value: '^' },
         { value: '±' }, { value: '|' }, { value: '[' }, { value: ']' },
-        { value: '{' }, { value: '}' }
+        { value: '{' }, { value: '}' },
+        // device-specific, put delete key on the top row
+        { value: '⌫', ratio: 1.27, keyCode: KeyEvent.DOM_VK_BACK_SPACE }
       ], [
         { value: '°' }, { value: '²' }, { value: '³' }, { value: '©' },
-        { value: '®' }, { value: '§' }, { value: '<' }, { value: '>' },
-        { value: '«' }, { value: '»' }
+        { value: '®' }, { value: '<' }, { value: '>'}, { value: '«' },
+        { value: '»' },
+        { value: '⇧', ratio: 0.87, keyCode: KeyEvent.DOM_VK_UP }
       ],
       [
-        { value: 'ALT', ratio: 1.5, keyCode: KeyEvent.DOM_VK_ALT },
-        { value: '¥' }, { value: '€' }, { value: '£' }, { value: '$' },
-        { value: '¢' }, { value: '\\' }, { value: '=' },
-        { value: '⌫', ratio: 1.5, keyCode: KeyEvent.DOM_VK_BACK_SPACE }
+        { value: '⇪', keyCode: KeyEvent.DOM_VK_CAPS_LOCK },
+        { value: '§' }, { value: '€' }, { value: '¥' }, { value: '£' },
+        { value: '$' }, { value: '¢' }, { value: '\\' }, { value: '=' },
+        { value: '⇦', ratio: 0.57, keyCode: KeyEvent.DOM_VK_LEFT },
+        { value: '⇩', ratio: 0.87, keyCode: KeyEvent.DOM_VK_DOWN },
+        { value: '⇨', ratio: 0.57, keyCode: KeyEvent.DOM_VK_RIGHT }
       ], [
-        { value: '&nbsp', ratio: 8, keyCode: KeyboardEvent.DOM_VK_SPACE },
-        { value: '↵', ratio: 2, keyCode: KeyEvent.DOM_VK_RETURN }
+        { value: ';)', keyCode: KeyEvent.DOM_VK_ALT },
+        { value: '&nbsp', ratio: 9.83, keyCode: KeyboardEvent.DOM_VK_SPACE },
+        { value: '↵', ratio: 1.7, keyCode: KeyEvent.DOM_VK_RETURN }
       ]
     ]
   },
@@ -107,6 +114,7 @@ const Keyboards = {
     imEngine: 'latin',
     needsCandidatePanel: 'true',
     menuLabel: 'English',
+    width: 14,
     alt: {
       a: 'áàâäåãāæ',
       c: 'çćč',
@@ -127,20 +135,27 @@ const Keyboards = {
       [
         { value: 'q' }, { value: 'w' }, { value: 'e' } , { value: 'r' },
         { value: 't' } , { value: 'y' }, { value: 'u' } , { value: 'i' },
-        { value: 'o' }, { value: 'p' }
+        { value: 'o' }, { value: 'p' },
+        // device-specific, put delete key on the top row
+        { value: '⌫', ratio: 1.27, keyCode: KeyEvent.DOM_VK_BACK_SPACE }
       ], [
         { value: 'a' }, { value: 's' }, { value: 'd' }, { value: 'f' },
         { value: 'g' } , { value: 'h' }, { value: 'j' }, { value: 'k' },
         { value: 'l' },
-        { value: ':', visible: ['url']}, { value: '_', visible: ['email']}
+        { value: '⇧', ratio: 0.87, keyCode: KeyEvent.DOM_VK_UP }
+        //{ value: ':', visible: ['url']}, { value: '_', visible: ['email']}
       ], [
-        { value: '⇪', ratio: 1.5, keyCode: KeyEvent.DOM_VK_CAPS_LOCK },
+        { value: '⇪', keyCode: KeyEvent.DOM_VK_CAPS_LOCK },
         { value: 'z' }, { value: 'x' }, { value: 'c' }, { value: 'v' },
         { value: 'b' }, { value: 'n' }, { value: 'm' },
-        { value: '⌫', ratio: 1.5, keyCode: KeyEvent.DOM_VK_BACK_SPACE }
+        { value: "'"},
+        { value: '⇦', ratio: 0.57, keyCode: KeyEvent.DOM_VK_LEFT },
+        { value: '⇩', ratio: 0.87, keyCode: KeyEvent.DOM_VK_DOWN },
+        { value: '⇨', ratio: 0.57, keyCode: KeyEvent.DOM_VK_RIGHT }
       ], [
-        { value: '&nbsp', ratio: 8, keyCode: KeyboardEvent.DOM_VK_SPACE },
-        { value: '↵', ratio: 2, keyCode: KeyEvent.DOM_VK_RETURN }
+        { value: ';)', keyCode: KeyEvent.DOM_VK_ALT },
+        { value: '&nbsp', ratio: 9.83, keyCode: KeyboardEvent.DOM_VK_SPACE },
+        { value: '↵', ratio: 1.7, keyCode: KeyEvent.DOM_VK_RETURN }
       ]
     ],
     alternateLayout: {
@@ -159,24 +174,30 @@ const Keyboards = {
         '?': '¿',
         '!': '¡'
       },
+      width: 14,
       keys: [
         [
           { value: '1' }, { value: '2' }, { value: '3' } , { value: '4' },
           { value: '5' } , { value: '6' }, { value: '7' } , { value: '8' },
-          { value: '9' }, { value: '0' }
+          { value: '9' }, { value: '0' },
+          // device-specific, put delete key on the top row
+          { value: '⌫', ratio: 1.27, keyCode: KeyEvent.DOM_VK_BACK_SPACE }
         ], [
-          { value: '@', hidden: ['email'] }, { value: '#' }, { value: '$' },
-          { value: '%' }, { value: '&' } , { value: '*' }, { value: '-' },
-          { value: '+' }, { value: '(' }, { value: ')' },
-          { value: '_', visible: ['email'] }
+          { value: '#' }, { value: '$' }, { value: '%' }, { value: '&' },
+          { value: '*' }, { value: '-' }, { value: '+' }, { value: '(' },
+          { value: ')' },
+          { value: '⇧', ratio: 0.87, keyCode: KeyEvent.DOM_VK_UP }
         ], [
-          { value: 'ALT', ratio: 1.5, keyCode: KeyEvent.DOM_VK_ALT },
-          { value: '!' }, { value: '\"' }, { value: "'" }, { value: ':' },
-          { value: ';' }, { value: '/' }, { value: '?' },
-          { value: '⌫', ratio: 1.5, keyCode: KeyEvent.DOM_VK_BACK_SPACE }
+          { value: '⇪', keyCode: KeyEvent.DOM_VK_CAPS_LOCK },
+          { value: '@' }, { value: '!' }, { value: '\"' }, { value: "'" },
+          { value: ':' }, { value: ';' }, { value: '/' }, { value: '?' },
+          { value: '⇦', ratio: 0.57, keyCode: KeyEvent.DOM_VK_LEFT },
+          { value: '⇩', ratio: 0.87, keyCode: KeyEvent.DOM_VK_DOWN },
+          { value: '⇨', ratio: 0.57, keyCode: KeyEvent.DOM_VK_RIGHT }
         ], [
-          { value: '&nbsp', ratio: 8, keyCode: KeyboardEvent.DOM_VK_SPACE },
-          { value: '↵', ratio: 2, keyCode: KeyEvent.DOM_VK_RETURN }
+          { value: ';)', keyCode: KeyEvent.DOM_VK_ALT },
+          { value: '&nbsp', ratio: 9.83, keyCode: KeyboardEvent.DOM_VK_SPACE },
+          { value: '↵', ratio: 1.7, keyCode: KeyEvent.DOM_VK_RETURN }
         ]
       ]
     }
