@@ -2,6 +2,12 @@
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 'use strict';
 
+// Arrow key codes
+const ARROW_KEY_LEFT = -4;
+const ARROW_KEY_UP = -5;
+const ARROW_KEY_RIGHT = -6;
+const ARROW_KEY_DOWN = -7;
+
 const Keyboards = {
   alternateLayout: {
     alt: {
@@ -43,15 +49,15 @@ const Keyboards = {
         { value: '°' }, { value: '²' }, { value: '³' }, { value: '©' },
         { value: '®' }, { value: '<' }, { value: '>'}, { value: '«' },
         { value: '»' },
-        { value: '⇧', ratio: 0.87, keyCode: KeyEvent.DOM_VK_UP }
+        { value: '', ratio: 0.85, keyCode: ARROW_KEY_UP } // up key
       ],
       [
         { value: '⇪', keyCode: KeyEvent.DOM_VK_CAPS_LOCK },
         { value: '§' }, { value: '€' }, { value: '¥' }, { value: '£' },
         { value: '$' }, { value: '¢' }, { value: '\\' }, { value: '=' },
-        { value: '⇦', ratio: 0.57, keyCode: KeyEvent.DOM_VK_LEFT },
-        { value: '⇩', ratio: 0.87, keyCode: KeyEvent.DOM_VK_DOWN },
-        { value: '⇨', ratio: 0.57, keyCode: KeyEvent.DOM_VK_RIGHT }
+        { value: '', ratio: 0.55, keyCode: ARROW_KEY_LEFT }, // left key
+        { value: '', ratio: 0.85, keyCode: ARROW_KEY_DOWN }, // down key
+        { value: '', ratio: 0.55, keyCode: ARROW_KEY_RIGHT } // right key
       ], [
         { value: ';)', keyCode: KeyEvent.DOM_VK_ALT },
         { value: '&nbsp', ratio: 9.83, keyCode: KeyboardEvent.DOM_VK_SPACE },
@@ -142,16 +148,16 @@ const Keyboards = {
         { value: 'a' }, { value: 's' }, { value: 'd' }, { value: 'f' },
         { value: 'g' } , { value: 'h' }, { value: 'j' }, { value: 'k' },
         { value: 'l' },
-        { value: '⇧', ratio: 0.87, keyCode: KeyEvent.DOM_VK_UP }
+        { value: '', ratio: 0.85, keyCode: ARROW_KEY_UP } // up key
         //{ value: ':', visible: ['url']}, { value: '_', visible: ['email']}
       ], [
         { value: '⇪', keyCode: KeyEvent.DOM_VK_CAPS_LOCK },
         { value: 'z' }, { value: 'x' }, { value: 'c' }, { value: 'v' },
         { value: 'b' }, { value: 'n' }, { value: 'm' },
         { value: "'"},
-        { value: '⇦', ratio: 0.57, keyCode: KeyEvent.DOM_VK_LEFT },
-        { value: '⇩', ratio: 0.87, keyCode: KeyEvent.DOM_VK_DOWN },
-        { value: '⇨', ratio: 0.57, keyCode: KeyEvent.DOM_VK_RIGHT }
+        { value: '', ratio: 0.55, keyCode: ARROW_KEY_LEFT }, // left key
+        { value: '', ratio: 0.85, keyCode: ARROW_KEY_DOWN }, // down key
+        { value: '', ratio: 0.55, keyCode: ARROW_KEY_RIGHT } // right key
       ], [
         { value: ';)', keyCode: KeyEvent.DOM_VK_ALT },
         { value: '&nbsp', ratio: 9.83, keyCode: KeyboardEvent.DOM_VK_SPACE },
@@ -186,14 +192,14 @@ const Keyboards = {
           { value: '#' }, { value: '$' }, { value: '%' }, { value: '&' },
           { value: '*' }, { value: '-' }, { value: '+' }, { value: '(' },
           { value: ')' },
-          { value: '⇧', ratio: 0.87, keyCode: KeyEvent.DOM_VK_UP }
+          { value: '', ratio: 0.85, keyCode: ARROW_KEY_UP } // up key
         ], [
           { value: '⇪', keyCode: KeyEvent.DOM_VK_CAPS_LOCK },
           { value: '@' }, { value: '!' }, { value: '\"' }, { value: "'" },
           { value: ':' }, { value: ';' }, { value: '/' }, { value: '?' },
-          { value: '⇦', ratio: 0.57, keyCode: KeyEvent.DOM_VK_LEFT },
-          { value: '⇩', ratio: 0.87, keyCode: KeyEvent.DOM_VK_DOWN },
-          { value: '⇨', ratio: 0.57, keyCode: KeyEvent.DOM_VK_RIGHT }
+          { value: '', ratio: 0.55, keyCode: ARROW_KEY_LEFT }, // left key
+          { value: '', ratio: 0.85, keyCode: ARROW_KEY_DOWN }, // down key
+          { value: '', ratio: 0.55, keyCode: ARROW_KEY_RIGHT } // right key
         ], [
           { value: ';)', keyCode: KeyEvent.DOM_VK_ALT },
           { value: '&nbsp', ratio: 9.83, keyCode: KeyboardEvent.DOM_VK_SPACE },

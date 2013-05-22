@@ -1393,6 +1393,22 @@ function sendKey(keyCode) {
     window.navigator.mozKeyboard.sendKey(keyCode, 0);
     break;
 
+  case ARROW_KEY_LEFT:
+    window.navigator.mozKeyboard.sendKey(KeyEvent.DOM_VK_LEFT, 0);
+    break;
+
+  case ARROW_KEY_RIGHT:
+    window.navigator.mozKeyboard.sendKey(KeyEvent.DOM_VK_RIGHT, 0);
+    break;
+
+  case ARROW_KEY_UP:
+    window.navigator.mozKeyboard.sendKey(KeyEvent.DOM_VK_UP, 0);
+    break;
+
+  case ARROW_KEY_DOWN:
+    window.navigator.mozKeyboard.sendKey(KeyEvent.DOM_VK_DOWN, 0);
+    break;
+
   default:
     window.navigator.mozKeyboard.sendKey(0, keyCode);
     break;
