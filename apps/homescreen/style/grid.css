@@ -62,11 +62,11 @@
 .apps ol > li span.options {
   position: absolute;
   top: .1rem;
-  left: .5rem;
-  width: calc(100% - .5rem);
-  height: 2.6rem;
+  left: calc(50% - 5rem);
+  width: 4.5rem;
+  height: 4.5rem;
   z-index: 2;
-  background: url(../resources/images/delete.png) no-repeat left top;
+  background: url(../resources/images/delete.png) no-repeat left top / 4.5rem;
 }
 
 /* Container -> icon + label */
