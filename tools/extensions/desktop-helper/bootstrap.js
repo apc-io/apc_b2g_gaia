@@ -41,7 +41,7 @@ function startup(data, reason) {
       let browserWindow = Services.wm.getMostRecentWindow('navigator:browser');
 
       // Automatically toggle responsive design mode
-      let args = {'width': 320, 'height': 480};
+      let args = {'width': 1280, 'height': 800};
       let mgr = browserWindow.ResponsiveUI.ResponsiveUIManager;
       mgr.handleGcliCommand(browserWindow,
                             browserWindow.gBrowser.selectedTab,
