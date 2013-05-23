@@ -213,7 +213,7 @@ var ValueSelector = {
   },
 
   show: function vs_show(detail) {
-    this._element.hidden = false;
+    this._element.classList.add('visible');
   },
 
   showPanel: function vs_showPanel(type) {
@@ -224,10 +224,19 @@ var ValueSelector = {
         this._popups[p].hidden = true;
       }
     }
+    this.show();
   },
 
   hide: function vs_hide() {
-    this._element.hidden = true;
+    if (!this._element.classList.contains('visible'))
+      return;
+    var self = this;
+    this._element.addEventListener('transitionend', function end() {
+      self._element.removeEventListener('transitionend', end);
+      self._element.classList.remove('visible');
+      self._element.classList.remove('closing');
+    });
+    this._element.classList.add('closing');
   },
 
   cancel: function vs_cancel() {

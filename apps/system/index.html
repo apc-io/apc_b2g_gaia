@@ -618,7 +618,7 @@
       </div> <!-- end of #overlay-dialog -->
 
       <!-- value selector -->
-      <div id="value-selector" hidden data-z-index-level="value-selector">
+      <div id="value-selector" data-z-index-level="value-selector">
         <!-- popup of options for select element -->
         <form id="select-option-popup" role="dialog" data-type="value-selector">
           <section id="value-selector-container">
@@ -632,7 +632,7 @@
         </form>
 
         <!-- Time Picker -->
-        <div id="time-picker-popup" hidden>
+        <div id="time-picker-popup">
           <div class="table-wrapper">
             <div class="table-cell">
               <div id="picker-bar">
@@ -661,7 +661,7 @@
         </div>
 
         <!-- Spin Date Picker -->
-        <div id="spin-date-picker-popup" hidden>
+        <div id="spin-date-picker-popup">
           <div id="spin-date-picker" class="table-wrapper">
             <div class="table-cell">
               <div class="picker-bar">
@@ -884,9 +884,11 @@
         <div id="toaster-detail"></div>
       </div>
 
-      <div id="listmenu" data-z-index-level="list-menu" role="dialog">
-        <menu class="actions">
-        </menu>
+      <div id="listmenu-overlay" data-z-index-level="list-menu" >
+        <div id="listmenu" role="dialog">
+          <menu class="actions">
+          </menu>
+        </div>
       </div>
 
       <!-- keyboard -->

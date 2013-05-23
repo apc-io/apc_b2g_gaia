@@ -541,6 +541,7 @@ iframe.backgroundWindow {
   visibility: hidden;
   pointer-events: none;
   background-color: rgba(0,0,0,0.6);
+  transition: visibility 0.2s ease;
 }
 
 #screen.active-statusbar #dialog-overlay {
