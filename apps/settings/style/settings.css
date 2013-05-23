@@ -9,9 +9,10 @@ html, body {
   width: 100%;
   height: 100%;
   font-size: 10px;
-  font-family: "MozTT", sans-serif;
+  font-family: "Open Sans", sans-serif;
   overflow: hidden;
 }
+
 
 /******************************************************************************
  * Setting panels: full-size <section role="region"> blocks
@@ -21,8 +22,8 @@ html, body {
 section[role="region"] {
   position: absolute;
   top: 0;
-  left: 40rem;
-  width: calc(100% - 40rem);
+  left: 50rem;
+  width: calc(100% - 50rem);
   height: 100%;
   border: 0;
   background: url(images/document_bg.png);
@@ -33,7 +34,20 @@ section[role="region"] {
 #root {
   display: block !important;
   left: 0;
-  width: 40rem;
+  width: 50rem;
+}
+
+#root header h2 {
+  padding-left: 12.7rem;
+}
+
+#root .menu-item {
+  padding-left: 12.7rem;
+}
+
+#root ul li > label:not([for]) > span,
+#root ul li > label:not([for]) > input[data-type="switch"] + span {
+  right: 3.5rem;
 }
 
 section[role="region"].previous {
@@ -47,9 +61,6 @@ section[role="region"].current {
 /**
  * Headers should not scroll with the rest of the page, except for #root.
  */
-section[role="region"] > header {
-  position: absolute;
-}
 
 section[role="region"] > div {
   position: absolute;
@@ -62,27 +73,6 @@ section[role="region"] > div {
   overflow-y: scroll;
 }
 
-section[role="region"] > header > a {
-  display: none;
-}
-
-/******************************************************************************
- * Breadcrumb
- */
-
-#breadcrumb {
-  position: absolute;
-  top: 0;
-  left: 40rem;
-  width: calc(100% - 40rem);
-  height: 5rem;
-  z-index: 15;
-  display: block;
-}
-
-#breadcrumb nav h1 {
-  display: inline;
-}
 
 /******************************************************************************
  * Setting panels: full-size <section role="dialog"> blocks
@@ -91,24 +81,26 @@ section[role="region"] > header > a {
 /* Setting panels: full-size <section role="dialog"> blocks */
 section[role="dialog"] {
   position: absolute;
-  top: calc(50% - 15rem);
-  left: 20%;
-  width: 60%;
-  height: 30rem;
+  top: calc(50% - 24rem);
+  left: calc(50% - 39rem);
+  width: 78rem;
+  height: 48rem;
   border: 0;
   background: url(images/document_bg.png);
   overflow: hidden;
-  display: none;
-  box-shadow: 10px 10px 5px #888;
-  z-index: 1;
+  z-index: 17;
+  opacity: 0;
+  transition: opacity .5s;
+  pointer-events: none;
 }
 
 section[role="dialog"].previous {
-  display: none;
+  opacity: 0;
 }
 
 section[role="dialog"].current {
-  display: block;
+  pointer-events: auto;
+  opacity: 1;
 }
 
 /**
@@ -129,19 +121,85 @@ section[role="dialog"] > div {
   overflow-y: scroll;
 }
 
+#dialog-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  opacity: 1;
+  transition: opacity 0.5s;
+  z-index: 16;
+}
+
+#dialog-overlay[hidden] {
+  opacity: 0;
+}
+
+
+/******************************************************************************
+ * Breadcrumb
+ */
+
+#breadcrumb {
+  position: absolute;
+  top: 0;
+  left: 50rem;
+  width: calc(100% - 50rem);
+  height: 5rem;
+  z-index: 15;
+  display: block;
+}
+
+#breadcrumb header {
+  background: url(images/header_column.png);
+}
+
+#breadcrumb nav {
+  padding-left: 5rem;
+  display: flex;
+  flex-direction: row-reverse;
+}
+
+#breadcrumb nav .item {
+  background: url(images/tab_L.png) no-repeat left center,
+              url(images/tab_R.png) no-repeat right center;
+  min-width: 6rem;
+  padding-left: 0.8rem;
+  padding-right: 1.9rem;
+  margin-right: 2rem;
+}
+
+#breadcrumb nav .item:nth-child(2) {
+  flex: 1 0 auto;
+}
+
+/* A placeholder can avoid the last item being extended to the end. */
+#breadcrumb nav .breadcrumb-placeholder {
+  opacity: 0;
+  flex: 99999;
+}
+
+#breadcrumb nav h1 {
+  margin: 0;
+  background: url(images/tab_bg.png) repeat-x center center;
+}
+
+
 /******************************************************************************
  * Explanation texts
  */
 
 .explanation {
-  padding: 0.5rem 3rem;
+  padding: 0.5rem 3rem 0.5rem 5rem;
   font-style: italic;
   font-size: 1.4rem;
   color: #505859;
 }
 
 .description {
-  padding: 1rem 2rem 1rem 3rem;
+  padding: 1rem 10rem 1rem 5rem;
   font-size: 1.7rem;
   line-height: 23px;
   white-space: normal;
@@ -168,7 +226,7 @@ section[role="dialog"] > div {
   font-style: normal;
   position: relative;
   margin-top: -2rem;
-  padding: 0.5rem 10rem 1.3rem 3.1rem;
+  padding: 0.5rem 10rem 1.3rem 5rem;
   white-space: normal;
 }
 .hint .explanation[hidden] {
@@ -248,49 +306,97 @@ section li.password > p {
 
 
 /******************************************************************************
+* Device Storage settings
+*/
+
+#deviceStorage progress {
+  display: inline-block;
+  width: calc(100% - 15rem);
+  height: 2.4rem;
+  border-radius: 1.2rem;
+  margin: 1.8rem 0 0 5rem;
+  background: linear-gradient(to bottom, #898989, #b5b5b6);
+}
+
+#deviceStorage progress[value]::-moz-progress-bar {
+  background: linear-gradient(to bottom, #008bfb, #00c2ef);
+  border-radius: 1.2rem;
+  height: 2.4rem;
+}
+
+#deviceStorage .stackedbar-color {
+  display: inline-block;
+  height: 2rem;
+  left: 5rem;
+  padding: 0px;
+  position: absolute;
+  top: 2.1rem;
+  width: 2.5rem;
+  border-radius: 1rem;
+}
+
+#deviceStorage #used-space .stackedbar-color {
+  background: linear-gradient(to bottom, #008bfb, #00c2ef);
+}
+
+#deviceStorage #left-space .stackedbar-color {
+  background: linear-gradient(to bottom, #898989, #b5b5b6);
+}
+
+#deviceStorage #used-space,
+#deviceStorage #left-space {
+  padding-left: 3.5rem;
+}
+
+
+/******************************************************************************
 * Media Storage settings
 */
 
 #mediaStorage #space-stackedbar {
-  border: solid 0px green;
   display: inline-block;
-  height: 30px;
-  margin: 0.8rem 5%;
+  height: 2.4rem;
+  margin: 1.8rem 0 0 1.5rem;
   padding: 0;
-  width: 90%;
+  width: calc(100% - 11.5rem);
+  border-radius: 1.2rem;
 }
 
 #mediaStorage #space-stackedbar .stackedbar-item {
   display: inline-block;
-  height: 30px;
+  height: 100%;
 }
 
 #mediaStorage #space-stackedbar .stackedbar-item#stackedbar-item-music, #mediaStorage #music-space .stackedbar-color {
-  background-color: #ff7517;
+  background: linear-gradient(to bottom, #f96438, #ed8c00);
 }
 
 #mediaStorage #space-stackedbar .stackedbar-item#stackedbar-item-pictures, #mediaStorage #pictures-space .stackedbar-color {
-  background-color: #5da31d;
+  background: linear-gradient(to bottom, #6300a9, #7100d7);
 }
 
 #mediaStorage #space-stackedbar .stackedbar-item#stackedbar-item-videos, #mediaStorage #videos-space .stackedbar-color {
-  background-color: #5917ba;
+  background: linear-gradient(to bottom, #639500, #89cf38);
 }
 
 #mediaStorage #space-stackedbar .stackedbar-item#stackedbar-item-free, #mediaStorage #media-free-space .stackedbar-color {
-  background-color: #fff;
+  background: linear-gradient(to bottom, #898989, #b5b5b6);
 }
 
 #mediaStorage .stackedbar-color {
   display: inline-block;
   height: 2rem;
-  left: 0.5rem;
+  left: 5rem;
   padding: 0px;
   position: absolute;
   top: 2.1rem;
-  width: 2rem;
+  width: 2.5rem;
+  border-radius: 1rem;
 }
 
+#mediaStorage #media-storage-summary li {
+  padding-left: 3.5rem;
+}
 
 /******************************************************************************
  * Call settings
@@ -382,11 +488,11 @@ section li.password > p {
 #wallpaper {
   position: relative;
   overflow: hidden;
-  height: 17rem;
+  height: 23rem;
 }
 
 #wallpaper-button {
-  background: url(images/wallpaper_edit.png) no-repeat 25rem 11.5rem / 4.5rem;
+  background: url(images/wallpaper_edit.png) no-repeat 5rem 16.5rem / 4.5rem;
   position: absolute;
   border: none;
   height: 100%;
@@ -418,6 +524,20 @@ section li.password > p {
 
 
 /******************************************************************************
+ * Sound: min/max icons
+ */
+
+ul li > label .range-icons.volume {
+  background:
+    url(images/range_icons_volume_min.png) no-repeat 0 50%,
+    url(images/range_icons_volume_max.png) no-repeat 100% 50%;
+  background-size: 4rem;
+  right: 10rem;
+  width: 29.6rem;
+}
+
+
+/******************************************************************************
  * Volume & Brightness: min/max icons
  */
 
@@ -428,7 +548,7 @@ ul li > label .range-icons {
   bottom: 0;
   left: 0;
   margin: 0 auto;
-  width: calc(100% - 5.4rem);
+  width: calc(100% - 15rem);
   height: 3rem;
 }
 
@@ -436,9 +556,9 @@ ul li > label .range-icons.brightness {
   background:
     url(images/range_icons_brightness_min.png) no-repeat 0 50%,
     url(images/range_icons_brightness_max.png) no-repeat 100% 50%;
-  background-size: 3rem;
-  left: 2.5rem;
-  right: auto;
+  background-size: 4rem;
+  right: 10rem;
+  width: 29.6rem;
 }
 
 #brightness-manual div {
@@ -490,7 +610,7 @@ ul li > label .range-icons.brightness {
  */
 
 #dateTime ul[data-state="auto"] ~ * {
-  display: none;
+  display: block; /* temp temp */
 }
 
 #dateTime ul[hidden] + header {

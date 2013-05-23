@@ -281,22 +281,22 @@ var Settings = {
         }
       }
 
-      // use a <button> instead of the <select> element
+      // use a <span> instead of the <select> element
       var fakeSelector = function(select) {
         var parent = select.parentElement;
-        var button = select.previousElementSibling;
-        // link the button with the select element
+        var span = select.previousElementSibling;
+        // link the span with the select element
         var index = select.selectedIndex;
         if (index >= 0) {
           var selection = select.options[index];
-          button.textContent = selection.textContent;
-          button.dataset.l10nId = selection.dataset.l10nId;
+          span.textContent = selection.textContent;
+          span.dataset.l10nId = selection.dataset.l10nId;
         }
         if (parent.classList.contains('fake-select')) {
           select.addEventListener('change', function() {
             var newSelection = this.options[this.selectedIndex];
-            button.textContent = newSelection.textContent;
-            button.dataset.l10nId = newSelection.dataset.l10nId;
+            span.textContent = newSelection.textContent;
+            span.dataset.l10nId = newSelection.dataset.l10nId;
           });
         }
       };
@@ -577,7 +577,12 @@ var Settings = {
 window.addEventListener('load', function loadSettings() {
   window.removeEventListener('load', loadSettings);
   window.addEventListener('change', Settings);
-  
+
+  navigator.addIdleObserver({
+    time: 3,
+    onidle: Settings.loadPanelStylesheetsIfNeeded.bind(Settings)
+  });
+
   Settings.init();
   handleRadioAndCardState();
 
@@ -592,6 +597,15 @@ window.addEventListener('load', function loadSettings() {
       'js/security_privacy.js',
       'js/icc_menu.js'
   ]);
+
+  // XXX: blank page handling
+  var airplaneModeItem =
+    document.getElementById('menuItem-airplaneMode').parentNode;
+  var geolocationItem = document.getElementById('menuItem-gps').parentNode;
+
+  var goToBlank = function() { document.location.hash = 'blank'; };
+  airplaneModeItem.addEventListener('click', goToBlank);
+  geolocationItem.addEventListener('click', goToBlank);
 
   // panel lazy-loading
   function lazyLoad(panel) {
@@ -683,14 +697,17 @@ window.addEventListener('load', function loadSettings() {
 
     var oldPanel = document.querySelector(oldHash);
     var newPanel = document.querySelector(hash);
+    var overlay = document.getElementById('dialog-overlay');
 
     // load panel (+ dependencies) if necessary -- this should be synchronous
     lazyLoad(newPanel);
 
     if (newPanel.getAttribute('role') === 'dialog') {
+      overlay.hidden = false;
       oldPanel.className = 'current';
       newPanel.className = 'current';
     } else {
+      overlay.hidden = true;
       oldPanel.className = 'previous';
       newPanel.className = 'current';
     }
@@ -761,15 +778,20 @@ window.addEventListener('load', function loadSettings() {
   // startup
   window.addEventListener('hashchange', showPanel);
   switch (window.location.hash) {
-    case '#root':
+    case '#wifi':
       // Nothing to do here; default startup case.
       break;
-    case '':
-      document.location.hash = 'root';
+    case '#root':
+      document.location.hash = 'wifi';
       break;
     default:
-      document.getElementById('root').className = 'previous';
-      showPanel();
+      // We need to create a hash change here so that the breadcrumb control can
+      // aware it.
+      var hash = document.location.hash;
+      document.location.hash = '#root';
+      setTimeout(function() {
+        document.location.hash = hash;
+      });
       break;
   }
 });
