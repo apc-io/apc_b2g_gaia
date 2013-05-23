@@ -29,6 +29,7 @@ section[role="region"] {
   background: url(images/document_bg.png);
   overflow: hidden;
   display: none;
+  z-index: 0;
 }
 
 #root {
