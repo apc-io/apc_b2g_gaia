@@ -444,6 +444,9 @@
       </header>
 
       <div>
+        <div id="photoFrame-placeholder">
+          <img src="/style/images/digitalphoto_banner.jpg"/>
+        </div>
         <ul>
           <li id="photoFrame-status">
             <label>
@@ -544,7 +547,7 @@
         </header>
         <ul>
           <li class="sound-setting">
-            <a data-l10n-id="ringer-and-notification-sound">Ringer & Notifications</a>
+            <a data-l10n-id="notifications">Notifications</a>
             <label>
               <input type="range" name="audio.volume.notification" step="1" min="0" value="15" max="15">
               <span class="range-icons volume"></span>
@@ -669,19 +672,6 @@
       </header>
 
       <div>
-        <ul id="time-auto" data-state="auto" hidden>
-          <li>
-            <label>
-              <input type="checkbox" data-type="switch" name="time.nitz.automatic-update.enabled" class="uninit"/>
-              <span></span>
-            </label>
-            <a data-l10n-id="setTimeAutomatically">Set Automatically</a>
-          </li>
-        </ul>
-
-        <header>
-          <h2 data-l10n-id="setTimeManually">Set Manually</h2>
-        </header>
         <ul id="time-manual">
           <li>
             <label>
@@ -743,10 +733,6 @@
           <h2 data-l10n-id="sample-format">Sample Format</h2>
         </header>
         <ul>
-          <li class="description">
-            <p id="region-date">Friday, September 28 2012</p>
-            <p id="region-time">06:54 PM</p>
-          </li>
           <li>
             <label>
               <div class="fake-select">
@@ -774,6 +760,10 @@
               </div>
             </label>
             <a data-l10n-id="region">Region</a>
+          </li>
+          <li class="description">
+            <p id="region-date">Friday, September 28 2012</p>
+            <p id="region-time">06:54 PM</p>
           </li>
         </ul>
       </div>
@@ -805,13 +795,6 @@
               <span></span>
             </label>
             <a data-l10n-id="clickSound">Click sound</a>
-          </li>
-          <li>
-            <label>
-              <input type="checkbox" name="keyboard.autocorrect"/>
-              <span></span>
-            </label>
-            <a data-l10n-id="autoCorrect">Auto correction</a>
           </li>
           <li>
             <label>
@@ -956,7 +939,7 @@
       <!--
       <header>
         <a href="#root"><span class="icon icon-back">back</span></a>
-        <h1 data-l10n-id="phoneLock"> Phone Lock </h1>
+        <h1 data-l10n-id="screenLock">Screen lock</h1>
       </header>
 
       <div>
@@ -1001,6 +984,13 @@
             <label>
               <button data-l10n-id="change-passcode" id="passcode-edit">Change Passcode</button>
             </label>
+          </li>
+          <li>
+            <label>
+              <input type="checkbox" name="privacy.donottrackheader.enabled" />
+              <span></span>
+            </label>
+            <a data-l10n-id="doNotTrack">Do Not Track</a>
           </li>
         </ul>
       </div>
@@ -1206,37 +1196,8 @@
             <small data-name="deviceinfo.update_channel"></small>
             <span data-l10n-id="update-channel"> Update Channel </span>
           </li>
-          <li>
-            <label>
-              <button id="reset-phone" data-l10n-id="reset-phone">Reset Phone</button>
-            </label>
-          </li>
-        </ul>
-
-        <header>
-          <h2 data-l10n-id="gitInfo"> Git commit info </h2>
-        </header>
-        <ul>
-          <li>
-            <small id="gaia-commit-hash"></small>
-            <span id="gaia-commit-date"></span>
-          </li>
-        </ul>
-
-        <header>
-          <h2 data-l10n-id="devSettings"> Developer Settings </h2>
-        </header>
-        <ul>
-          <li>
-            <label>
-              <button data-href="#about-moreInfo-developer"
-                data-l10n-id="developer">Developer</button>
-            </label>
-          </li>
         </ul>
       </div>
-
-      <script src="js/factory_reset.js"></script>
       -->
     </section>
 
@@ -1394,10 +1355,6 @@
       <div>
         <ul>
           <li>
-            <small id="deviceInfo-msisdn"></small>
-            <span data-l10n-id="deviceInfo-MSISDN"> Phone number </span>
-          </li>
-          <li>
             <small data-name="deviceinfo.hardware"></small>
             <span id="model-name" data-l10n-id="model-name"> Model </span>
           </li>
@@ -1416,69 +1373,27 @@
             </label>
           </li>
         </ul>
-
-        <header>
-          <h2 data-l10n-id="softwareUpdates"> Software Updates </h2>
-        </header>
-        <ul>
-          <li>
-            <label>
-              <div class="fake-select">
-                <span class="icon icon-dialog">empty</span>
-                <select name="app.update.interval">
-                  <option value="86400"   data-l10n-id="check-update-daily" selected>Daily</option>
-                  <option value="604800"  data-l10n-id="check-update-weekly">Weekly</option>
-                  <option value="2592000" data-l10n-id="check-update-monthly">Monthly</option>
-                </select>
-              </div>
-            </label>
-            <a data-l10n-id="check-for-updates">Check for Updates</a>
-          </li>
-          <li>
-            <label>
-              <button id="check-update-now"
-                data-l10n-id="check-update-now"> Check Now </button>
-            </label>
-          </li>
-          <li id="update-status" class="description update-status">
-            <p class="description general-information"
-                data-l10n-id="checking-for-update">Checking for updates…</p>
-            <p class="description system-update-status"></p>
-          </li>
-        </ul>
-
-        <header>
-          <h2 data-l10n-id="aboutBrowserOS"> About Browser OS </h2>
-        </header>
-        <ul>
-          <li class="description" data-l10n-id="browser-os-desc">
-            Browser OS is the free and open source operating system from Mozilla.
-            Our mission is to promote openness, innovation and opportunity by
-            keeping the power of the Web in your hands.
-          </li>
-          <li>
-            <label>
-              <button data-href="#about-yourRights"
-                data-l10n-id="your-rights"> Your Rights </button>
-            </label>
-          </li>
-          <li>
-            <label>
-              <button data-href="#about-yourPrivacy"
-                data-l10n-id="your-privacy"> Your Privacy </button>
-            </label>
-          </li>
-          <li>
-            <label>
-              <button data-href="#about-legal"
-                data-l10n-id="about-legal-info"> Legal Information </button>
-            </label>
-          </li>
-        </ul>
       </div>
 
       <script src="shared/js/l10n_date.js"></script>
       <script src="js/about.js"></script>
+      -->
+    </section>
+
+    <!-- Device :: Reset -->
+    <section role="region" id="reset">
+      <!--
+      <header>
+        <a href="#root"><span class="icon icon-back">back</span></a>
+        <h1 data-l10n-id="reset">Reset</h1>
+      </header>
+
+      <div>
+        <p id="reset-device-caution"></p>
+        <button id="reset-device-btn" data-l10n-id="reset">Reset</button>
+      </div>
+
+      <script src="js/factory_reset.js"></script>
       -->
     </section>
 
@@ -1824,6 +1739,9 @@
             <a id="menuItem-deviceInfo" class="menu-item" href="#about" data-l10n-id="deviceInfo">Device Information</a>
           </li>
           <li>
+            <a id="menuItem-resetDevice" class="menu-item" href="#reset" data-l10n-id="reset">Reset</a>
+          </li>
+          <li>
             <small id="battery-desc" class="menu-item-desc"></small>
             <a id="menuItem-battery" class="menu-item" href="#battery" data-l10n-id="battery">Battery</a>
           </li>
@@ -1837,9 +1755,6 @@
           </li>
           <li hidden>
             <a id="menuItem-accessibility" class="menu-item" href="#accessibility" data-l10n-id="accessibility">Accessibility</a>
-          </li>
-          <li>
-            <a id="menuItem-help" class="menu-item" href="#help" data-l10n-id="help">Help</a>
           </li>
         </ul>
       </div>

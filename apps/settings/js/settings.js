@@ -578,10 +578,10 @@ window.addEventListener('load', function loadSettings() {
   window.removeEventListener('load', loadSettings);
   window.addEventListener('change', Settings);
 
-  navigator.addIdleObserver({
+  /*navigator.addIdleObserver({
     time: 3,
     onidle: Settings.loadPanelStylesheetsIfNeeded.bind(Settings)
-  });
+  });*/
 
   Settings.init();
   handleRadioAndCardState();

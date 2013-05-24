@@ -489,11 +489,11 @@ section li.password > p {
 #wallpaper {
   position: relative;
   overflow: hidden;
-  height: 23rem;
+  height: 25rem;
 }
 
 #wallpaper-button {
-  background: url(images/wallpaper_edit.png) no-repeat 5rem 16.5rem / 4.5rem;
+  background: url(images/wallpaper_edit.png) no-repeat 5rem 18.5rem / 4.5rem;
   position: absolute;
   border: none;
   height: 100%;
@@ -521,6 +521,16 @@ section li.password > p {
 }
 #display li:last-child {
   border-bottom: none;
+}
+
+
+/******************************************************************************
+ * Photo Frame
+ */
+
+#photoFrame-placeholder {
+  overflow: hidden;
+  height: 25rem;
 }
 
 
@@ -605,6 +615,33 @@ ul li > label .range-icons.brightness {
   word-wrap: break-word;
 }
 
+
+/******************************************************************************
+ * Reset
+ */
+
+#reset li {
+  border: none;
+}
+
+#reset #reset-device-caution {
+  font-size: 2.2rem;
+  margin: 8rem 5rem;
+}
+
+#reset #reset-device-btn {
+  text-align: center;
+  font-size: 2.1rem;
+  color: #FFFFFF;
+  width: 32rem;
+  height: 4.5rem;
+  border-radius: 0.3rem;
+  border: 0.1rem #a8a8a8 solid;
+  background: #898989;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
 
 /******************************************************************************
  * Date & Time
