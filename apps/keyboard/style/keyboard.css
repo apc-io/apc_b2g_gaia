@@ -99,6 +99,23 @@ button::-moz-focus-inner {
   border-radius: 0.3rem;
 }
 
+/* Arrow key styles */
+.keyboard-key[data-keycode="-4"] > .visual-wrapper > span {
+  background: url("./images/arrowkey_left.png") center no-repeat;
+}
+
+.keyboard-key[data-keycode="-5"] > .visual-wrapper > span {
+  background: url("./images/arrowkey_up.png") center no-repeat;
+}
+
+.keyboard-key[data-keycode="-6"] > .visual-wrapper > span {
+  background: url("./images/arrowkey_right.png") center no-repeat;
+}
+
+.keyboard-key[data-keycode="-7"] > .visual-wrapper > span {
+  background: url("./images/arrowkey_down.png") center no-repeat;
+}
+
 /* Highlights */
 .keyboard-key.highlighted {
   position: relative;
@@ -234,6 +251,35 @@ button::-moz-focus-inner {
 .keyboard-key.highlighted[data-keycode="32"] > .visual-wrapper > span:after,
 #keyboard-accent-char-menu .keyboard-key > .visual-wrapper:before {
   display: none;
+}
+
+/* Highlight for arrow keys */
+.keyboard-key.highlighted[data-keycode="-4"] > .visual-wrapper > span {
+  top: 0;
+  left: 0;
+  height: 3.65rem;
+  background: url("./images/arrowkey_left_pressed.png") center no-repeat;
+}
+
+.keyboard-key.highlighted[data-keycode="-5"] > .visual-wrapper > span {
+  top: 0;
+  left: 0;
+  height: 3.65rem;
+  background: url("./images/arrowkey_up_pressed.png") center no-repeat;
+}
+
+.keyboard-key.highlighted[data-keycode="-6"] > .visual-wrapper > span {
+  top: 0;
+  left: 0;
+  height: 3.65rem;
+  background: url("./images/arrowkey_right_pressed.png") center no-repeat;
+}
+
+.keyboard-key.highlighted[data-keycode="-7"] > .visual-wrapper > span {
+  top: 0;
+  left: 0;
+  height: 3.65rem;
+  background: url("./images/arrowkey_down_pressed.png") center no-repeat;
 }
 
 /* For keyboard layout menu*/
