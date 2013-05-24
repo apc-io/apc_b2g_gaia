@@ -907,22 +907,19 @@ var Browser = {
   },
 
   addLinkToHome: function browser_addLinkToHome() {
-    Places.getPlace(this.currentTab.url, (function(place) {
-      var name = this.homescreenTitle.value;
-      var url = this.homescreenUrl.value;
-      var icon = place.iconUri;
+    var name = this.homescreenTitle.value;
+    var url = this.homescreenUrl.value;
 
-      new MozActivity({
-        name: 'save-bookmark',
-        data: {
-          type: 'url',
-          name: name,
-          url: url,
-          icon: icon,
-          useAsyncPanZoom: true
-        }
-      });
-    }).bind(this));
+    new MozActivity({
+      name: 'save-bookmark',
+      data: {
+        type: 'url',
+        name: name,
+        url: url,
+        useAsyncPanZoom: true
+      }
+    });
+
     this.hideHomescreenEntrySheet();
   },
 

@@ -255,7 +255,7 @@ Icon.prototype = {
 
     // Draw the background
     var background = new Image();
-    background.src = 'style/images/default_background.png';
+    background.src = 'style/images/default_background@100x100.png';
     background.onload = function icon_loadBackgroundSuccess() {
       ctx.shadowColor = 'rgba(0,0,0,0.8)';
       ctx.shadowBlur = 2;
@@ -266,15 +266,16 @@ Icon.prototype = {
       ctx.shadowBlur = 0;
       ctx.shadowOffsetY = 0;
       ctx.mozImageSmoothingEnabled = false;
-      ctx.drawImage(img, 16 * SCALE_RATIO, 16 * SCALE_RATIO,
-                    32 * SCALE_RATIO, 32 * SCALE_RATIO);
+      // Disable drawing the default bookmark icon
+      //ctx.drawImage(img, 16 * SCALE_RATIO, 16 * SCALE_RATIO,
+                    //32 * SCALE_RATIO, 32 * SCALE_RATIO);
       canvas.toBlob(self.renderBlob.bind(self));
     };
   },
 
   renderImage: function icon_renderImage(img) {
     if (this.app && this.app.iconable) {
-      this.renderImageForBookMark(img);
+      this.renderImageForBookMark();
       return;
     }
 
