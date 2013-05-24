@@ -70,4 +70,29 @@
     width: 10rem;
     height: 10rem;
   }
+
+  #footer > div li,
+  #footer > div.scrollable li {
+    width: 22rem;
+  }
+
+  #footer > div li:first-child {
+    width: 10rem;
+    padding-left: 15rem;
+    padding-right: 6rem;
+  }
+
+  #footer li:first-child span.options {
+    left: 15rem;
+  }
+
+  #footer > div li:last-child:not(:first-child) {
+    width: 10rem;
+    padding-right: 15rem;
+    padding-left: 6rem;
+  }
+
+  #footer li:last-child:not(:first-child) span.options {
+    left: 6rem;
+  }
 }
