@@ -153,8 +153,7 @@ var Browser = {
       'tabs-list', 'settings', 'settings-button',
       'about-browser-button', 'clear-history-button', 'close-tab',
       'try-reloading', 'bookmark-menu-add', 'bookmark-menu-remove',
-      'bookmark-menu-cancel', 'bookmark-menu-edit',
-      'bookmark-entry-sheet-done',
+      'bookmark-menu-edit', 'bookmark-entry-sheet-done',
       'bookmark-title', 'bookmark-url', 'bookmark-previous-url',
       'bookmark-menu-add-home', 'new-tab-button',
       'homescreen-entry-sheet-done', 'homescreen-title', 'homescreen-url',
@@ -209,8 +208,6 @@ var Browser = {
        this.addBookmark.bind(this));
      this.bookmarkMenuRemove.addEventListener('click',
        this.removeBookmark.bind(this));
-     this.bookmarkMenuCancel.addEventListener('click',
-       this.hideBookmarkMenu.bind(this));
      this.bookmarkMenuEdit.addEventListener('click',
        this.showBookmarkEntrySheet.bind(this));
      this.bookmarkMenuAddHome.addEventListener('click',
@@ -980,16 +977,16 @@ var Browser = {
     this.urlButtonMode = mode;
     switch (mode) {
       case this.GO:
-        this.urlButton.style.backgroundImage = 'url(style/images/go.png)';
+        this.urlButton.style.backgroundImage = 'url(style/images/go_2x.png)';
         break;
       case this.REFRESH:
-        this.urlButton.style.backgroundImage = 'url(style/images/refresh.png)';
+        this.urlButton.style.backgroundImage = 'url(style/images/refresh_2x.png)';
         break;
       case this.STOP:
-        this.urlButton.style.backgroundImage = 'url(style/images/stop.png)';
+        this.urlButton.style.backgroundImage = 'url(style/images/stop_40x40.png)';
         break;
       case this.SEARCH:
-        this.urlButton.style.backgroundImage = 'url(style/images/search.png)';
+        this.urlButton.style.backgroundImage = 'url(style/images/search_2x.png)';
         break;
     }
   },
