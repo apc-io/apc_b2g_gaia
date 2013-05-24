@@ -77,7 +77,7 @@ settings = {
  "debug.console.enabled": False,
  "phone.ring.keypad": True,
  "photoFrame.enabled": False,
- "photoFrame.source": "Wallpaper",
+ "photoFrame.source": "wallpaper",
  "photoFrame.duration": 2,
  "powersave.enabled": False,
  "powersave.threshold": 0,

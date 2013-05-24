@@ -5,6 +5,8 @@
 
 navigator.mozL10n.ready(function SettingsFactoryReset() {
   var _ = navigator.mozL10n.get;
+  var resetCaution = document.getElementById('reset-device-caution');
+  var resetButton = document.getElementById('reset-device-btn');
 
   function factoryReset() {
     var power = navigator.mozPower;
@@ -21,16 +23,23 @@ navigator.mozL10n.ready(function SettingsFactoryReset() {
     power.factoryReset();
   }
 
-  var resetButton = document.getElementById('reset-phone');
+  function updateText() {
+    resetCaution.textContent =
+      _('reset-warning-1') + '\n' + _('reset-warning-2');
+  }
+
   if (resetButton) {
     resetButton.addEventListener('click', function reset_click(evt) {
       // XXX: need to refine this part when the visual design is done
-      var msg = _('reset-warning-1') + '\n' + _('reset-warning-2');
+      var msg = _('reset-warning-3');
       var response = window.confirm(msg);
       if (response) {
         factoryReset();
       }
     });
   }
+
+  updateText();
+  window.addEventListener('localized', updateText);
 });
 

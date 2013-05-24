@@ -307,10 +307,10 @@ section li.password > p {
 
 
 /******************************************************************************
-* Device Storage settings
+* Storage settings
 */
 
-#deviceStorage progress {
+#storage progress {
   display: inline-block;
   width: calc(100% - 15rem);
   height: 2.4rem;
@@ -319,13 +319,13 @@ section li.password > p {
   background: linear-gradient(to bottom, #898989, #b5b5b6);
 }
 
-#deviceStorage progress[value]::-moz-progress-bar {
+#storage progress[value]::-moz-progress-bar {
   background: linear-gradient(to bottom, #008bfb, #00c2ef);
   border-radius: 1.2rem;
   height: 2.4rem;
 }
 
-#deviceStorage .stackedbar-color {
+#storage .stackedbar-color {
   display: inline-block;
   height: 2rem;
   left: 5rem;
@@ -336,25 +336,40 @@ section li.password > p {
   border-radius: 1rem;
 }
 
-#deviceStorage #used-space .stackedbar-color {
+#storage .used-space .stackedbar-color {
   background: linear-gradient(to bottom, #008bfb, #00c2ef);
 }
 
-#deviceStorage #left-space .stackedbar-color {
+#storage .left-space .stackedbar-color {
   background: linear-gradient(to bottom, #898989, #b5b5b6);
 }
 
-#deviceStorage #used-space,
-#deviceStorage #left-space {
+#storage .app-space .stackedbar-color {
+  background: linear-gradient(to bottom, #f96438, #ed8c00);
+}
+
+#storage .music-space .stackedbar-color {
+  background: linear-gradient(to bottom, #ff8500, #f9cf38);
+}
+
+#storage .video-space .stackedbar-color {
+  background: linear-gradient(to bottom, #639500, #89cf38);
+}
+
+#storage .photo-space .stackedbar-color {
+  background: linear-gradient(to bottom, #6300a9, #7100d7);
+}
+
+#storage .sdcard-space .stackedbar-color {
+  background: linear-gradient(to bottom, #008bfb, #00c2ef);
+}
+
+#storage .used-space,
+#storage .left-space {
   padding-left: 3.5rem;
 }
 
-
-/******************************************************************************
-* Media Storage settings
-*/
-
-#mediaStorage #space-stackedbar {
+#storage .space-stackedbar {
   display: inline-block;
   height: 2.4rem;
   margin: 1.8rem 0 0 1.5rem;
@@ -363,28 +378,28 @@ section li.password > p {
   border-radius: 1.2rem;
 }
 
-#mediaStorage #space-stackedbar .stackedbar-item {
+#storage .space-stackedbar .stackedbar-item {
   display: inline-block;
   height: 100%;
 }
 
-#mediaStorage #space-stackedbar .stackedbar-item#stackedbar-item-music, #mediaStorage #music-space .stackedbar-color {
+#storage #space-stackedbar .stackedbar-item.stackedbar-item-music, #storage #music-space .stackedbar-color {
   background: linear-gradient(to bottom, #f96438, #ed8c00);
 }
 
-#mediaStorage #space-stackedbar .stackedbar-item#stackedbar-item-pictures, #mediaStorage #pictures-space .stackedbar-color {
+#storage #space-stackedbar .stackedbar-item.stackedbar-item-pictures, #storage #pictures-space .stackedbar-color {
   background: linear-gradient(to bottom, #6300a9, #7100d7);
 }
 
-#mediaStorage #space-stackedbar .stackedbar-item#stackedbar-item-videos, #mediaStorage #videos-space .stackedbar-color {
+#storage #space-stackedbar .stackedbar-item.stackedbar-item-videos, #storage #videos-space .stackedbar-color {
   background: linear-gradient(to bottom, #639500, #89cf38);
 }
 
-#mediaStorage #space-stackedbar .stackedbar-item#stackedbar-item-free, #mediaStorage #media-free-space .stackedbar-color {
+#storage #space-stackedbar .stackedbar-item.stackedbar-item-free, #storage #media-free-space .stackedbar-color {
   background: linear-gradient(to bottom, #898989, #b5b5b6);
 }
 
-#mediaStorage .stackedbar-color {
+#storage .stackedbar-color-label {
   display: inline-block;
   height: 2rem;
   left: 5rem;
@@ -395,9 +410,6 @@ section li.password > p {
   border-radius: 1rem;
 }
 
-#mediaStorage #media-storage-summary li {
-  padding-left: 3.5rem;
-}
 
 /******************************************************************************
  * Call settings
@@ -489,11 +501,11 @@ section li.password > p {
 #wallpaper {
   position: relative;
   overflow: hidden;
-  height: 23rem;
+  height: 25rem;
 }
 
 #wallpaper-button {
-  background: url(images/wallpaper_edit.png) no-repeat 5rem 16.5rem / 4.5rem;
+  background: url(images/wallpaper_edit.png) no-repeat 5rem 18.5rem / 4.5rem;
   position: absolute;
   border: none;
   height: 100%;
@@ -521,6 +533,16 @@ section li.password > p {
 }
 #display li:last-child {
   border-bottom: none;
+}
+
+
+/******************************************************************************
+ * Photo Frame
+ */
+
+#photoFrame-placeholder {
+  overflow: hidden;
+  height: 25rem;
 }
 
 
@@ -605,6 +627,33 @@ ul li > label .range-icons.brightness {
   word-wrap: break-word;
 }
 
+
+/******************************************************************************
+ * Reset
+ */
+
+#reset li {
+  border: none;
+}
+
+#reset #reset-device-caution {
+  font-size: 2.2rem;
+  margin: 8rem 5rem;
+}
+
+#reset #reset-device-btn {
+  text-align: center;
+  font-size: 2.1rem;
+  color: #FFFFFF;
+  width: 32rem;
+  height: 4.5rem;
+  border-radius: 0.3rem;
+  border: 0.1rem #a8a8a8 solid;
+  background: #898989;
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
 
 /******************************************************************************
  * Date & Time

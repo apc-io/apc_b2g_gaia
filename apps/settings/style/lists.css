@@ -199,7 +199,7 @@ input[type=range]:-moz-focusring {
 ul li > label input[type="range"] {
   position: absolute;
   top: calc(50% - 1.5rem);
-  right: 14rem;
+  right: 13.5rem;
   height: 3rem;
   width: 21.6rem;
 }
