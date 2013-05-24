@@ -150,7 +150,7 @@ var Browser = {
     var domElements = [
       'tab-headers', 'top-sites', 'bookmarks', 'history',
       'top-sites-tab', 'bookmarks-tab', 'history-tab',
-      'tabs-list', 'settings-button', 'settings-done-button',
+      'tabs-list', 'settings', 'settings-button',
       'about-browser-button', 'clear-history-button', 'close-tab',
       'try-reloading', 'bookmark-menu-add', 'bookmark-menu-remove',
       'bookmark-menu-cancel', 'bookmark-menu-edit',
@@ -197,8 +197,6 @@ var Browser = {
      this.settingsButton.addEventListener('click',
        this.showSettingsScreen.bind(this));
      this.newTabButton.addEventListener('click', this.handleNewTab.bind(this));
-     this.settingsDoneButton.addEventListener('click',
-       this.showPageScreen.bind(this));
      this.aboutBrowserButton.addEventListener('click',
        this.showAboutPage.bind(this));
      this.clearHistoryButton.addEventListener('click',
@@ -231,6 +229,7 @@ var Browser = {
     this.closeMenuWhenClickOutside(this.bookmarkMenu);
     this.closeMenuWhenClickOutside(this.bookmarkEntrySheet);
     this.closeMenuWhenClickOutside(this.homescreenEntrySheet);
+    this.closeMenuWhenClickOutside(this.settings);
 
     this.tabsSwipeMngr.browser = this;
      ['mousedown', 'pan', 'tap', 'swipe'].forEach(function(evt) {
@@ -1767,10 +1766,8 @@ var Browser = {
     return li;
   },
 
-  showSettingsScreen: function browser_showSettingsScreen() {
-    this.switchScreen(this.SETTINGS_SCREEN);
-    this.clearHistoryButton.disabled = false;
-    this.clearPrivateDataButton.disabled = false;
+  showSettingsScreen: function browser_showSettingsScreen(evt) {
+    this.settings.classList.remove('hidden');
   },
 
   showAboutPage: function browser_showAboutPage() {
@@ -1780,15 +1777,14 @@ var Browser = {
     this.setTabVisibility(this.currentTab, true);
     this.updateTabsCount();
     this.showPageScreen();
+    this.settings.classList.add('hidden');
   },
 
   handleClearHistory: function browser_handleClearHistory() {
     var msg = navigator.mozL10n.get('confirm-clear-browsing-history');
+    this.settings.classList.add('hidden');
     if (confirm(msg)) {
       Places.clearHistory((function() {
-
-        this.clearHistoryButton.setAttribute('disabled', 'disabled');
-
         Places.getTopSites(this.MAX_TOP_SITES, null,
           this.showTopSiteThumbnails.bind(this));
 
@@ -1812,11 +1808,11 @@ var Browser = {
 
   clearPrivateData: function browser_clearPrivateData() {
     var msg = navigator.mozL10n.get('confirm-clear-cookies-and-stored-data');
+    this.settings.classList.add('hidden');
     if (confirm(msg)) {
       var request = navigator.mozApps.getSelf();
       request.onsuccess = (function() {
         request.result.clearBrowserData();
-        this.clearPrivateDataButton.setAttribute('disabled', 'disabled');
       }).bind(this);
     }
   },
