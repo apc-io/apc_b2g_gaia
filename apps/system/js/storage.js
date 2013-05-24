@@ -13,7 +13,7 @@ var Storage = {
     window.addEventListener('unlock', this);
 
     SettingsListener.observe(this.umsEnabled, false, function umsChanged(val) {
-      if (LockScreen.locked) {
+      if (LockScreen.locked.state) {
         // covers startup
         Storage.setMode(Storage.automounterDisable, 'screen locked');
       } else {
