@@ -62,11 +62,11 @@
 .apps ol > li span.options {
   position: absolute;
   top: .1rem;
-  left: .5rem;
-  width: calc(100% - .5rem);
-  height: 2.6rem;
+  left: calc(50% - 5rem);
+  width: 4.5rem;
+  height: 4.5rem;
   z-index: 2;
-  background: url(../resources/images/delete.png) no-repeat left top;
+  background: url(../resources/images/delete.png) no-repeat left top / 4.5rem;
 }
 
 /* Container -> icon + label */
@@ -172,5 +172,30 @@ body[data-transitioning] .loading:after {
   }
   to {
     transform: rotate(360deg)
+  }
+}
+
+
+
+@media (min-width: 1280px) and (orientation: landscape) {
+  .apps ol li > div > img {
+    width: 10rem;
+    height: 10rem;
+  }
+  .apps ol {
+    -moz-box-sizing: border-box;
+    padding: 5.3rem 9rem 5.6rem 9rem;
+  }
+  .labelWrapper {
+    margin-top: 1.5rem;
+    font-size: 1.8rem;
+    line-height: 1.8rem;
+    height: 2.3rem;
+    font-weight: 400rem;
+    color: #FFFFFF;
+  }
+  .apps ol > li > div > span > span {
+    font-size: 1.8rem;
+    text-shadow: 0 0 0.5rem #111111;
   }
 }

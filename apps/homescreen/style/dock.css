@@ -1,5 +1,5 @@
 #footer {
-  min-height: 7.5rem;
+  min-height: 16rem;
   width: 100%;
   position: fixed;
   bottom: 0;
@@ -46,13 +46,53 @@
 #footer li span.options {
   position: absolute;
   top: .1rem;
-  left: .5rem;
-  width: calc(100% - .5rem);
-  height: 2.6rem;
+  left: calc(50% - 5rem);
+  width: 4.5rem;
+  height: 4.5rem;
   z-index: 2;
-  background: url(../resources/images/delete.png) no-repeat left top;
+  background: url(../resources/images/delete.png) no-repeat left top / 4.5rem;
 }
 
 #footer li > div > *:not(img) {
   display: none;
+}
+
+@media (min-width: 1280px) and (orientation: landscape) {
+  #footer {
+    height: 16rem;
+  }
+
+  #footer ol {
+    margin-top: 2.5rem;
+  }
+
+  #footer li > div > img {
+    width: 10rem;
+    height: 10rem;
+  }
+
+  #footer > div li,
+  #footer > div.scrollable li {
+    width: 22rem;
+  }
+
+  #footer > div li:first-child {
+    width: 10rem;
+    padding-left: 15rem;
+    padding-right: 6rem;
+  }
+
+  #footer li:first-child span.options {
+    left: 15rem;
+  }
+
+  #footer > div li:last-child:not(:first-child) {
+    width: 10rem;
+    padding-right: 15rem;
+    padding-left: 6rem;
+  }
+
+  #footer li:last-child:not(:first-child) span.options {
+    left: 6rem;
+  }
 }

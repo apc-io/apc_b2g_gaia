@@ -181,7 +181,7 @@ var DockManager = (function() {
 
     // We are going to place the dock in the middle of the screen
     document.body.dataset.transitioning = 'true';
-    dock.moveByWithDuration(maxOffsetLeft / 2, .5);
+    dock.moveByWithDuration(0, .5);
     container.addEventListener('transitionend', function transEnd(e) {
       container.removeEventListener('transitionend', transEnd);
       delete document.body.dataset.transitioning;
@@ -194,9 +194,18 @@ var DockManager = (function() {
     } else {
       container.classList.add('scrollable');
     }
-
-    cellWidth = numIcons ? dock.getFirstIcon().getWidth() : 0;
-    maxOffsetLeft = windowWidth - numIcons * cellWidth;
+    // The first and the last child have different width for padding so we
+    // Need to figure out the amount of padding and take it into account on
+    // maxOffsetLeft.
+    var firstIcon = dock.getFirstIcon();
+    var firstCellWidth = numIcons ? firstIcon.getWidth() : 0;
+    if (firstIcon.icon.parentNode.nextSibling) {
+      cellWidth = firstIcon.icon.parentNode.nextSibling.offsetWidth;
+    } else {
+      cellWidth = firstCellWidth;
+    }
+    var paddingLR = firstCellWidth - cellWidth;
+    maxOffsetLeft = windowWidth - numIcons * cellWidth - paddingLR * 2;
   }
 
   return {
@@ -222,9 +231,7 @@ var DockManager = (function() {
 
       calculateDimentions(numIcons);
 
-      if (numIcons <= maxNumAppInViewPort) {
-        dock.moveBy(maxOffsetLeft / 2);
-      }
+
     },
 
     onDragStop: function dm_onDragStop() {
@@ -248,12 +255,11 @@ var DockManager = (function() {
      * Update display after removing an app.
      */
     afterRemovingApp: function dm_afterRemovingApp() {
-      maxOffsetLeft = windowWidth - dock.getNumIcons() * cellWidth;
       var numApps = dock.getNumIcons();
+      calculateDimentions(numApps);
       if (numApps > maxNumAppInViewPort && dock.getRight() >= windowWidth) {
         return;
       }
-      calculateDimentions(numApps);
       rePosition(numApps);
     },
 
