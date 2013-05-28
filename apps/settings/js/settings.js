@@ -594,8 +594,7 @@ window.addEventListener('load', function loadSettings() {
       'js/media_storage.js',
       'shared/js/mobile_operator.js',
       'js/connectivity.js',
-      'js/security_privacy.js',
-      'js/icc_menu.js'
+      'js/security_privacy.js'
   ]);
 
   // XXX: blank page handling

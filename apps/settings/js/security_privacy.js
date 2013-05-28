@@ -31,6 +31,8 @@ var Security = {
       return;
 
     var simSecurityDesc = document.getElementById('simCardLock-desc');
+    if (!simSecurityDesc)
+      return;
 
     switch (mobileConnection.cardState) {
       case null:

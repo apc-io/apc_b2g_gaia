@@ -21,7 +21,6 @@ var Connectivity = (function(window, document, undefined) {
   var mobileConnection = getMobileConnection();
 
   mobileConnection.addEventListener('datachange', updateCarrier);
-  mobileConnection.addEventListener('cardstatechange', updateCallSettings);
 
   // XXX if wifiManager implements addEventListener function
   // we can remove these listener lists.
@@ -80,16 +79,15 @@ var Connectivity = (function(window, document, undefined) {
       'null' : _('simCardNotReady')
     };
 
-    updateCarrier();
-    updateCallSettings();
+    // updateCarrier();
     updateWifi();
-    updateBluetooth();
+    // updateBluetooth();
     // register blutooth system message handler
-    initSystemMessageHandler();
+    // initSystemMessageHandler();
 
     window.addEventListener('localized', function() {
       updateWifi();
-      updateBluetooth();
+      // updateBluetooth();
     });
   }
 
@@ -221,29 +219,6 @@ var Connectivity = (function(window, document, undefined) {
       operator: operator,
       data: dataType
     });
-  }
-
-  /**
-   * Call Settings
-   */
-
-  var callDesc = document.getElementById('call-desc');
-  callDesc.style.fontStyle = 'italic';
-
-  function updateCallSettings() {
-    if (!_initialized) {
-      init();
-      return; // init will call updateCallSettings()
-    }
-
-    var mobileConnection = getMobileConnection();
-
-    if (!mobileConnection)
-      return;
-
-    // update the current SIM card state
-    var cardState = mobileConnection.cardState;
-    callDesc.textContent = kCardState[cardState] || '';
   }
 
   /**
