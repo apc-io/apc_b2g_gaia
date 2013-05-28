@@ -193,6 +193,10 @@ var QuickSettings = {
             break;
 
           case this.digitalPhoto:
+            SettingsListener.getSettingsLock().set({
+              'photoFrame.enabled': true
+            });
+
             window.dispatchEvent(new Event('digitalphoto'));
             UtilityTray.hide();
             break;
