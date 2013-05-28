@@ -199,7 +199,7 @@ body[data-transitioning] .loading:after {
   }
 
   /* Here users can view the clock while grid is loading -> better experience */
-  #landing-page {
+  #landing-time {
     margin-left: 15rem;
     margin-top: 15rem;
   }

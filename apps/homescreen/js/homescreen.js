@@ -10,6 +10,7 @@ const Homescreen = (function() {
   navigator.mozL10n.ready(function localize() {
     setLocale();
     GridManager.localize();
+    PhotoFrame.init();
   });
 
   var initialized = false, landingPage;
@@ -25,14 +26,21 @@ const Homescreen = (function() {
     landingPage = lPage;
 
     window.addEventListener('hashchange', function() {
-      if (document.location.hash != '#root')
+      if (document.location.hash != '#root') {
+        // stop digitalframe
+        if (photoFrameTimeID != null) {
+          PhotoFrame.stopFrames();
+        }
         return;
+      }
 
       // this happens when the user presses the 'home' button
       if (Homescreen.isInEditMode()) {
         exitFromEditMode();
       } else {
         GridManager.goToPage(landingPage);
+        PhotoFrame.checkToggle();
+        //digitalFrame.playFrames().bind(digitalFrame);
       }
       GridManager.ensurePanning();
     });
@@ -113,6 +121,17 @@ const Homescreen = (function() {
         var helper = document.getElementById('repaint-helper');
         helper.classList.toggle('displayed');
       });
+      
+      initThumbnails(); // update photoDB
+      if (document.location.hash === '#root') {
+        PhotoFrame.checkToggle();
+      }
+      
+    } else {
+      // stop digitalframe
+      if (photoFrameTimeID != null) {
+        PhotoFrame.stopFrames();
+      }
     }
   });
 

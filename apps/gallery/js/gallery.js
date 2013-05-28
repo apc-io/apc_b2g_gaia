@@ -229,7 +229,7 @@ function initDB() {
       return;
     }
 
-    loader.load('js/metadata_scripts.js', function() {
+    loader.load('shared/js/metadata_scripts.js', function() {
       loaded = true;
       metadataParser(file, onsuccess, onerror);
     });

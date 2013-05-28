@@ -15,6 +15,22 @@
     <script type="text/javascript" src="shared/js/l10n_date.js"></script>
     <script type="text/javascript" defer src="shared/js/manifest_helper.js"></script>
     <script type="text/javascript" src="shared/js/settings_listener.js"></script>
+    <script type="text/javascript" defer src="shared/js/lazy_loader.js"></script>
+    <script type="text/javascript" defer src="shared/js/mediadb.js"></script>
+    <script type="text/javascript" defer src="shared/js/metadata_scripts.js"></script>
+    
+    <!-- Resources for wallpaper-->
+    <link rel="resource" href="shared/resources/wallpaper/1280x800/list.json">
+    <link rel="resource" type="image/png" href="shared/resources/wallpaper/1280x800/FXOS_Blue_Mountains.png"/>
+    <link rel="resource" type="image/png" href="shared/resources/wallpaper/1280x800/FXOS_Cherry_Blossoms.png"/>
+    <link rel="resource" type="image/png" href="shared/resources/wallpaper/1280x800/FXOS_Dusk_Flowers.png"/>
+    <link rel="resource" type="image/png" href="shared/resources/wallpaper/1280x800/FXOS_Fox_Sit.png"/>
+    <link rel="resource" type="image/png" href="shared/resources/wallpaper/1280x800/FXOS_Fox.png"/>
+    <link rel="resource" type="image/png" href="shared/resources/wallpaper/1280x800/FXOS_Golden_Grass.png"/>
+    <link rel="resource" type="image/png" href="shared/resources/wallpaper/1280x800/FXOS_Shadows.png"/>
+    <link rel="resource" type="image/png" href="shared/resources/wallpaper/1280x800/FXOS_Sunset_Field.png"/>
+    <link rel="resource" type="image/png" href="shared/resources/wallpaper/1280x800/FXOS_Sunset_Grains.png"/>
+    <link rel="resource" type="image/png" href="shared/resources/wallpaper/1280x800/FXOS_Techno_Wave.png"/>
 
     <link rel="stylesheet" type="text/css" href="shared/style_unstable/progress_activity.css">
     <link rel="stylesheet" type="text/css" href="shared/style/buttons.css">
@@ -35,6 +51,7 @@
     <script type="text/javascript" defer src="js/grid.js"></script>
     <script type="text/javascript" defer src="js/dragdrop.js"></script>
     <script type="text/javascript" defer src="everything.me/js/everything.me.js"></script>
+    <script type="text/javascript" defer src="js/digitalframe.js"></script>
     <script type="text/javascript" defer src="js/homescreen.js"></script>
     <script type="text/javascript" defer src="js/configurator.js"></script>
     <script type="text/javascript" defer src="js/wallpaper.js"></script>
@@ -131,6 +148,10 @@
             <span class="meridiem"></span>
           </p>
           <p id="landing-date"></p>
+        </div>
+        <div id="frame-set" class="hidden">
+          <img id="frame1" class="frame">
+          <img id="frame2" class="frame">
         </div>
       </div>
     </div>

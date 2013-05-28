@@ -3,6 +3,10 @@
   padding: 4.4rem 0 0 2.5rem;
   color: #fff;
   font-family: 'MozTT', sans-serif;
+  z-index: 100;
+  position: absolute;
+  top:0;
+  left:0;
 }
 
 #landing-clock, #landing-date {
@@ -57,4 +61,33 @@
     line-height: 4rem;
     font-weight: 400;
   }
+}
+
+#frame-set {
+  position: absolute;
+  top:0;
+  left:0;
+  width: 100%;
+  height: 100%;
+  background: black;
+  pointer-event: none;
+  z-index: 90;
+}
+
+#frame-set.hidden {
+  display: none;
+}
+
+.frame {
+  transform-origin: 0 0;
+  position: absolute;
+  transition: opacity .35s ease-in-out;
+  opacity: 0;
+  -moz-user-select: none;
+  top:0;
+  left:0;
+}
+
+#footer.hidden{
+  transform: translateY(100%);
 }
