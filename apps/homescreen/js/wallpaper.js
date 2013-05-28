@@ -8,8 +8,8 @@ const Wallpaper = (function() {
       name: 'pick',
       data: {
         type: 'image/jpeg',
-        width: 320,
-        height: 480
+        width: 1280,
+        height: 800
       }
     });
     a.onsuccess = function onWallpaperSuccess() {

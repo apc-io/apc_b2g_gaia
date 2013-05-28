@@ -13,8 +13,8 @@
     "pick": {
       "filters": {
         "type": ["image/*", "image/jpeg"],
-        "width": 320,
-        "height": 480
+        "width": 1280,
+        "height": 800
        },
       "disposition": "inline",
       "returnValue": true,
