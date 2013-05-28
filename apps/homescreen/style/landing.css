@@ -31,16 +31,15 @@
   font-weight: 400;
 }
 
-
-@media (min-width: 1280px) and (orientation: landscape) {
+@media (min-width: 1000px) and (orientation: landscape) {
   #landing-time {
-    padding: 15rem 10rem 0 15rem;
     line-height: 8rem;
     color: #FFFFFF;
   }
 
   .numbers, .meridiem, #landing-date {
     text-shadow: 0 0 1.5rem #111111;
+    color: #000;
   }
 
   .numbers {
@@ -56,6 +55,6 @@
   #landing-date {
     font-size: 4.8rem;
     line-height: 4rem;
-    font-weight: 300;
+    font-weight: 400;
   }
 }

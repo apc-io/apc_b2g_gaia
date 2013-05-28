@@ -176,8 +176,7 @@ body[data-transitioning] .loading:after {
 }
 
 
-
-@media (min-width: 1280px) and (orientation: landscape) {
+@media (min-width: 1000px) and (orientation: landscape) {
   .apps ol li > div > img {
     width: 10rem;
     height: 10rem;
@@ -197,5 +196,11 @@ body[data-transitioning] .loading:after {
   .apps ol > li > div > span > span {
     font-size: 1.8rem;
     text-shadow: 0 0 0.5rem #111111;
+  }
+
+  /* Here users can view the clock while grid is loading -> better experience */
+  #landing-page {
+    margin-left: 15rem;
+    margin-top: 15rem;
   }
 }
