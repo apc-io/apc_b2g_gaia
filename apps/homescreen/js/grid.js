@@ -2,7 +2,7 @@
 
 var GridManager = (function() {
   var MAX_ICONS_PER_PAGE = 5 * 3;
-  var PREFERRED_ICON_SIZE = 60;
+  var PREFERRED_ICON_SIZE = 100;
   var SAVE_STATE_TIMEOUT = 100;
   var BASE_WIDTH = 1280;
   var BASE_HEIGHT = 800;
