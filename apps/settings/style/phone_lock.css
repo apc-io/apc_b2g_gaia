@@ -3,7 +3,7 @@
 }
 
 #phoneLock[data-lockscreen-enabled="true"] li.lockscreen-enabled {
-  display: block;
+  /* display: block;*/
 }
 
 #phoneLock li.passcode-enabled {
@@ -11,7 +11,7 @@
 }
 
 #phoneLock[data-lockscreen-enabled="true"][data-passcode-enabled="true"] li.passcode-enabled {
-  display: block;
+  /*display: block;*/
 }
 
 #phoneLock li.passcode-enabled {
@@ -19,7 +19,7 @@
 }
 
 #phoneLock[data-lockscreen-enabled="true"][data-passcode-enabled="true"] li.passcode-enabled {
-  display: block;
+  /*display: block;*/
 }
 
 #phoneLock-passcode .passcode-error {

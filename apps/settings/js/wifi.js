@@ -761,7 +761,6 @@ navigator.mozL10n.ready(function wifiSettings() {
   var req = settings.createLock().get('wifi.enabled');
   req.onsuccess = function wf_getStatusSuccess() {
     lastMozSettingValue = req.result['wifi.enabled'];
-    dump("====== wifi.enabled" + lastMozSettingValue);
     setMozSettingsEnabled(lastMozSettingValue);
     if (lastMozSettingValue) {
       /**

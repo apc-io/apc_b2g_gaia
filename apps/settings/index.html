@@ -453,8 +453,14 @@
               <input type="checkbox" data-type="switch" name="photoFrame.enabled"/>
               <span></span>
             </label>
+            <a data-l10n-id="turnOn">Turn ON</a>
           </li>
-          <li hidden id="photoFrame-source">
+        </ul>
+        <header>
+          <h2 data-l10n-id="setup">Setup</h2>
+        </header>
+        <ul>
+          <li id="photoFrame-source">
             <label>
               <div class="fake-select">
                 <span class="icon icon-dialog">empty</span>
@@ -466,7 +472,7 @@
             </label>
             <a data-l10n-id="photoFrame-source">Photo source</a>
           </li>
-          <li hidden id="photoFrame-duration">
+          <li id="photoFrame-duration">
             <label>
               <div class="fake-select">
                 <span class="icon icon-dialog">empty</span>
@@ -487,8 +493,6 @@
           </li>
         </ul>
       </div>
-
-      <script src="js/photoFrame.js"></script>
       -->
     </section>
 
@@ -935,11 +939,11 @@
     </section>
 
     <!-- Security :: Phone Lock -->
-    <section role="region" id="phoneLock" data-passcode-enabled="false" data-lockscreen-enabled="false">
+    <section role="region" id="security" data-passcode-enabled="false" data-lockscreen-enabled="false">
       <!--
       <header>
         <a href="#root"><span class="icon icon-back">back</span></a>
-        <h1 data-l10n-id="screenLock">Screen lock</h1>
+        <h1 data-l10n-id="security">Security</h1>
       </header>
 
       <div>
@@ -949,16 +953,16 @@
               <input type="checkbox" data-type="switch" name="lockscreen.enabled" id="lockscreen-enable" class="uninit"/>
               <span></span>
             </label>
-            <a data-l10n-id="lockScreen">General Lock</a>
+            <a data-l10n-id="lockscreen">Lock Screen</a>
           </li>
-          <li class="lockscreen-enabled">
+          <li class="lockscreen-enabled" hidden>
             <label>
               <input type="checkbox" data-type="switch" name="lockscreen.passcode-lock.enabled" id="passcode-enable" class="uninit"/>
               <span></span>
             </label>
             <a data-l10n-id="passcode-lock">Passcode Lock</a>
           </li>
-          <li class="passcode-enabled" id="passcode-timeout-row">
+          <li class="passcode-enabled" id="passcode-timeout-row" hidden>
             <label>
               <div class="fake-select">
                 <span class="icon icon-dialog">empty</span>
@@ -980,7 +984,7 @@
             </label>
             <a data-l10n-id="require-passcode">Require passcode</a>
           </li>
-          <li class="passcode-enabled">
+          <li class="passcode-enabled" hidden>
             <label>
               <button data-l10n-id="change-passcode" id="passcode-edit">Change Passcode</button>
             </label>
@@ -995,7 +999,6 @@
         </ul>
       </div>
 
-      <script src="js/phone_lock.js"></script>
       -->
     </section>
 
@@ -1683,6 +1686,9 @@
             <small id="keyboard-desc" class="menu-item-desc"></small>
             <a id="menuItem-keyboard" class="menu-item" href="#keyboard" data-l10n-id="keyboard">Keyboard</a>
           </li>
+          <li>
+            <a id="menuItem-security" class="menu-item" href="#security" data-l10n-id="security">Scurity</a>
+          </li>
         </ul>
 
         <!-- Main :: Accounts -->
@@ -1695,35 +1701,6 @@
           </li>
           <li>
             <a id="menuItem-mail" class="menu-item" href="#mail" data-l10n-id="mail">Mail</a>
-          </li>
-        </ul>
-
-        <!-- Main :: Security & Privacy -->
-        <header>
-          <h2 data-l10n-id="privacyAndSecurity">Privacy &amp; Security</h2>
-        </header>
-        <ul>
-          <li>
-            <small id="phoneLock-desc" class="menu-item-desc"></small>
-            <a id="menuItem-phoneLock" class="menu-item" href="#phoneLock" data-l10n-id="screenLock">Screen Lock</a>
-          </li>
-        </ul>
-        <!-- Main :: Storage -->
-        <header>
-          <h2 data-l10n-id="storage">Storage</h2>
-        </header>
-        <ul>
-          <li hidden>
-            <label>
-              <input type="checkbox" id="ums-switch-root" data-type="switch" data-ignore />
-              <span></span>
-            </label>
-            <small id="ums-desc-root" class="menu-item-desc">Disabled</small>
-            <a class="menu-item" data-l10n-id="enableUSBStorage">Enable USB storage</a>
-          </li>
-          <li id="storage-section">
-            <small id="storage-desc" class="menu-item-desc"></small>
-            <a id="menuItem-storage" class="menu-item" href="#storage" data-l10n-id="storage">Storage</a>
           </li>
         </ul>
 
@@ -1741,6 +1718,18 @@
           <li>
             <small id="battery-desc" class="menu-item-desc"></small>
             <a id="menuItem-battery" class="menu-item" href="#battery" data-l10n-id="battery">Battery</a>
+          </li>
+          <li hidden>
+            <label>
+              <input type="checkbox" id="ums-switch-root" data-type="switch" data-ignore />
+              <span></span>
+            </label>
+            <small id="ums-desc-root" class="menu-item-desc">Disabled</small>
+            <a class="menu-item" data-l10n-id="enableUSBStorage">Enable USB storage</a>
+          </li>
+          <li id="storage-section">
+            <small id="storage-desc" class="menu-item-desc"></small>
+            <a id="menuItem-storage" class="menu-item" href="#storage" data-l10n-id="storage">Storage</a>
           </li>
           <li hidden>
             <a id="menuItem-accessibility" class="menu-item" href="#accessibility" data-l10n-id="accessibility">Accessibility</a>
