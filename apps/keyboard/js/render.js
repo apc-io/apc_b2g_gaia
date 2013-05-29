@@ -117,9 +117,9 @@ const IMERender = (function() {
 
         // telLayout and numberLayout keys works like special-keys without
         // popups
-        if (!isSpecialKey(key) &&
-            (inputType === 'tel' || inputType === 'number')) {
-          className = 'special-key big-key';
+        if (inputType === 'tel' || inputType === 'number') {
+          className += ' num-key';
+          className += isSpecialKey(key) ? '' : ' special-key big-key';
         }
 
         var ratio = key.ratio || 1;
@@ -436,9 +436,7 @@ const IMERender = (function() {
         keys = row.childNodes;
         for (var k = 0, key; key = keys[k]; k += 1) {
           ratio = layout.keys[r][k].ratio || 1;
-          // divide by 10 to convert the unit from px to rem
-          key.style.width =
-            Math.floor(placeHolderWidth * ratio) / changeScale + 'rem';
+          key.style.width = Math.floor(placeHolderWidth * ratio) + 'px';
 
           // to get the visual width/height of the key
           // for better proximity info

@@ -56,16 +56,21 @@ button::-moz-focus-inner {
   display: inline-block;
   min-width: 2rem;
   padding: 0 0.1rem;
-  margin: 0 0.58rem 0 0.58rem;
+  margin: 0 0.58rem;
   border: none;
   background: none;
 }
 
-.keyboard-row > .keyboard-key:first-child {
+/* Buttons: logic keys */
+.keyboard-key.num-key {
+  margin: 0;
+}
+
+.keyboard-row > .keyboard-key:not(.num-key):first-child {
   margin: 0 0.65rem 0 0;
 }
 
-.keyboard-row > .keyboard-key:last-child {
+.keyboard-row > .keyboard-key:not(.num-key):last-child {
   margin: 0 0 0 0.65rem;
 }
 
