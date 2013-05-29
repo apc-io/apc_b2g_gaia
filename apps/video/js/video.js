@@ -65,6 +65,9 @@ var dragging = false;
 // Videos recorded by our own camera have filenames of this form
 var FROMCAMERA = /^DCIM\/\d{3}MZLLA\/VID_\d{4}\.3gp$/;
 
+// For Cards View
+var cv = null;
+
 function init() {
 
   initDB();
@@ -92,8 +95,11 @@ function init() {
 
   dom.thumbnailsCancelButton.addEventListener('click', hideSelectView);
 
-  var cv = new CardsView(dom.thumbnails);
-  cv.start();
+  // Cards view is only for tablet
+  cv = new CardsView(dom.thumbnails);
+  // Let's see if it's landscape or portrait
+  if (dom.thumbnails.clientWidth > dom.thumbnails.clientHeight)
+    cv.start();
 }
 
 function showSelectView() {
@@ -998,6 +1004,12 @@ window.addEventListener('resize', function() {
   for (var i = 0; i < texts.length; i++) {
     textTruncate(texts[i]);
   }
+
+  // Let's see if it's landscape or portrait
+  if (dom.thumbnails.clientWidth > dom.thumbnails.clientHeight)
+    cv.start();
+  else
+    cv.stop();
 });
 
 dom.player.addEventListener('timeupdate', timeUpdated);

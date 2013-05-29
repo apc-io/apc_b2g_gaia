@@ -15,31 +15,67 @@ var CardsView = (function() {
     this.parent = parent;
     this.count = 0;
     this.index = 0;
-    this.gd = null;
+    this.observer = new MutationObserver(mutationHandler.bind(this));
+    this.config = { childList: true };
+    this.gd = new GestureDetector(this.parent);
     this.cardwidth = 0;
     this.movedx = 0;
+
+    this.isStopped = true;
+    // Set the event listeners and handlers to interact with users
+    this.parent.addEventListener('mousedown', mousedownHandler.bind(this));
+    this.parent.addEventListener('mouseup', mouseupHandler.bind(this));
+    this.parent.addEventListener('pan', panHandler.bind(this));
+    this.parent.addEventListener('swipe', swipeHandler.bind(this));
   }
 
   //
   // Public methods
   //
   CV.prototype.start = function() {
-    var observer = new MutationObserver(mutationHandler.bind(this));
-    var config = { childList: true };
-
-    observer.observe(this.parent, config);
-
-    this.gd = new GestureDetector(this.parent);
+    this.observer.observe(this.parent, this.config);
     this.gd.startDetecting();
 
-    // Set the event listeners and handlers to interact with users
-    this.parent.addEventListener('mousedown', mousedownHandler.bind(this));
-    this.parent.addEventListener('mouseup', mouseupHandler.bind(this));
-    this.parent.addEventListener('pan', panHandler.bind(this));
-
-    // Set overflow to the parent so that
+    // Set overflowY: hidden to the parent so that
     // it will not be scrolled by user's panning
-    this.parent.style.overflow = 'hidden';
+    this.parent.style.overflowX = 'hidden';
+    this.parent.style.overflowY = 'hidden';
+
+    this.isStopped = false;
+
+    // This should only happen when start is called after mutationHandler
+    if (this.cardwidth <= 0)
+      this.cardwidth = this.children[0].clientWidth;
+
+    this.index = 0;
+    this.count = this.children.length;
+
+    // XXX We will set all the children to opacity 0 so that
+    // Users won't be able to see the cards moving
+    // if the cards moves from the center to the show range
+    for (var i = 0; i < this.children.length; i++) {
+      this.children[i].style.opacity = 0;
+    }
+
+    this.moveCards();
+  };
+
+  CV.prototype.stop = function() {
+    this.observer.disconnect();
+    this.gd.stopDetecting();
+
+    // Reset all the children when stopping Cards View
+    for (var i = 0; i < this.children.length; i++) {
+      setItemStyles(this.children[i], 0, 1, 1, 'auto');
+
+      var carddetails = this.children[i].getElementsByClassName('details')[0];
+      carddetails.style.opacity = 1;
+    }
+
+    this.parent.style.overflowX = 'hidden';
+    this.parent.style.overflowY = 'scroll';
+
+    this.isStopped = true;
   };
 
   CV.prototype.moveCards = function() {
@@ -117,9 +153,14 @@ var CardsView = (function() {
   function mousedownHandler() {
     // If we want to stop an transition then we have to handle this event
     // like using window.getComputedStyle() to get the styles when user taps
+    if (this.isStopped)
+      return;
   }
 
   function panHandler(event) {
+    if (this.isStopped)
+      return;
+
     var dx = event.detail.relative.dx;
     var fix = (this.movedx < 0) ? 1 : -1;
     this.movedx += dx;
@@ -156,11 +197,18 @@ var CardsView = (function() {
                                           'opacity 0ms ease, ' +
                                           'z-index 150ms ease';
       // Do we need to change the z-index while panning?
-      // If we want, just set values to this.children[i].style.zIndex
+      var currentz = this.children[i].style.zIndex - 0;
+      var newz = -Math.abs(distance + fix) + MIN_ZINDEX;
+
+      if (currentz !== newz)
+        this.children[i].style.zIndex = newz;
     }
   }
 
   function mouseupHandler() {
+    if (this.isStopped)
+      return;
+
     var needmove = Math.abs(this.movedx) > this.cardwidth / 4;
 
     if (needmove && this.movedx > 0 && this.index > 0) {
@@ -172,6 +220,14 @@ var CardsView = (function() {
     }
 
     this.movedx = 0;
+  }
+
+  function swipeHandler(event) {
+    if (this.isStopped)
+      return;
+
+    // TODO: If we want to enable swiping the cards
+    // then we need to implement this function
   }
 
   function setItemStyles(card, cx, sx, op, z) {
