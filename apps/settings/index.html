@@ -1461,71 +1461,70 @@
       </header>
 
       <div>
-        <ul>
-          <li>
-            <progress id="apps-space-bar" min="0" value="50" max="100"></progress>
-          </li>
-
-          <li>
-            <a data-l10n-id="apps-total-space"> Total Space
-              <span id="apps-total-space"></span>
-            </a>
-          </li>
-          <li id="used-space">
-            <span class="stackedbar-color"></span>
-            <a data-l10n-id="apps-used-space"> Used
-              <span id="apps-used-space"></span>
-            </a>
-          </li>
-          <li id="left-space">
-            <span class="stackedbar-color"></span>
-            <a data-l10n-id="apps-free-space"> Left
-              <span id="apps-free-space"></span>
-            </a>
-          </li>
-          <li class="description" data-l10n-id="media-storage-details">
-            Photos, videos, and music are stored in the SD Card.
-            See Media Storage for details.
-          </li>
-        </ul>
-        <ul id="media-storage-summary">
-          <li hidden>
-            <label>
-              <input id="ums-switch" type="checkbox" data-type="switch" data-ignore />
-              <span></span>
-            </label>
-            <small id="ums-desc">Disabled</small>
-            <a data-l10n-id="enableUSBStorage">Enable USB storage</a>
-          </li>
-        </ul>
-        <div id="volume-list">
-        </div>
         <header>
-          <h2 data-l10n-id="advanced">Advanced</h2>
+          <h2 data-l10n-id="storage-name-device">Device Storage</h2>
         </header>
-        <ul>
+        <ul id="device-storage-summary">
           <li>
-            <p data-l10n-id="default-media-location">Default media location</p>
-            <p class="fake-select">
-              <button class="icon icon-dialog">empty</button>
-              <select id="defaultMediaLocation" name="device.storage.writable.name">
-              </select>
-            </p>
+            <progress id="device-space-bar" min="0" value="50" max="100"></progress>
           </li>
-          <li data-l10n-id="default-media-location-msg" class="explanation">
-            Choose where photos, videos, music and downloads are stored by default.
+          <li>
+            <a data-l10n-id="total-space"> Total Space <span id="device-total-space"></span></a>
+          </li>
+          <li class="used-space">
+            <span class="stackedbar-color"></span>
+            <a data-l10n-id="used-space"> Used <span id="device-used-space"></span></a>
+          </li>
+          <li class="left-space">
+            <span class="stackedbar-color"></span>
+            <a data-l10n-id="free-space"> Left <span id="device-free-space"></span></a>
+          </li>
+        </ul>
+        <header hidden>
+          <h2 data-l10n-id="storage-name-extdevice">External Storage</h2>
+        </header>
+        <ul id="external-storage-summary" hidden>
+          <li>
+            <progress id="external-space-bar" min="0" value="50" max="100"></progress>
+          </li>
+          <li>
+            <a data-l10n-id="total-space"> Total Space <span id="external-total-space"></span></a>
+          </li>
+          <li class="used-space">
+            <span class="stackedbar-color"></span>
+            <a data-l10n-id="used-space"> Used <span id="external-used-space"></span></a>
+          </li>
+          <li class="left-space">
+            <span class="stackedbar-color"></span>
+            <a data-l10n-id="free-space"> Left <span id="external-free-space"></span></a>
+          </li>
+        </ul>
+        <header>
+          <h2 data-l10n-id="summary-of-used">Summary of used space</h2>
+        </header>
+        <ul id="media-storage-summary">
+          <li class="app-space used-space">
+            <span class="stackedbar-color"></span>
+            <a data-l10n-id="app-space"> App <span id="apps-used-space"></span></a>
+          </li>
+          <li class="music-space used-space">
+            <span class="stackedbar-color"></span>
+            <a data-l10n-id="music-space"> Music <span id="music-used-space"></span></a>
+          </li>
+          <li class="video-space used-space">
+            <span class="stackedbar-color"></span>
+            <a data-l10n-id="video-space"> Video <span id="videos-used-space"></span></a>
+          </li>
+          <li class="photo-space used-space">
+            <span class="stackedbar-color"></span>
+            <a data-l10n-id="photo-space"> Photo <span id="pictures-used-space"></span></a>
+          </li>
+          <li class="sdcard-space used-space">
+            <span class="stackedbar-color"></span>
+            <a data-l10n-id="sdcard-space"> SD card <span id="sdcard-used-space"></span></a>
           </li>
         </ul>
       </div>
-      <form data-type="confirm" role="dialog" id="default-location-popup-container" hidden>
-        <section>
-          <p>Changing the default media storage volume will effect where photos, videos, downloads and other media will be saved to by default. Existing data will remain in its current location.</p>
-        </section>
-        <menu>
-          <button id="default-location-cancel-btn">Cancel</button>
-          <button id="default-location-change-btn">Change</button>
-        </menu>
-      </form>
       <script src="js/storage.js"></script>
       -->
     </section>

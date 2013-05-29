@@ -592,7 +592,6 @@ window.addEventListener('load', function loadSettings() {
       'js/airplane_mode.js',
       'js/battery.js',
       'shared/js/async_storage.js',
-      'js/storage.js',
       'shared/js/mobile_operator.js',
       'js/connectivity.js',
   ]);

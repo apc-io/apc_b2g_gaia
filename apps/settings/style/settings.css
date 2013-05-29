@@ -336,16 +336,36 @@ section li.password > p {
   border-radius: 1rem;
 }
 
-#storage #used-space .stackedbar-color {
+#storage .used-space .stackedbar-color {
   background: linear-gradient(to bottom, #008bfb, #00c2ef);
 }
 
-#storage #left-space .stackedbar-color {
+#storage .left-space .stackedbar-color {
   background: linear-gradient(to bottom, #898989, #b5b5b6);
 }
 
-#storage #used-space,
-#storage #left-space {
+#storage .app-space .stackedbar-color {
+  background: linear-gradient(to bottom, #f96438, #ed8c00);
+}
+
+#storage .music-space .stackedbar-color {
+  background: linear-gradient(to bottom, #ff8500, #f9cf38);
+}
+
+#storage .video-space .stackedbar-color {
+  background: linear-gradient(to bottom, #639500, #89cf38);
+}
+
+#storage .photo-space .stackedbar-color {
+  background: linear-gradient(to bottom, #6300a9, #7100d7);
+}
+
+#storage .sdcard-space .stackedbar-color {
+  background: linear-gradient(to bottom, #008bfb, #00c2ef);
+}
+
+#storage .used-space,
+#storage .left-space {
   padding-left: 3.5rem;
 }
 
