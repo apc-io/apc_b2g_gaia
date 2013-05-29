@@ -11,7 +11,7 @@ var ids = ['thumbnail-list-view', 'thumbnails-bottom',
            'thumbnails-single-delete-button', 'thumbnails-single-share-button',
            'player', 'overlay', 'overlay-title',
            'overlay-text', 'videoControls', 'videoBar', 'videoActionBar',
-           'close', 'play', 'playHead', 'timeSlider', 'elapsedTime',
+           'title-back', 'play', 'playHead', 'timeSlider', 'elapsedTime',
            'video-title', 'duration-text', 'elapsed-text', 'bufferedTime',
            'slider-wrapper', 'throbber', 'delete-video-button',
            'picker-header', 'picker-close', 'picker-title', 'picker-done',
@@ -433,7 +433,7 @@ function playerMousedown(event) {
   }
   if (event.target == dom.play) {
     setVideoPlaying(dom.player.paused);
-  } else if (event.target == dom.close) {
+  } else if (event.target == dom.titleBack) {
     hidePlayer(true);
   } else if (event.target == dom.sliderWrapper) {
     dragSlider(event);

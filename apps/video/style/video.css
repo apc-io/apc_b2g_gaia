@@ -310,7 +310,6 @@ body.hidden *[data-l10n-id] {
 
 .icon-back {
   pointer-events: none;
-  width: 2.3rem !important;
 }
 
 .icon.icon-done {
@@ -320,16 +319,18 @@ body.hidden *[data-l10n-id] {
 
 header {
   background: rgba(0, 0, 0, 1) !important;
-  width: calc(100% - 10rem);
+  width: 100%;
   display: inline-block !important;
+}
+
+#videos-header {
+  width: calc(100% - 10rem);
 }
 
 header h1 {
   font-size: 2.5rem !important;
   line-height: 5rem !important;
-  margin: 0 0 0 4.5rem !important;
   width: 29.6rem;
-  text-align: center !important;
 }
 
 @media (orientation: portrait) { 
