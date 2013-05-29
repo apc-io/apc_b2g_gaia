@@ -1,0 +1,75 @@
+.page-screen #toolbar-start {
+  background-image: url('./images/tab_portrait.png');
+}
+
+#settings-button {
+  margin: 0.3rem 1.25rem 0 0;
+}
+
+#url-bar {
+  width: 41.5rem;
+  margin-left: 1rem;
+}
+
+.awesome-screen #url-bar {
+  margin: 0.8rem 0px 0.8rem 3rem;
+  width: 70rem;
+}
+
+#tabs-badge {
+  margin: 0.3rem 3rem 0 0;
+}
+
+#back-button {
+  margin: 0 2.1rem 0 2rem;
+}
+
+#forward-button{
+  margin: 0 2rem 0 2.1rem;
+}
+
+#bookmark-button{
+  margin: 0.3rem 3rem 0 0;
+}
+
+section#settings[role="dialog"] menu.actions {
+  top: 4.5rem;
+  right: 1rem;
+}
+
+section[role="dialog"] menu.actions {
+  top: 4.5rem;
+  right: 1rem;
+}
+
+section#bookmark-menu[role="dialog"] menu.actions,
+section#bookmark-entry-sheet[role="dialog"] menu.actions,
+section#homescreen-entry-sheet[role="dialog"] menu.actions {
+  top: 4.5rem;
+  right: 13.5rem;
+}
+
+section#settings[role="dialog"] menu.actions {
+  width: 37.5rem;
+  top: 4.5rem;
+  right: -0.5rem;
+}
+
+#tabs-list li {
+  width: 100%;
+}
+
+#tabs-list li a {
+  display: block;
+  height: 18rem;
+  -moz-user-select: none;
+  padding-left: 4rem;
+}
+
+#tabs-list span {
+  width: 23rem;
+}
+
+#tabs-list .close {
+  padding-right: 5rem;
+}

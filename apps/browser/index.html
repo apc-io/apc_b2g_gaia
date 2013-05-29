@@ -31,6 +31,9 @@
 
     <!-- Shared responsive -->
     <link rel="stylesheet" href="shared/style/responsive.css" type="text/css">
+
+    <!-- Portrait view -->
+    <link rel="stylesheet" media="all and (orientation: portrait)" href="style/browser_portrait.css" type="text/css"/>
   </head>
 
   <body class="page-screen" role="application">
@@ -54,8 +57,8 @@
           title=""></button>
         <button id="awesomescreen-cancel-button"></button>
         <div id="throbber"></div>
+        <button type="button" id="back-tab-button" class="hidden"></button>
       </menu>
-
       <div id="frames">
 
         <div id="startscreen" class="hidden">
@@ -124,6 +127,7 @@
       <!-- 
       <menu type="toolbar" id="tray-toolbar">
         <button type="button" id="new-tab-button"></button>
+        <span id="toolbar-separator"></span>
       </menu>
       <div id="tabs-list"></div> 
       -->
@@ -133,11 +137,10 @@
     <!-- 
       <menu class="actions">
         <ul>
-          <li><button id="bookmark-menu-add" data-l10n-id="bookmark">Bookmark</button></li>
+          <li><button id="bookmark-menu-add" data-l10n-id="bookmark">Add to Bookmark</button></li>
           <li><button id="bookmark-menu-remove" data-l10n-id="unbookmark">Unbookmark</button></li>
           <li><button id="bookmark-menu-edit" data-l10n-id="edit-bookmark">Edit Bookmark</button></li>
           <li><button id="bookmark-menu-add-home" data-l10n-id="add-to-home-screen">Add to Home Screen</button></li>
-          <li><button id="bookmark-menu-cancel" data-l10n-id="cancel">Cancel</button></li>
         </ul>
       </menu> 
     -->
@@ -151,7 +154,8 @@
           <input type="text" id="bookmark-title" /></label></li>
           <li><label data-l10n-id="address">Address
           <input type="url" id="bookmark-url" /></label></li>
-          <li><input type="hidden" id="bookmark-previous-url"></input></li>
+          <li style="display: none"><input type="hidden" id="bookmark-previous-url"></input></li>
+          <li><hr /></li>
           <li><button id="bookmark-entry-sheet-done" data-l10n-id="done">Done</button></li>
         </ul>
       </menu> 
@@ -166,6 +170,7 @@
           <input type="text" id="homescreen-title" /></label></li>
           <li><label data-l10n-id="address">Address
           <input type="url" id="homescreen-url" /></label></li>
+          <li><hr /></li>
           <li><button id="homescreen-entry-sheet-done" data-l10n-id="add-to-home-screen">Add to home screen</button></li>
         </ul>
       </menu> 
@@ -252,9 +257,7 @@
           <button id="about-browser-button"
           data-l10n-id="about-browser" class="icon icon-view">About Browser</button>
         </li>
-        <li>
-          <h2 data-l10n-id="privacy-and-security">Privacy & Security</h2>
-        </li>
+        <p data-l10n-id="privacy-and-security">Privacy & Security</p>
         <li>
           <button id="clear-history-button"
           data-l10n-id="clear-browsing-history">Clear browsing history</button>

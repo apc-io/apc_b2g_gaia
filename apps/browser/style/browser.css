@@ -26,7 +26,7 @@ input[type="image"] {
 }
 
 .tabs-screen #main-screen {
-  transform: translateX(calc(-100% + 5rem));
+  transform: translateX(calc(-100% + 5.4rem));
 }
 
 .tabs-screen #throbber,
@@ -74,7 +74,7 @@ input[type="image"] {
 }
 
 .current {
-  background: rgba(0, 0, 0, 0.4);
+  background-image: url('images/list_dark_background.png');
 }
 
 #tray {
@@ -87,7 +87,7 @@ input[type="image"] {
   bottom: 0;
   color: white;
   z-index: 40;
-  background-image: url('./images/drawer-header-background.png');
+  background-image: url('./images/tab_gray_background.png');
   background-repeat: repeat-x;
   background-position: top;
   background-size: auto 5rem;
@@ -118,7 +118,7 @@ input[type="image"] {
 
 #tabs-list ul {
   list-style-type: none;
-  margin: 0;
+  margin: 0 0 0 0.4rem;
   padding: 0;
 }
 
@@ -132,12 +132,14 @@ input[type="image"] {
 #tabs-list li {
   margin: 0;
   height: 22rem;
-  border-bottom: 0.1rem solid #54575c;
   font-family: 'MozTT', sans-serif;
-  overflow: hidden;
   position: relative;
-  width: 50%;
+  width: 61.2rem;
   display:inline-block;
+}
+
+#tabs-list li:nth-child(2n+1) {
+  border-right: 0.2rem solid #616161;
 }
 
 #tabs-list li a.active {
@@ -148,12 +150,12 @@ input[type="image"] {
   display: block;
   width: 30rem;
   height: 18rem;
-  background-color: rgba(255, 255, 255, 0.3);
+  background-image: url('images/list_gray_background.png');
   background-size: cover;
   float:left;
-  border-radius: 0.5rem;
+  border-radius: 0.4rem;
   pointer-events: none;
-  margin-right: 2rem;
+  margin-right: 3rem;
 }
 
 #tabs-list span {
@@ -164,6 +166,7 @@ input[type="image"] {
   margin: 3rem 5rem 0 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-size: 2.4rem;
 }
 
 #tabs-list .close:hover, #tabs-list .close:active {
@@ -182,6 +185,7 @@ input[type="image"] {
   font-size: 2.8rem;
   color: white;
   padding-bottom: 0.7rem;
+  overflow: hidden;
 }
 
 #main-screen {
@@ -192,7 +196,6 @@ input[type="image"] {
   z-index: 50;
   position: relative;
   left: 0;
-  overflow: hidden;
   /*
    * Make sure this frame starts out with an identity transform so that
    * when we apply the .address-hidden style, we aren't reframed.
@@ -214,7 +217,9 @@ input[type="image"] {
 
 #tabs-badge {
   /* a temporary background image */
-  background-image: url("images/menu.png");
+  background-image: url("images/tabs.png");
+  float: right;
+  margin: 0.3rem 6rem 0 0;
 }
 
 #more-tabs {
@@ -228,8 +233,6 @@ input[type="image"] {
   top: 0;
   left: 0;
   right: 0;
-  display: flex;
-  flex-direction: row;
 }
 
 #throbber {
@@ -255,14 +258,14 @@ input[type="image"] {
 }
 
 .page-screen #toolbar-start {
-  background-image: url('./images/tabs-badge-background.png');
+  background-image: url('./images/tab_landscape.png');
   background-repeat: no-repeat;
   background-position: right;
   background-size: auto 5rem;
 }
 
 .tabs-screen #toolbar-start {
-  background-image: url('./images/iconaction_back_50x50.png'), url('./images/tabs-badge-background.png');
+  background-image: url('./images/tab_gray_left.png');
   background-repeat: no-repeat, no-repeat;
   background-position: top right, right;
   background-size: auto 5rem;
@@ -279,15 +282,12 @@ input[type="image"] {
 #url-bar {
   display: -moz-box;
   -moz-box-orient: horizontal;
-  margin: 1rem;
-  border: 0.1rem solid #c1c5ce;
-  border-radius: 0.5rem;
-  height: 3.4rem;
+  height: 3.6rem;
+  width: 77.3rem;
   margin: 0.8rem 0 0.8rem 0.5rem;
-  padding: 0 0 0 0.5rem;
-  background-color: #fff;
+  padding: 0;
+  background: url('./images/browser_bar_background.png');
   font-weight: 600;
-  flex: 1;
 }
 
 #url-button {
@@ -298,7 +298,17 @@ input[type="image"] {
   background-size: 3rem;
   float: right;
   background-repeat: no-repeat;
+  margin: 0 0 0.5rem;
 }
+
+/*
+#url-button:after {
+  content: url('./images/browser_bar_right.png');
+  position: relative;
+  right: -3.7rem;
+  top: -0.25rem;
+}
+*/
 
 #ssl-indicator {
   display: block;
@@ -327,7 +337,7 @@ input[type="image"] {
   font-size: 1.7rem;
   height: 3.4rem;
   -moz-box-flex: 1;
-  margin: 0;
+  margin: 0 0 0.5rem;
   padding: 0;
   border: none;
   background-color: transparent;
@@ -337,8 +347,16 @@ input[type="image"] {
   width: calc(100% - 3.2rem);
 }
 
-#url-input:invalid {
-  box-shadow: none;
+#url-bar:before {
+  content: url('./images/browser_bar_left.png');
+  display: block;
+  margin: -0.2rem 0 0 -1.5rem;
+}
+
+#url-bar:after {
+  content: url('./images/browser_bar_right.png');
+  display: block;
+  margin: -0.2rem -1.5rem 0 0;
 }
 
 menu[type="toolbar"] {
@@ -358,22 +376,27 @@ menu[type="toolbar"] button {
   display: block;
   margin: 0;
   padding: 0;
-  width: 8rem;
+  width: 4rem;
   height: 4.5rem;
   float: left;
 }
 
 #back-button {
-  background-image: url("images/iconaction_browser_back_30x30.png");
+  background-image: url("images/browser_back.png");
+  margin: 0 3rem 0 3rem;
 }
 
 #forward-button {
-  background-image: url("images/iconaction_browser_forward_30x30.png");
+  background-image: url("images/browser_forward.png");
+  margin: 0 3rem 0 3rem;
 }
-
 
 #back-button:active {
   background-image: url("images/iconaction_browser_backpressed_30x30.png");
+}
+
+#forward-button:active {
+  background-image: url("images/iconaction_browser_forward_30x30@2x.png");
 }
 
 input::-moz-focus-inner {
@@ -381,7 +404,7 @@ input::-moz-focus-inner {
 }
 
 #back-button[disabled] {
-  background-image: url("images/back-disabled.png");
+  background-image: url("images/browser_back.png");
 }
 
 #forward-button[disabled] {
@@ -389,12 +412,13 @@ input::-moz-focus-inner {
 }
 
 #bookmark-button {
+  background-image: url("images/iconaction_bookmark_40x40.png");
   float: right;
-  background-image: url("images/iconaction_bookmark_30x30.png");
+  margin: 0.3rem 6rem 0 0;
 }
 
 #bookmark-button.bookmarked {
- background-image: url("images/bookmarked.png");
+ background-image: url("images/bookmarked_40x40.png");
 }
 
 #frames {
@@ -762,6 +786,11 @@ li[role="listitem"] small {
   background-color: #ccd6df;
 }
 
+.awesome-screen #url-bar {
+  margin: 0.8rem 0px 0.8rem 3rem;
+  width: 115rem;
+}
+
 #history, #bookmarks, #top-sites {
   height: calc(100% - 3.6rem);
   overflow-y: auto;
@@ -846,38 +875,63 @@ li[role="listitem"] small {
 }
 
 #tray-toolbar button {
-  width: 6rem;
+  width: 4rem;
   background-repeat: no-repeat;
   background-position: center, left;
   border-radius: 0;
 }
 
 #settings-button {
-  background-image: url('images/iconaction_settings_30x30.png');
+  background-image: url('images/iconaction_settings_40x40.png');
   float: right;
-  height: 5rem;
+  margin: 0.3rem 2.8rem 0 0;
+}
+
+#back-tab-button {
+  background-image: url('images/back_2x.png');
+  background-size: auto 4rem;
+  float: right;
+  position: relative;
+  left: 2rem;
+  margin-top: 0.2rem;
+}
+
+.awesome-screen #back-tab-button.hidden {
+  display: none;
+}
+
+#toolbar-separator {
+  background-image: url('images/separator-large.png');
+  background-size: 0.2rem 4.8rem;
+  float: right;
+  width: 0.2rem;
+  height: 4.8rem;
 }
 
 #new-tab-button {
-  background-image: url('images/iconaction_new_30x30.png'), url('images/header-divider.png');
-  background-size: auto 3rem, 0.2rem;
+  background-image: url('images/add_2x.png');
+  background-size: auto 4rem;
   float: right;
-  height: 5rem;
+  margin: 0.2rem 3rem;
 }
 
-section#settings[role="dialog"] menu.actions > ul > li:last-child {
-  border-top: none;
+section#settings[role="dialog"] menu.actions {
+  width: 37.5rem;
+  top: 4.5rem;
+  right: 1rem;
 }
 
-section#settings[role="dialog"] menu.actions > ul > li:last-child > button,
-section#settings[role="dialog"] menu.actions > ul > li:last-child > a[role="button"] {
-  background: none repeat scroll 0% 0% padding-box rgb(78, 78, 78);
-  border: 1px solid rgba(0, 0, 0, 0.25);
-  font-size: 1.4rem;
-  color: rgb(255, 255, 255);
-  text-align: left;
-  text-shadow: none;
-  padding: 0px 1rem;
+section#settings[role="dialog"] menu.actions > ul > li {
+  padding: 0.75rem 3.5rem;
+}
+
+section#settings[role="dialog"] menu.actions > ul > p {
+  width: 100%;
+  font-size: 2rem;
+  color: #333333;
+  padding: 1rem 0px 1rem 3.5rem;
+  margin: 1.3rem 0 1.3rem 0;
+  background-image: url('images/subheader.png');
 }
 
 #enable-cookies input {
@@ -897,6 +951,13 @@ section#settings[role="dialog"] menu.actions > ul > li:last-child > a[role="butt
 
 #bookmark-menu.hidden {
   display: none;
+}
+
+section#bookmark-menu[role="dialog"] menu.actions,
+section#bookmark-entry-sheet[role="dialog"] menu.actions,
+section#homescreen-entry-sheet[role="dialog"] menu.actions {
+  top: 4.5rem;
+  right: 21rem;
 }
 
 /* Edit bookmark entry sheet */
@@ -941,18 +1002,6 @@ section#settings[role="dialog"] menu.actions > ul > li:last-child > a[role="butt
 #http-authentication-message.error {
   color: #950d0d;
 }
-
-/* The following can be removed once we have a building block
- * for entry sheets.
- */
- #bookmark-entry-sheet label,
- #http-authentication-dialog label {
-  display: block;
-  position: relative;
-  margin: 1rem 2rem;
-  text-transform: uppercase;
-  font-size: 1.4rem;
- }
 
 /* This is a dirty hack to hide the bottom toolbar while
  * the keyboard is active, than device-height - 40px
