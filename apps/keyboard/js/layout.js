@@ -121,22 +121,6 @@ const Keyboards = {
     needsCandidatePanel: 'true',
     menuLabel: 'English',
     width: 14,
-    alt: {
-      a: 'áàâäåãāæ',
-      c: 'çćč',
-      e: 'éèêëēę€ɛ',
-      i: 'ïíìîīį',
-      o: 'öóòôōœøɵ',
-      u: 'üúùûū',
-      s: 'ßśš$',
-      S: 'ŚŠŞ',
-      n: 'ñń',
-      l: 'ł£',
-      y: 'ÿ¥',
-      z: 'žźż',
-      r: 'R$ ',
-      '.': ',?!;:'
-    },
     keys: [
       [
         { value: 'q' }, { value: 'w' }, { value: 'e' } , { value: 'r' },
