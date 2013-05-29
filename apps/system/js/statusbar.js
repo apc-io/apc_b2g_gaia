@@ -516,7 +516,7 @@ var StatusBar = {
       }
 
       flightModeIcon.hidden = true;
-      icon.hidden = false;
+      icon.hidden = true;
 
       if (conn.cardState === 'absent') {
         // no SIM
@@ -566,7 +566,7 @@ var StatusBar = {
         return;
       }
 
-      icon.hidden = false;
+      icon.hidden = true;
       icon.dataset.type =
         this.mobileDataIconTypes[data.type] || 'circle';
     },
@@ -706,7 +706,7 @@ var StatusBar = {
 
     headphones: function sb_updateHeadphones() {
       var icon = this.icons.headphones;
-      icon.hidden = !this.headphonesActive;
+      icon.hidden = true;
     },
 
     systemDownloads: function sb_updatesystemDownloads() {
