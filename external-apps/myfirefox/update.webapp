@@ -1,0 +1,5 @@
+{"name": "My Firefox",
+ "description": "My Firefox",
+ "package_path": "/application.zip",
+ "launch_path": "/index.html"
+}
