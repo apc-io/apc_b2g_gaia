@@ -1,5 +1,5 @@
 var Wallpaper = {
-  wallpapersUrl: '/resources/320x480/list.json',
+  wallpapersUrl: 'shared/resources/wallpaper/1280x800/list.json',
 
   init: function wallpaper_init() {
     var self = this;
@@ -29,7 +29,7 @@ var Wallpaper = {
       xhr.response.forEach(function(wallpaper) {
         var div = document.createElement('div');
         div.classList.add('wallpaper');
-        div.style.backgroundImage = 'url(resources/320x480/' + wallpaper + ')';
+        div.style.backgroundImage = 'url(shared/resources/wallpaper/1280x800/' + wallpaper + ')';
         self.wallpapers.appendChild(div);
       });
       if (cb) {
