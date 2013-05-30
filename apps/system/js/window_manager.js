@@ -1758,8 +1758,9 @@ var WindowManager = (function() {
   }
 
   window.addEventListener('digitalphoto', function() {
-    runningApps[homescreen].iframe.src = homescreenURL;
-    setAppSize(homescreen);
+    setDisplayedApp(homescreen, function() {
+      runningApps[homescreen].iframe.src = homescreenURL;
+    });
   });
 
   // Deal with crashed apps
