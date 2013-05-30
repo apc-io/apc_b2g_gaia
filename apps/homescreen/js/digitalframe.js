@@ -83,6 +83,7 @@ var PhotoFrame = {
       this.imageIndex = 0;
       this.photoBatch = [];
       this.frame1.src = this.frame2.src = '';
+      this.frame1.style.opacity = this.frame2.style.opacity =  0.01;
     }
   },
 
@@ -120,7 +121,7 @@ var PhotoFrame = {
         self.frontFrame = self.backFrame;
         self.backFrame = temp;
         self.showImage();
-        self.backFrame.style.opacity = 0;
+        self.backFrame.style.opacity = 0.01;
         self.backFrame.addEventListener('transitionend', function revok() {
           self.backFrame.removeEventListener('transitionend', revok);
           self.backFrame.src = '';
