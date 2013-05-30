@@ -196,6 +196,36 @@ li .after span:last-child {
   outline-offset: -3px;
 }
 
+@media (orientation: landscape) {
+  #thumbnails > .thumbnail {
+    position: absolute;
+    width: 40rem;
+    left: calc(50% - 16.5rem);
+    top: calc(50% - 23.5rem);
+  }
+
+  #thumbnails > .thumbnail > .inner {
+    width: 100%;
+    height: 22.5rem;
+  }
+
+  #thumbnails > .thumbnail > .inner > .img {
+    width: 100%;
+    height: 22.5rem;
+    margin-top: 7rem;
+  }
+
+  #thumbnails > .thumbnail > .inner > .details {
+    opacity: 0;
+    transition: opacity 300ms ease;
+  }
+
+  #thumbnails > .thumbnail > .inner > .unwatched {
+    background-size: 100% 60%;
+    background-position: 0 7rem;
+  }
+}
+
 /*
  * When the user holds their finger over a thumbnail, change the background
  * color to highlight it
