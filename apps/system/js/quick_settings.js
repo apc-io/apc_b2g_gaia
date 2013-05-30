@@ -118,6 +118,10 @@ var QuickSettings = {
       self.geolocationEnabled = value;
     });
 
+    SettingsListener.observe('photoFrame.enabled', true, function(value) {
+      self.digitalPhoto.dataset.enabled = value;
+    });
+
     // monitor airplane mode
     SettingsListener.observe('ril.radio.disabled', false, function(value) {
       self.data.dataset.airplaneMode = value;
