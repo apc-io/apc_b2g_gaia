@@ -199,20 +199,21 @@ li .after span:last-child {
 @media (orientation: landscape) {
   #thumbnails > .thumbnail {
     position: absolute;
-    width: 40rem;
-    left: calc(50% - 16.5rem);
+    width: 60rem;
+    height: 42rem;
+    left: calc(50% - 28.5rem);
     top: calc(50% - 23.5rem);
   }
 
   #thumbnails > .thumbnail > .inner {
     width: 100%;
-    height: 22.5rem;
+    height: 37rem;
   }
 
   #thumbnails > .thumbnail > .inner > .img {
     width: 100%;
-    height: 22.5rem;
-    margin-top: 7rem;
+    height: 33.75rem;
+    margin-top: 0rem;
   }
 
   #thumbnails > .thumbnail > .inner > .details {
@@ -221,8 +222,7 @@ li .after span:last-child {
   }
 
   #thumbnails > .thumbnail > .inner > .unwatched {
-    background-size: 100% 60%;
-    background-position: 0 7rem;
+    background-size: 100% 33.75rem;
   }
 }
 
