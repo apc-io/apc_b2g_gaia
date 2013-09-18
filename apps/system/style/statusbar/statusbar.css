@@ -12,12 +12,17 @@ body, html {
   position: absolute;
 
   width: 100%;
+  margin-left: 2.1rem;
   height: 2.5rem;
   top: 0;
   left: 0;
   background-color: #000;
 
-  padding: 0.2rem 0.35rem;
+  /*padding: 0.2rem 0.35rem;*/
+  padding-right: 2.1rem;
+  padding-top: 0.2rem;
+  padding-bottom: 0.35rem;
+  
   -moz-box-sizing: border-box;
 }
 
@@ -92,6 +97,26 @@ body, html {
   height: 2.1rem;
   background: url('images/icons.png') no-repeat;
   background-size: 40.6875rem 12.6rem;
+}
+
+.sb-background-home {
+  width: 2.5rem;
+  height: 2.5rem;
+  position: absolute;
+  display: block;
+  top: 0rem;
+  left: 0rem;
+  background-color: #000000;
+}
+
+.sb-icon-home {
+  width: 2.5rem;
+  height: 2.5rem;
+  position: absolute;
+  display: block;
+  top: 0.2rem;
+  left: 0.1rem;
+  background: url('images/home.png') no-repeat;
 }
 
 .sb-icon-battery {

@@ -181,6 +181,9 @@
     <script defer src="js/update_manager.js"></script>
     <link rel="stylesheet" type="text/css" href="style/update_manager/update_manager.css">
 
+	<!-- Home button manager -->
+	<script defer src="js/home_button.js"></script>
+
     <!-- Theme and localization -->
     <link rel="stylesheet" type="text/css" href="style/themes/default/system.css">
     <link rel="stylesheet" type="text/css" href="style/themes/default/core.css">
@@ -310,8 +313,10 @@
         <div id="statusbar-time"></div>
 
         <!-- Status -->
+        <!--
         <div id="statusbar-battery" class="sb-icon sb-icon-battery"
           data-level="100" charging hidden></div>
+          -->
         <div id="statusbar-wifi" class="sb-icon sb-icon-wifi"
           data-level="4" hidden></div>
         <div id="statusbar-data" class="sb-icon sb-icon-data"
@@ -335,6 +340,10 @@
         <!-- Activity -->
         <canvas id="statusbar-system-downloads" width="16" height="16" hidden></canvas>
         <canvas id="statusbar-network-activity" width="16" height="16" hidden></canvas>
+      </div>
+      
+      <div id="statusbar-home-button-container" class="sb-background-home" data-z-index-level="statusbar">
+        <div id="statusbar-home-button" class="sb-icon-home"></div>
       </div>
 
       <div id="utility-tray" data-z-index-level="utility-tray">
