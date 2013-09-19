@@ -97,6 +97,8 @@ navigator.mozL10n.ready(function SettingsDateAndTime() {
    */
 
   var kTimeAutoEnabled = 'time.nitz.automatic-update.enabled';
+  var kClockAutoEnabled = 'time.clock.automatic-update.enabled';
+  var kTimezoneAutoEnabled = 'time.timezone.automatic-update.enabled';
 
   function setTimeAutoEnabled(enabled) {
     gTimeAutoSwitch.dataset.state = enabled ? 'auto' : 'manual';
@@ -114,7 +116,8 @@ navigator.mozL10n.ready(function SettingsDateAndTime() {
     };
   }
 
-  settings.addObserver(kTimeAutoEnabled, function(event) {
+  //settings.addObserver(kTimeAutoEnabled, function(event) {
+  settings.addObserver(kClockAutoEnabled, function(event) {
     setTimeAutoEnabled(!!event.settingValue);
   });
 
@@ -130,6 +133,11 @@ navigator.mozL10n.ready(function SettingsDateAndTime() {
 
   var kTimeAutoAvailable = 'time.nitz.available';
 
+  var _clockAutoAvailable = false;
+  var _timezoneAutoAvailable = false;
+  var kClockAutoAvailable = 'time.clock.automatic-update.available';
+  var kTimezoneAutoAvailable = 'time.timezone.automatic-update.available';
+
   function setTimeAutoAvailable(available) {
     gTimeAutoSwitch.hidden = !available;
     if (!available) { // disable the time auto-update if N/A
@@ -142,6 +150,17 @@ navigator.mozL10n.ready(function SettingsDateAndTime() {
   settings.addObserver(kTimeAutoAvailable, function(event) {
     setTimeAutoAvailable(!!event.settingValue);
   });
+
+  settings.addObserver(kClockAutoAvailable, function(event) {
+    //setClockAutoAvailable(!!event.settingValue);
+    console.log('kClockAutoAvailable,');
+  });
+
+  settings.addObserver(kTimezoneAutoAvailable, function(event) {
+    //setTimezoneAutoAvailable(!!event.settingValue);
+    console.log('kTimezoneAutoAvailable');
+  });
+
 
   var reqTimeAutoAvailable = settings.createLock().get(kTimeAutoAvailable);
   reqTimeAutoAvailable.onsuccess = function nitz_getStatusSuccess() {
