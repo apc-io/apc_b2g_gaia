@@ -1,7 +1,29 @@
 'use strict';
 
+// backend integration
+function HWKeyboardObserver() {
+  var present = false;
+  var presentName = 'mozilla.hw.keyboard.present';
+
+  function init() {
+    var req = SettingsListener.getSettingsLock().get(presentName);
+    req.onsuccess = function updatevalue() {
+      present = req.result[presentName];
+    };
+  }
+
+  this.observePresentChanged = function(callback) {
+    SettingsListener.observe(presentName, false, callback);
+  }
+
+  init();
+}
+
 var KeyboardManager = (function() {
   var keyboardHeight = 0;
+  var showing = false;
+  var hwKeyboardObserver = new HWKeyboardObserver(this);
+  var requestHeight = 0;
 
   function getKeyboardURL() {
     // TODO: Retrieve it from Settings, allowing 3rd party keyboards
@@ -30,6 +52,41 @@ var KeyboardManager = (function() {
   var manifestURL = getKeyboardURL() + 'manifest.webapp';
   var keyboard = generateKeyboard(container, keyboardURL, manifestURL);
 
+  function showKeyboard(height) {
+    keyboardHeight = parseInt(height);
+
+    var updateHeight = function updateHeight() {
+      container.removeEventListener('transitionend', updateHeight);
+      if (container.classList.contains('hide')) {
+        // The keyboard has been closed already, let's not resize the
+        // application and ends up with half apps.
+        return;
+      }
+
+      var detail = {
+        'detail': {
+        'height': keyboardHeight
+        }
+      };
+
+      dispatchEvent(new CustomEvent('keyboardchange', detail));
+    };
+
+    if (container.classList.contains('hide')) {
+      container.classList.remove('hide');
+      container.addEventListener('transitionend', updateHeight);
+      return;
+    }
+
+    updateHeight();
+  }
+
+  function hideKeyboard() {
+    keyboardHeight = 0;
+    dispatchEvent(new CustomEvent('keyboardhide'));
+    container.classList.add('hide');
+  }
+
   // Listen for mozbrowserlocationchange of keyboard iframe.
   var previousHash = '';
 
@@ -43,45 +100,37 @@ var KeyboardManager = (function() {
     var type = urlparser.hash.split('=');
     switch (type[0]) {
       case '#show':
-
-        //XXX: The url will contain the info for keyboard height
-        keyboardHeight = parseInt(type[1]);
-
-        var updateHeight = function updateHeight() {
-          container.removeEventListener('transitionend', updateHeight);
-          if (container.classList.contains('hide')) {
-            // The keyboard has been closed already, let's not resize the
-            // application and ends up with half apps.
-            return;
-          }
-
-          var detail = {
-            'detail': {
-              'height': keyboardHeight
-            }
-          };
-
-          dispatchEvent(new CustomEvent('keyboardchange', detail));
-        };
-
-        if (container.classList.contains('hide')) {
-          container.classList.remove('hide');
-          container.addEventListener('transitionend', updateHeight);
+        showing = true;
+        if (hwKeyboardObserver.present) {
+          hideKeyboard();
           return;
         }
 
-        updateHeight();
+        //XXX: The url will contain the info for keyboard height
+        requestHeight = type[1];
+        showKeyboard(type[1]);
         break;
 
       case '#hide':
         // inform window manager to resize app first or
         // it may show the underlying homescreen
-        keyboardHeight = 0;
-        dispatchEvent(new CustomEvent('keyboardhide'));
-        container.classList.add('hide');
+        hideKeyboard();
+        showing = false;
         break;
     }
   });
+
+  function onHWKeyboardPresentChanged(present) {
+    hwKeyboardObserver.present = present;
+    if (present == true && showing == true) {
+      hideKeyboard();
+    }
+    if (present == false && showing == true) {
+      showKeyboard(requestHeight); // well, bad
+    }
+  }
+
+  hwKeyboardObserver.observePresentChanged(onHWKeyboardPresentChanged);
 
   function getHeight() {
     return keyboardHeight;
