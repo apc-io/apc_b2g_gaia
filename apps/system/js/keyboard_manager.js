@@ -2,6 +2,9 @@
 
 var KeyboardManager = (function() {
   var keyboardHeight = 0;
+  var requestHeight = 0; 
+  var showing = false;
+  var hwkeyboard = navigator.hardwareKeyboardManager;
 
   function getKeyboardURL() {
     // TODO: Retrieve it from Settings, allowing 3rd party keyboards
@@ -23,6 +26,36 @@ var KeyboardManager = (function() {
     container.appendChild(keyboard);
     return keyboard;
   }
+  
+  function showKeyboard(height) {
+  	keyboardHeight = parseInt(height);
+		var updateHeight = function updateHeight() {
+			container.removeEventListener('transitionend', updateHeight);
+			if (container.classList.contains('hide')) {
+				// The keyboard has been closed already, let's not resize the
+				// application and ends up with half apps.
+				return;
+			}
+			var detail = {
+				'detail': {
+					'height': keyboardHeight
+				}
+			};
+			dispatchEvent(new CustomEvent('keyboardchange', detail));
+		};
+
+		if (container.classList.contains('hide')) {
+			container.classList.remove('hide');
+			container.addEventListener('transitionend', updateHeight);
+			return;
+		}
+	}
+  
+  function hideKeyboard() {
+  	keyboardHeight = 0;
+		dispatchEvent(new CustomEvent('keyboardhide'));
+		container.classList.add('hide');
+  }
 
   // Generate a <iframe mozbrowser> containing the keyboard.
   var container = document.getElementById('keyboard-frame');
@@ -43,46 +76,40 @@ var KeyboardManager = (function() {
     var type = urlparser.hash.split('=');
     switch (type[0]) {
       case '#show':
-
-        //XXX: The url will contain the info for keyboard height
-        keyboardHeight = parseInt(type[1]);
-
-        var updateHeight = function updateHeight() {
-          container.removeEventListener('transitionend', updateHeight);
-          if (container.classList.contains('hide')) {
-            // The keyboard has been closed already, let's not resize the
-            // application and ends up with half apps.
-            return;
-          }
-
-          var detail = {
-            'detail': {
-              'height': keyboardHeight
-            }
-          };
-
-          dispatchEvent(new CustomEvent('keyboardchange', detail));
-        };
-
-        if (container.classList.contains('hide')) {
-          container.classList.remove('hide');
-          container.addEventListener('transitionend', updateHeight);
+      	showing = true;
+      	requestHeight = type[1];
+      	if (hwkeyboard.isPlugged) {
+					hideKeyboard();
           return;
         }
-
+        //XXX: The url will contain the info for keyboard height
+        showKeyboard(type[1]);
         updateHeight();
         break;
 
       case '#hide':
         // inform window manager to resize app first or
         // it may show the underlying homescreen
-        keyboardHeight = 0;
-        dispatchEvent(new CustomEvent('keyboardhide'));
-        container.classList.add('hide');
+        showing = false;
+        hideKeyboard();
         break;
     }
   });
-
+  
+  hwkeyboard.addEventListener('hardwarekeyboardconnected', function(e) {
+  	if (showing == true) {
+      hideKeyboard();
+    }
+    console.log("hardware keyboard plugged");
+  });
+  
+  hwkeyboard.addEventListener('hardwarekeyboarddisconnected', function(e) {
+  	if (showing == true && (requestHeight > 0)) {
+    	showKeyboard(requestHeight);
+    }
+      console.log("hardware keyboard unplugged");
+  });
+  
   function getHeight() {
     return keyboardHeight;
   }
