@@ -77,7 +77,7 @@ var KeyboardManager = (function() {
 			case '#show':
 				showing = true;
 				requestHeight = type[1];
-				if (hwkeyboard.isPlugged) {
+				if (hwkeyboard.hardwareKeyboardPresent) {
 					hideKeyboard();
 					return;
 				}
