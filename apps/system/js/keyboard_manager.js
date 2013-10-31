@@ -77,7 +77,8 @@ var KeyboardManager = (function() {
 			case '#show':
 				showing = true;
 				requestHeight = type[1];
-				if (hwkeyboard.hardwareKeyboardPresent) {
+				//if (hwkeyboard.hardwareKeyboardPresent) {
+				if (window.navigator.mozKeyboard.hardwarekeyboard) {
 					hideKeyboard();
 					return;
 				}
@@ -94,7 +95,7 @@ var KeyboardManager = (function() {
 		}
 	});
   
-	hwkeyboard.addEventListener('hardwarekeyboardconnected', function(e) {
+	/*hwkeyboard.addEventListener('hardwarekeyboardconnected', function(e) {
 		if (showing == true) {
 			hideKeyboard();
 		}
@@ -106,7 +107,21 @@ var KeyboardManager = (function() {
 			showKeyboard(requestHeight);
 		}
 		console.log("hardware keyboard unplugged");
-	});
+	});*/
+	
+	window.navigator.mozKeyboard.onhardwarekeyboard = function(evt) {
+		console.log("++++++++++systemapp::keyboard_manager.js++++++++++++++++++++++++++");
+		console.log("-----:" + window.navigator.mozKeyboard.hardwarekeyboard + ":------");
+		if (window.navigator.mozKeyboard.hardwarekeyboard) {
+			if (showing == true) {
+				hideKeyboard();
+			}
+		} else {
+			if (showing == true && requestHeight > 0) {
+				showKeyboard(requestHeight);
+			}
+		}
+	}
   
 	function getHeight() {
 		return keyboardHeight;
