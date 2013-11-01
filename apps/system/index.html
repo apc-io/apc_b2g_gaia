@@ -284,6 +284,8 @@
     <!-- Device storage watcher -->
     <script defer src="js/storage_watcher.js"></script>
     <link rel="stylesheet" type="text/css" href="style/storage_watcher/storage_watcher.css">
+    
+    <script defer src="js/home_button.js"></script>
 
     <style>
       /* initlogos style is here to prevent flashing */
@@ -365,8 +367,10 @@
         <div id="statusbar-time"></div>
 
         <!-- Status -->
+        <!--
         <div id="statusbar-battery" class="sb-icon sb-icon-battery"
           data-level="100" charging hidden></div>
+          -->
         <div id="statusbar-wifi" class="sb-icon sb-icon-wifi"
           data-level="4" hidden></div>
         <div id="statusbar-data" class="sb-icon" hidden></div>
@@ -398,6 +402,10 @@
         <img id="statusbar-network-activity"
              src="style/statusbar/images/network-activity.png"
              class="sb-icon-network-activity" hidden>
+      </div>
+      
+      <div id="statusbar-home-button-container" class="sb-background-home" data-z-index-level="statusbar">
+        <div id="statusbar-home-button" class="sb-icon-home"></div>
       </div>
 
       <div id="utility-tray" data-z-index-level="utility-tray">
