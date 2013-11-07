@@ -262,7 +262,7 @@ function execute(options) {
    'ril.callerId': 'CLIR_DEFAULT',
    'screen.automatic-brightness': true,
    'screen.brightness': 1,
-   'screen.timeout': 60,
+   'screen.timeout': 0,
    'software-button.enabled': false,
    'homegesture.enabled': false,
    'support.onlinesupport.title': '',
