@@ -42,6 +42,7 @@ const FOCUS_CHANGE_DELAY = 20;
 var KeyboardManager = {
   inputTypeTable: {},
   keyboardFrameContainer: null,
+  isKeyboardShowing: false,
 
   /**
    *
@@ -147,6 +148,21 @@ var KeyboardManager = {
           break;
       }
     }.bind(this));
+    
+    var self = this;
+    navigator.mozInputMethod.onhardwarekeyboard = function(evt) {
+      if (navigator.mozInputMethod.hardwarekeyboard == true) {
+        console.log("keyboard_manager::keyboard plugged===================");
+        self.hideKeyboard();
+        self.hideIMESwitcher();
+      } else {
+        console.log("keyboard_manager::keyboard unplugged==================");
+        if (self.isKeyboardShowing == true) {
+          self.setKeyboardToShow(self.showingLayout.type, self.showingLayout.index);
+          self.showKeyboard(function() {});
+        }
+      }
+    };
 
     LazyLoader.load([
       'shared/js/keyboard_helper.js'
@@ -455,6 +471,12 @@ var KeyboardManager = {
   },
 
   showKeyboard: function km_showKeyboard(callback) {
+    this.isKeyboardShowing = true;
+    // If hardware keyboard is available, soft keyboard should not be shown
+    if (navigator.mozInputMethod.hardwarekeyboard == true) {
+      return;
+    }
+    
     // Are we already shown and not currently in a transition? Continue.
     if (!this.keyboardFrameContainer.classList.contains('hide') &&
         this.keyboardFrameContainer.dataset.transitionIn !== 'true') {
@@ -543,6 +565,7 @@ var KeyboardManager = {
   },
 
   hideKeyboard: function km_hideKeyboard() {
+    this.isKeyboardShowing = false;
     var self = this;
     var onTransitionEnd = function(evt) {
       if (evt.propertyName !== 'transform') {
@@ -569,6 +592,7 @@ var KeyboardManager = {
   },
 
   hideKeyboardImmediately: function km_hideImmediately() {
+    this.isKeyboardShowing = false;
     this.keyboardHeight = 0;
     window.dispatchEvent(new CustomEvent('keyboardhide'));
 
