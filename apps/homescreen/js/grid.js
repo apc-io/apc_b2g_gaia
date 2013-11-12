@@ -356,11 +356,12 @@ var GridManager = (function() {
         break;
 
       case 'wheel':
-        if (evt.deltaMode === evt.DOM_DELTA_PAGE && evt.deltaX) {
+        // if (evt.deltaMode === evt.DOM_DELTA_PAGE && evt.deltaX) {
+        if (evt.deltaX || evt.deltaY) {
           // XXX: Scroll one page at a time
-          if (evt.deltaX > 0 && currentPage < pages.length - 1) {
+          if (((evt.deltaX > 0) || (evt.deltaY > 0)) && currentPage < pages.length - 1) {
             GridManager.goToNextPage();
-          } else if (evt.deltaX < 0 && currentPage > 0) {
+          } else if (((evt.deltaX < 0) || (evt.deltaY < 0)) && currentPage > 0) {
             GridManager.goToPreviousPage();
           }
           evt.stopPropagation();
