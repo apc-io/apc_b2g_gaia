@@ -115,7 +115,7 @@ body, html {
   display: block;
   top: 0rem;
   left: 0rem;
-  background-color: transparent;
+  background-color: #000;
 }
 
 .sb-icon-home {
@@ -127,6 +127,13 @@ body, html {
   left: 0.2rem;
   background: url('images/home.png') no-repeat;
   background-color: transparent
+}
+
+#screen.lockscreen-camera > .sb-background-home {
+  display: none;
+}
+#screen.locked:not(.attention) .sb-background-home {
+  background-color: transparent;
 }
 
 .sb-icon-battery {
