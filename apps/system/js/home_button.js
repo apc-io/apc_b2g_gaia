@@ -15,6 +15,12 @@ var HomeButtonManager = {
     this.homeButton = document.getElementById('statusbar-home-button-container');
     this.homeButton.onmousedown = this.homeButtonPressed.bind(this);
     this.homeButton.onmouseup = this.homeButtonReleased.bind(this);
+    window.addEventListener('lock', function lockScreenHandler(evt) {
+      HomeButtonManager.homeButton.style.visibility = 'hidden';
+    });
+    window.addEventListener('unlock', function lockScreenHandler(evt) {
+      HomeButtonManager.homeButton.style.visibility = 'visible';
+    });
   },
   
   homeButtonPressed: function hbm_homeButtonPresser() {
