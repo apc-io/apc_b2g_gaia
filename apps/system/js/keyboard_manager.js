@@ -127,6 +127,7 @@ var KeyboardManager = {
     var hwkeyboardManager = window.navigator.hardwareKeyboardManager;
     hwkeyboardManager.addEventListener('hwkeyboardpresentchange', function(e) {
       var self = this;
+      self._debug("===hwkeyboardpresentchange===");
       if (hwkeyboardManager.isPresent && self.keyboardHeight) {
         self._debug("hardware keyboard plugged, hide virtual keyboard");
         self.hideKeyboard();
@@ -156,8 +157,6 @@ var KeyboardManager = {
       var type = evt.detail.type;
       switch (type) {
         case 'inputmethod-showall':
-          if (navigator.hardwareKeyboardManager.isPresent)
-            break;
           this.showAll();
           break;
         case 'inputmethod-next':
@@ -311,10 +310,7 @@ var KeyboardManager = {
           KeyboardHelper.getLayouts(showKeyboard);
         } else {
           self._onFocus = true;
-          if (!navigator.hardwareKeyboardManager.isPresent) {
-            self._debug("====hw keyboard not present, show vkb");
-            showKeyboard();
-          }
+          showKeyboard();
         }
 
 
@@ -481,6 +477,10 @@ var KeyboardManager = {
   },
 
   showKeyboard: function km_showKeyboard(callback) {
+    if (navigator.hardwareKeyboardManager.isPresent) {
+      self._debug("not show virtual keyboard since hw keyboard present");
+      return;
+    }
     // Are we already shown and not currently in a transition? Continue.
     if (!this.keyboardFrameContainer.classList.contains('hide') &&
         this.keyboardFrameContainer.dataset.transitionIn !== 'true') {
