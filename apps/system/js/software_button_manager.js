@@ -19,6 +19,10 @@ var SoftwareButtonManager = {
     // _enable is true on mobile that has no hardware home button
     this._enable = !this.hasHardwareHomeButton && isMobile;
     this.element = document.getElementById('software-buttons');
+    this.element.onclick = function elementClickHandler() {
+      //Nothing to do
+      //To prevent user click on below items
+    }.bind(this);
     this.homeButton = document.getElementById('software-home-button');
     this.fullscreenHomeButton =
       document.getElementById('fullscreen-software-home-button');
