@@ -151,13 +151,37 @@ var KeyboardManager = {
     
     var self = this;
     navigator.mozInputMethod.onhardwarekeyboard = function(evt) {
-      if (navigator.mozInputMethod.hardwarekeyboard == true) {
-        console.log("keyboard_manager::keyboard plugged===================");
-        self.hideKeyboard();
-        self.hideIMESwitcher();
+      function hideKeyboard() {
+        var onTransitionEnd = function(evt) {
+          if (evt.propertyName !== 'transform') {
+            return;
+          }
+          self.keyboardFrameContainer.removeEventListener('transitionend', onTransitionEnd);
+
+          self._debug('hideKeyboard display transitionend');
+
+          // prevent destroying the keyboard when we're not hidden anymore
+          if (!self.keyboardFrameContainer.classList.contains('hide')) {
+            return;
+          }
+
+          self.resetShowingKeyboard();
+        };
+        self.keyboardFrameContainer.addEventListener('transitionend', onTransitionEnd);
+
+        self.keyboardHeight = 0;
+        window.dispatchEvent(new CustomEvent('keyboardhide'));
+        self.keyboardFrameContainer.classList.add('hide');
+      }
+      if (navigator.mozInputMethod.hardwarekeyboard) {
+        console.log("keyboard_manager::keyboard plugged");
+        if (self.isKeyboardShowing) {
+          hideKeyboard();
+          self.hideIMESwitcher();
+        }
       } else {
-        console.log("keyboard_manager::keyboard unplugged==================");
-        if (self.isKeyboardShowing == true) {
+        console.log("keyboard_manager::keyboard unplugged::isKeyboardShowing" + self.isKeyboardShowing);
+        if (self.isKeyboardShowing) {
           self.setKeyboardToShow(self.showingLayout.type, self.showingLayout.index);
           self.showKeyboard(function() {});
         }
@@ -473,7 +497,7 @@ var KeyboardManager = {
   showKeyboard: function km_showKeyboard(callback) {
     this.isKeyboardShowing = true;
     // If hardware keyboard is available, soft keyboard should not be shown
-    if (navigator.mozInputMethod.hardwarekeyboard == true) {
+    if (navigator.mozInputMethod.hardwarekeyboard) {
       return;
     }
     
