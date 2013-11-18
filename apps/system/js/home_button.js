@@ -15,6 +15,9 @@ var HomeButtonManager = {
     this.homeButton = document.getElementById('statusbar-home-button-container');
     this.homeButton.onmousedown = this.homeButtonPressed.bind(this);
     this.homeButton.onmouseup = this.homeButtonReleased.bind(this);
+    if (window.navigator.mozSettings.createLock().get('lockscreen.locked')) {
+      HomeButtonManager.homeButton.style.visibility = 'hidden';
+    }
     window.addEventListener('lock', function lockScreenHandler(evt) {
       HomeButtonManager.homeButton.style.visibility = 'hidden';
     });
