@@ -148,7 +148,7 @@ var KeyboardManager = {
           break;
       }
     }.bind(this));
-    
+
     var self = this;
     navigator.mozInputMethod.onhardwarekeyboard = function(evt) {
       function hideKeyboard() {
@@ -500,7 +500,7 @@ var KeyboardManager = {
     if (navigator.mozInputMethod.hardwarekeyboard) {
       return;
     }
-    
+
     // Are we already shown and not currently in a transition? Continue.
     if (!this.keyboardFrameContainer.classList.contains('hide') &&
         this.keyboardFrameContainer.dataset.transitionIn !== 'true') {
