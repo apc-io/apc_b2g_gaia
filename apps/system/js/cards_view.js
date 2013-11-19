@@ -886,6 +886,20 @@ var CardsView = (function() {
           hideCardSwitcher(/* immediately */ true);
         }
         break;
+      case 'wheel':
+        console.log("=====Receive wheel event====" + evt.deltaY);
+        if (evt.deltaX || evt.deltaY) {
+          if (((evt.deltaX > 0) || (evt.deltaY > 0)) &&
+              currentDisplayed < cardsList.children.length - 1) {
+            currentDisplayed++;
+          } else if (((evt.deltaX < 0) || (evt.deltaY < 0)) && currentDisplayed > 0) {
+            currentDisplayed--;
+          }
+          alignCurrentCard();
+          evt.stopPropagation();
+          evt.preventDefault();
+        }
+        break;
     }
   }
 
@@ -908,3 +922,4 @@ window.addEventListener('taskmanagerhide', CardsView);
 window.addEventListener('holdhome', CardsView);
 window.addEventListener('home', CardsView);
 window.addEventListener('appopen', CardsView);
+window.addEventListener('wheel', CardsView);
