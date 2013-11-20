@@ -115,7 +115,7 @@ body, html {
   display: block;
   top: 0rem;
   left: 0rem;
-  background-color: transparent;
+  background-color: #000000;
 }
 
 .sb-icon-home {
@@ -126,7 +126,6 @@ body, html {
   top: 0.2rem;
   left: 0.2rem;
   background: url('images/home.png') no-repeat;
-  background-color: transparent
 }
 
 .sb-icon-battery {
