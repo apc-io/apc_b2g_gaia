@@ -13,6 +13,11 @@
     "120": "/style/icons/Uitest.png"
   },
   "permissions": {
+    "browser":{},
+    "geolocation":{},
+    "wifi-manage":{},
+    "mobilenetwork":{},
+    "mobileconnection":{},
     "power":{},
     "backgroundservice":{},
     "attention":{},
@@ -22,6 +27,7 @@
     "device-storage:sdcard":{ "access": "readonly" },
     "settings":{ "access": "readwrite" },
     "audio-capture": {},
+    "video-capture": {},
     "bluetooth":{}
   }
 }

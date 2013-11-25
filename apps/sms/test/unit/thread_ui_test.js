@@ -1,8 +1,9 @@
 /*global mocha, MocksHelper, MockAttachment, MockL10n, loadBodyHTML, ThreadUI,
-         MockNavigatormozMobileMessage, Compose, MockDialog, Template, MockSMIL,
-         Utils, MessageManager, LinkActionHandler, LinkHelper, Attachment,
-         MockContact, MockOptionMenu, MockActivityPicker, Threads, Settings,
-         MockMessages, MockUtils, MockContacts */
+         MockNavigatormozMobileMessage, Contacts, Compose, MockDialog,
+         Template, MockSMIL, Utils, MessageManager, LinkActionHandler,
+         LinkHelper, Attachment, MockContact, MockOptionMenu,
+         MockActivityPicker, Threads, Settings, MockMessages, MockUtils,
+         MockContacts, ActivityHandler, Recipients, MockMozActivity */
 
 'use strict';
 
@@ -43,6 +44,7 @@ requireApp('sms/test/unit/mock_smil.js');
 requireApp('sms/test/unit/mock_custom_dialog.js');
 requireApp('sms/test/unit/mock_url.js');
 requireApp('sms/test/unit/mock_compose.js');
+requireApp('sms/test/unit/mock_activity_handler.js');
 
 var mocksHelperForThreadUI = new MocksHelper([
   'Attachment',
@@ -59,6 +61,7 @@ var mocksHelperForThreadUI = new MocksHelper([
   'Dialog',
   'Contacts',
   'SMIL',
+  'ActivityHandler',
   'TimeHeaders'
 ]);
 
@@ -224,7 +227,7 @@ suite('thread_ui.js >', function() {
       window.location.hash = '';
     });
 
-    suite('Thread View', function() {
+    suite('In #thread view, button should be...', function() {
       setup(function() {
         window.location.hash = '#thread-1';
       });
@@ -233,18 +236,18 @@ suite('thread_ui.js >', function() {
         window.location.hash = '';
       });
 
-      test('button should be disabled at the beginning', function() {
+      test('disabled at the beginning', function() {
         Compose.clear();
         assert.isTrue(sendButton.disabled);
       });
 
-      test('button should be enabled when there is some text', function() {
+      test('enabled when there is message input', function() {
         Compose.append('Hola');
         assert.isFalse(sendButton.disabled);
       });
 
-      test('button should not be disabled if there is some text ' +
-        'but too many segments', function() {
+      test('enabled when there is message input, but too many segments',
+        function() {
 
         Compose.append('Hola');
         this.sinon.clock.tick(ThreadUI.UPDATE_DELAY);
@@ -261,7 +264,7 @@ suite('thread_ui.js >', function() {
     });
 
 
-    suite('#new mode >', function() {
+    suite('In #new view, button should be...', function() {
       setup(function() {
         window.location.hash = '#new';
         Compose.clear();
@@ -276,79 +279,130 @@ suite('thread_ui.js >', function() {
         ThreadUI.recipients.inputValue = '';
       });
 
-      test('button should be disabled when there is neither contact or input',
-        function() {
-        assert.isTrue(sendButton.disabled);
-      });
+      suite('enabled', function() {
 
-      test('button should be disabled when there is no contact', function() {
-        Compose.append('Hola');
-        assert.isTrue(sendButton.disabled);
-      });
+        suite('when there is message input...', function() {
 
-      test('button should be enabled with recipient input', function() {
-        Compose.append('Hola');
-        ThreadUI.recipients.inputValue = '999';
+          test('and recipient field value is valid ', function() {
+            Compose.append('Hola');
+            ThreadUI.recipients.inputValue = '999';
 
-        // Call directly since no input event will be triggered
-        ThreadUI.enableSend();
-        assert.isFalse(sendButton.disabled);
-      });
+            // Call directly since no input event will be triggered
+            ThreadUI.enableSend();
+            assert.isFalse(sendButton.disabled);
+          });
 
-      test('button should be enabled after adding a recipient when text exists',
-        function() {
-        Compose.append('Hola');
+          test('after adding a valid recipient ',
+            function() {
+            Compose.append('Hola');
 
-        ThreadUI.recipients.add({
-          number: '999'
+            ThreadUI.recipients.add({
+              number: '999'
+            });
+
+            assert.isFalse(sendButton.disabled);
+          });
+
+          test('after adding valid & questionable recipients ', function() {
+            Compose.append('Hola');
+
+            ThreadUI.recipients.add({
+              number: 'foo',
+              isQuestionable: true
+            });
+
+            ThreadUI.recipients.add({
+              number: '999'
+            });
+
+            assert.isFalse(sendButton.disabled);
+          });
         });
 
-        assert.isFalse(sendButton.disabled);
-      });
+        suite('when a valid recipient exists...', function() {
+          test('after adding message input ', function() {
 
-      test('button should be enabled after adding text when recipient exists',
-        function() {
+            ThreadUI.recipients.add({
+              number: '999'
+            });
+            Compose.append('Hola');
 
-        ThreadUI.recipients.add({
-          number: '999'
-        });
-        Compose.append('Hola');
-
-        assert.isFalse(sendButton.disabled);
-      });
-
-      // TODO: Fix this test to be about being over the MMS limit inside #840035
-
-      test('button should be disabled when there is both contact and ' +
-          'input, but too much data to send as mms',
-        function() {
-
-        ThreadUI.recipients.add({
-          number: '999'
+            assert.isFalse(sendButton.disabled);
+          });
         });
 
-        Compose.append(mockAttachment(300 * 1024));
 
-        assert.isFalse(sendButton.disabled);
-        Compose.append('Hola');
+        test('after appending image within size limits ', function() {
+          ThreadUI.recipients.add({
+            number: '999'
+          });
 
-        assert.isTrue(sendButton.disabled);
+          Compose.append(mockImgAttachment());
+          assert.isFalse(sendButton.disabled);
+        });
       });
 
-      test('When adding an image that is under the limitation, button ' +
-           'should be enabled right after appended',
-        function() {
+      suite('disabled', function() {
 
-        ThreadUI.recipients.add({
-          number: '999'
+        test('when there is no message input or recipient ', function() {
+          assert.isTrue(sendButton.disabled);
         });
 
-        Compose.append(mockImgAttachment());
-        assert.isFalse(sendButton.disabled);
+        test('when message is over data limit ', function() {
+          ThreadUI.recipients.add({
+            number: '999'
+          });
+
+          Compose.append(mockAttachment(300 * 1024));
+
+          assert.isFalse(sendButton.disabled);
+          Compose.append('Hola');
+
+          assert.isTrue(sendButton.disabled);
+        });
+
+
+        suite('when there is message input...', function() {
+          test('there is no recipient ', function() {
+            Compose.append('Hola');
+            assert.isTrue(sendButton.disabled);
+          });
+
+          test('recipient field value is questionable ', function() {
+            Compose.append('Hola');
+            ThreadUI.recipients.inputValue = 'a';
+
+            // Call directly since no input event will be triggered
+            ThreadUI.enableSend();
+            assert.isTrue(sendButton.disabled);
+          });
+
+          test('after adding a questionable recipient ', function() {
+            Compose.append('Hola');
+
+            ThreadUI.recipients.add({
+              number: 'foo',
+              isQuestionable: true
+            });
+
+            assert.isFalse(sendButton.disabled);
+          });
+        });
+
+        suite('when a valid recipient exists...', function() {
+          test('there is no message input ', function() {
+
+            ThreadUI.recipients.add({
+              number: 'foo'
+            });
+
+            assert.isTrue(sendButton.disabled);
+          });
+        });
       });
 
-      test('When adding an oversized image, button should be disabled while ' +
-           'resizing and enabled when resize complete',
+      test('disabled while resizing oversized image and ' +
+        'enabled when resize complete ',
         function(done) {
 
         ThreadUI.recipients.add({
@@ -999,10 +1053,13 @@ suite('thread_ui.js >', function() {
   });
 
   suite('Recipient Assimiliation', function() {
-
     setup(function() {
-      this.sinon.spy(ThreadUI.recipients, 'visible');
+      this.sinon.spy(ThreadUI, 'validateContact');
       this.sinon.spy(ThreadUI.recipients, 'add');
+      this.sinon.spy(ThreadUI.recipients, 'remove');
+      this.sinon.spy(ThreadUI.recipients, 'update');
+      this.sinon.spy(ThreadUI.recipients, 'visible');
+      this.sinon.spy(Utils, 'basicContact');
 
       Threads.set(1, {
         participants: ['999']
@@ -1012,6 +1069,20 @@ suite('thread_ui.js >', function() {
     teardown(function() {
       Threads.delete(1);
       window.location.hash = '';
+    });
+
+    suite('Existing Conversation', function() {
+
+      setup(function() {
+        window.location.hash = '#thread=1';
+      });
+
+      test('Will not assimilate recipients ', function() {
+        ThreadUI.assimilateRecipients();
+
+        sinon.assert.notCalled(ThreadUI.recipients.visible);
+        sinon.assert.notCalled(ThreadUI.recipients.add);
+      });
     });
 
     suite('New Conversation', function() {
@@ -1028,45 +1099,381 @@ suite('thread_ui.js >', function() {
       });
 
       teardown(function() {
-        ThreadUI.recipientsList.removeChild(node);
+        if (ThreadUI.recipientsList.children.length) {
+          ThreadUI.recipientsList.removeChild(node);
+        }
       });
 
-      test('Will assimilate recipients', function() {
-        var visible, add;
+      suite('Typed number', function() {
+        test('Triggers assimilation ', function() {
+          var visible;
 
-        ThreadUI.assimilateRecipients();
+          ThreadUI.assimilateRecipients();
 
-        visible = ThreadUI.recipients.visible;
-        add = ThreadUI.recipients.add;
+          visible = ThreadUI.recipients.visible;
 
-        assert.ok(visible.called);
-        assert.equal(visible.args[0][0], 'singleline');
+          assert.isTrue(visible.called);
+          assert.isTrue(visible.firstCall.calledWith('singleline'));
+          assert.isTrue(ThreadUI.recipients.add.called);
+          assert.isTrue(
+            ThreadUI.recipients.add.calledWithMatch({
+              name: '999',
+              number: '999',
+              source: 'manual'
+            })
+          );
+        });
+      });
 
-        assert.ok(add.called);
-        assert.deepEqual(add.args[0][0], {
-          name: '999',
-          number: '999',
-          source: 'manual'
+      suite('Typed non-number', function() {
+        var realContacts;
+
+        suiteSetup(function() {
+          realContacts = window.Contacts;
+          window.Contacts = MockContacts;
+        });
+
+        suiteTeardown(function() {
+          window.Contacts = realContacts;
+        });
+
+        setup(function() {
+          this.sinon.spy(ThreadUI, 'searchContact');
+          this.sinon.spy(ThreadUI, 'exactContact');
+        });
+
+        test('Triggers assimilation & silent search ', function() {
+          node.textContent = 'foo';
+          ThreadUI.assimilateRecipients();
+
+          assert.isTrue(ThreadUI.recipients.add.called);
+          assert.isTrue(
+            ThreadUI.recipients.add.calledWithMatch({
+              name: 'foo',
+              number: 'foo',
+              source: 'manual'
+            })
+          );
+        });
+
+        test('Matches contact ', function() {
+          var record = {
+            isQuestionable: true,
+            name: 'Jane Doozer',
+            number: 'Jane Doozer',
+            source: 'manual'
+          };
+
+          this.sinon.stub(Contacts, 'findByString').yields(
+            MockContact.list([
+              { givenName: ['Jane'], familyName: ['Doozer'] }
+            ])
+          );
+
+          ThreadUI.searchContact(
+            record.number, ThreadUI.validateContact.bind(ThreadUI, record)
+          );
+
+          assert.isTrue(ThreadUI.recipients.remove.called);
+          assert.isTrue(ThreadUI.recipients.add.called);
+          assert.isTrue(
+            ThreadUI.recipients.add.calledWithMatch({
+              name: 'Jane Doozer',
+              number: '+346578888888',
+              type: 'Mobile',
+              carrier: 'TEF, ',
+              separator: ' | ',
+              source: 'contacts',
+              nameHTML: '',
+              numberHTML: ''
+            })
+          );
+        });
+
+        test('Does not match contact ', function() {
+          // Clear out the existing recipient field fixtures
+          ThreadUI.recipients.length = 0;
+          ThreadUI.recipientsList.textContent = '';
+
+          var record = {
+            isQuestionable: true,
+            name: 'Jane Doozer',
+            number: 'Jane Doozer',
+            source: 'manual'
+          };
+
+          this.sinon.stub(Contacts, 'findByString', function(term, callback) {
+            callback([]);
+          });
+
+          ThreadUI.searchContact(
+            record.number, ThreadUI.validateContact.bind(ThreadUI, record)
+          );
+
+          sinon.assert.called(ThreadUI.recipients.update);
+
+          record.isInvalid = true;
+
+          sinon.assert.calledWithMatch(ThreadUI.recipients.update, 0, record);
+        });
+
+        test('Exact contact ', function() {
+          var record = {
+            isQuestionable: true,
+            name: 'Jane Doozer',
+            number: 'Jane Doozer',
+            source: 'manual'
+          };
+
+          this.sinon.stub(Contacts, 'findExact').yields(
+            MockContact.list([
+              { givenName: ['Jane'], familyName: ['Doozer'] }
+            ])
+          );
+
+          ThreadUI.exactContact(
+            record.number, ThreadUI.validateContact.bind(ThreadUI, record)
+          );
+
+          assert.isTrue(ThreadUI.recipients.remove.called);
+          assert.isTrue(ThreadUI.recipients.add.called);
+          assert.isTrue(
+            ThreadUI.recipients.add.calledWithMatch({
+              name: 'Jane Doozer',
+              number: '+346578888888',
+              type: 'Mobile',
+              carrier: 'TEF, ',
+              separator: ' | ',
+              source: 'contacts',
+              nameHTML: '',
+              numberHTML: ''
+            })
+          );
+        });
+
+        test('No exact contact ', function() {
+          // Clear out the existing recipient field fixtures
+          ThreadUI.recipients.length = 0;
+          ThreadUI.recipientsList.textContent = '';
+
+          var record = {
+            isQuestionable: true,
+            name: 'Jane Doozer',
+            number: 'Jane Doozer',
+            source: 'manual'
+          };
+
+          this.sinon.stub(Contacts, 'findExact').yields([], {});
+
+          ThreadUI.exactContact(
+            record.number, ThreadUI.validateContact.bind(ThreadUI, record)
+          );
+
+          sinon.assert.called(ThreadUI.recipients.update);
+
+          record.isInvalid = true;
+
+          sinon.assert.calledWithMatch(ThreadUI.recipients.update, 0, record);
+        });
+
+        test('No exact contact, editting recipient ', function() {
+          var record = {
+            isQuestionable: true,
+            name: 'Jane Doozer',
+            number: 'Jane Doozer',
+            source: 'manual'
+          };
+
+          this.sinon.stub(Contacts, 'findExact', function(term, callback) {
+            callback([], {});
+          });
+
+          ThreadUI.exactContact(
+            record.number, ThreadUI.validateContact.bind(ThreadUI, record)
+          );
+
+          assert.isFalse(ThreadUI.recipients.update.called);
+        });
+
+        test('Determines correct strategy ', function() {
+          var record = {
+            isQuestionable: true,
+            isLookupable: true,
+            name: 'Jane Doozer',
+            number: 'Jane Doozer',
+            source: 'manual'
+          };
+
+          ThreadUI.recipients.add(record);
+
+          record.isLookupable = false;
+
+          ThreadUI.recipients.add(record);
+
+          sinon.assert.calledOnce(ThreadUI.searchContact);
+          sinon.assert.calledOnce(ThreadUI.exactContact);
         });
       });
     });
 
-    suite('Existing Conversation', function() {
+    suite('validateContact', function() {
+      var fixture, contacts;
 
       setup(function() {
-        window.location.hash = '#thread=1';
+        fixture = {
+          name: 'Janet Jones',
+          number: '+346578888888',
+          source: 'manual',
+          isInvalid: false
+        };
+
+        contacts = MockContact.list([
+          { givenName: ['Janet'], familyName: ['Jones'] }
+        ]);
       });
 
-      test('Will not assimilate recipients ', function() {
-        var visible, add;
+      suite('No Recipients', function() {
+        test('input value has matching record ', function() {
 
-        ThreadUI.assimilateRecipients();
+          ThreadUI.validateContact(fixture, '', contacts);
 
-        visible = ThreadUI.recipients.visible;
-        add = ThreadUI.recipients.add;
+          sinon.assert.calledOnce(ThreadUI.recipients.remove);
+          sinon.assert.calledWith(ThreadUI.recipients.remove, 0);
 
-        assert.isFalse(visible.called);
-        assert.isFalse(add.called);
+          assert.equal(
+            ThreadUI.recipients.add.firstCall.args[0].source, 'contacts'
+          );
+          assert.equal(
+            ThreadUI.recipients.add.firstCall.args[0].number, '+346578888888'
+          );
+        });
+
+        test('input value is invalid ', function() {
+          // An actual accepted recipient from contacts
+          fixture.number = 'foo';
+          fixture.isQuestionable = true;
+
+          ThreadUI.recipients.add(fixture);
+          assert.isFalse(fixture.isInvalid);
+
+          ThreadUI.recipientsList.lastElementChild.textContent = '';
+
+          ThreadUI.validateContact(fixture, '', []);
+
+          sinon.assert.calledOnce(ThreadUI.recipients.update);
+          sinon.assert.calledWithMatch(ThreadUI.recipients.update, 1, fixture);
+
+          assert.isTrue(fixture.isInvalid);
+        });
+      });
+
+      suite('Has Recipients', function() {
+
+
+        test('input value has matching duplicate record w/ ' +
+              'multiple, different tel records (accept) ', function() {
+
+          // An actual accepted recipient from contacts
+          ThreadUI.recipients.add(fixture);
+
+          // The last accepted recipient, manually entered.
+          ThreadUI.recipients.add({
+            name: 'Janet Jones',
+            number: 'Janet Jones',
+            source: 'manual'
+          });
+
+          ThreadUI.validateContact(fixture, '', contacts);
+
+          sinon.assert.calledOnce(ThreadUI.recipients.remove);
+          sinon.assert.calledWith(ThreadUI.recipients.remove, 1);
+
+          assert.equal(
+            ThreadUI.recipients.add.lastCall.args[0].source, 'contacts'
+          );
+          assert.equal(
+            ThreadUI.recipients.add.lastCall.args[0].number, '+12125559999'
+          );
+          assert.equal(
+            Utils.basicContact.returnValues[0].number, '+12125559999'
+          );
+        });
+
+        test('input value has multiple matching records, the ' +
+              'first is a duplicate, use next (accept) ', function() {
+
+          contacts = MockContact.list([
+            { givenName: ['Janet'], familyName: ['Jones'] },
+            { givenName: ['Jane'], familyName: ['Johnson'] }
+          ]);
+
+          contacts[0].tel = [{value: '777'}];
+          contacts[1].tel = [{value: '888'}];
+
+          // An actual accepted recipient from contacts
+          ThreadUI.recipients.add({
+            name: 'Janet Jones',
+            number: '777',
+            source: 'contacts'
+          });
+
+          // The last accepted recipient, manually entered.a
+          ThreadUI.recipients.add({
+            name: 'Jane',
+            number: 'Jane',
+            source: 'manual'
+          });
+
+          ThreadUI.validateContact(fixture, '', contacts);
+
+          // Called from here, then called again for the
+          // second contact record.
+          sinon.assert.calledTwice(ThreadUI.validateContact);
+
+          sinon.assert.called(ThreadUI.recipients.remove);
+          sinon.assert.called(ThreadUI.recipients.add);
+
+          assert.equal(
+            ThreadUI.recipients.add.lastCall.args[0].source, 'contacts'
+          );
+          assert.equal(
+            ThreadUI.recipients.add.lastCall.args[0].number, '888'
+          );
+          assert.equal(
+            Utils.basicContact.returnValues[0].number, '888'
+          );
+        });
+
+        test('input value has matching duplicate record w/ ' +
+              'single, same tel record (invalid) ', function() {
+
+          // Get rid of the second tel record to create a "duplicate"
+          contacts[0].tel.length = 1;
+
+          // An actual accepted recipient from contacts
+          fixture.source = 'contacts';
+          ThreadUI.recipients.add(fixture);
+
+          fixture.source = 'manual';
+          // The last accepted recipient, manually entered.
+          ThreadUI.recipients.add(fixture);
+
+          assert.isFalse(fixture.isInvalid);
+
+          ThreadUI.recipientsList.lastElementChild.textContent = '';
+          ThreadUI.validateContact(fixture, '', contacts);
+
+          // ThreadUI.recipients.update is called with the updated
+          // source recipient object. This object's isValid property
+          // has been set to true.
+          sinon.assert.calledOnce(
+            ThreadUI.recipients.update
+          );
+          sinon.assert.calledWithMatch(
+            ThreadUI.recipients.update, 1, fixture
+          );
+          assert.isTrue(fixture.isInvalid);
+        });
       });
     });
   });
@@ -1210,25 +1617,36 @@ suite('thread_ui.js >', function() {
 
     suite('onDeliverySuccess >', function() {
       teardown(function() {
+        this.fakeMessage.type = null;
         this.fakeMessage.deliveryStatus = null;
+        this.fakeMessage.deliveryInfo = null;
       });
       test('sms delivery success', function() {
+        this.fakeMessage.type = 'sms';
         this.fakeMessage.deliveryStatus = 'success';
         ThreadUI.onDeliverySuccess(this.fakeMessage);
         assert.isTrue(this.container.classList.contains('delivered'));
       });
       test('mms delivery success', function() {
-        this.fakeMessage.deliveryStatus = ['success'];
+        this.fakeMessage.type = 'mms';
+        this.fakeMessage.deliveryInfo = [{
+          receiver: null, deliveryStatus: 'success'}];
         ThreadUI.onDeliverySuccess(this.fakeMessage);
         assert.isTrue(this.container.classList.contains('delivered'));
       });
       test('multiple recipients mms delivery success', function() {
-        this.fakeMessage.deliveryStatus = ['success', 'success'];
+        this.fakeMessage.type = 'mms';
+        this.fakeMessage.deliveryInfo = [
+          {receiver: null, deliveryStatus: 'success'},
+          {receiver: null, deliveryStatus: 'success'}];
         ThreadUI.onDeliverySuccess(this.fakeMessage);
         assert.isTrue(this.container.classList.contains('delivered'));
       });
       test('not all recipients return mms delivery success', function() {
-        this.fakeMessage.deliveryStatus = ['success', 'pending'];
+        this.fakeMessage.type = 'mms';
+        this.fakeMessage.deliveryInfo = [
+          {receiver: null, deliveryStatus: 'success'},
+          {receiver: null, deliveryStatus: 'pending'}];
         ThreadUI.onDeliverySuccess(this.fakeMessage);
         assert.isFalse(this.container.classList.contains('delivered'));
       });
@@ -1512,6 +1930,7 @@ suite('thread_ui.js >', function() {
     setup(function() {
       this.sinon.spy(Template, 'escape');
       this.sinon.stub(MockSMIL, 'parse');
+      this.sinon.spy(ThreadUI.tmpl.message, 'interpolate');
     });
 
     function buildSMS(payload) {
@@ -1536,6 +1955,22 @@ suite('thread_ui.js >', function() {
       ThreadUI.buildMessageDOM(buildMMS(payload));
       assert.ok(Template.escape.calledWith(payload));
     });
+
+    test('calls template with subject for MMS', function() {
+      ThreadUI.buildMessageDOM({
+        id: '1',
+        subject: 'subject',
+        type: 'mms',
+        deliveryInfo: [],
+        attachments: []
+      });
+      assert.ok(ThreadUI.tmpl.message.interpolate.calledWith({
+        id: '1',
+        bodyHTML: '',
+        subject: 'subject'
+      }));
+    });
+
   });
 
   suite('renderMessages()', function() {
@@ -1564,7 +1999,7 @@ suite('thread_ui.js >', function() {
         sender: '123456',
         type: 'mms',
         delivery: 'not-downloaded',
-        deliveryStatus: ['pending'],
+        deliveryInfo: [{receiver: null, deliveryStatus: 'pending'}],
         subject: 'Pending download',
         timestamp: new Date(Date.now() - 150000),
         expiryDate: new Date(Date.now() + ONE_DAY_TIME)
@@ -1575,7 +2010,7 @@ suite('thread_ui.js >', function() {
         sender: '123456',
         type: 'mms',
         delivery: 'not-downloaded',
-        deliveryStatus: ['manual'],
+        deliveryInfo: [{receiver: null, deliveryStatus: 'manual'}],
         subject: 'manual download',
         timestamp: new Date(Date.now() - 150000),
         expiryDate: new Date(Date.now() + ONE_DAY_TIME * 2)
@@ -1586,7 +2021,7 @@ suite('thread_ui.js >', function() {
         sender: '123456',
         type: 'mms',
         delivery: 'not-downloaded',
-        deliveryStatus: ['error'],
+        deliveryInfo: [{receiver: null, deliveryStatus: 'error'}],
         subject: 'error download',
         timestamp: new Date(Date.now() - 150000),
         expiryDate: new Date(Date.now() + ONE_DAY_TIME * 2)
@@ -1597,7 +2032,7 @@ suite('thread_ui.js >', function() {
         sender: '123456',
         type: 'mms',
         delivery: 'not-downloaded',
-        deliveryStatus: ['error'],
+        deliveryInfo: [{receiver: null, deliveryStatus: 'error'}],
         subject: 'Error download',
         timestamp: new Date(Date.now() - 150000),
         expiryDate: new Date(Date.now() - ONE_DAY_TIME)
@@ -1913,7 +2348,7 @@ suite('thread_ui.js >', function() {
         sender: '123456',
         type: 'mms',
         delivery: 'received',
-        deliveryStatus: ['success'],
+        deliveryInfo: [{receiver: null, deliveryStatus: 'success'}],
         subject: 'No attachment testing',
         smil: '<smil><body><par><text src="cid:1"/>' +
               '</par></body></smil>',
@@ -1927,7 +2362,7 @@ suite('thread_ui.js >', function() {
         sender: '123456',
         type: 'mms',
         delivery: 'received',
-        deliveryStatus: ['success'],
+        deliveryInfo: [{receiver: null, deliveryStatus: 'success'}],
         subject: 'Empty attachment testing',
         smil: '<smil><body><par><text src="cid:1"/>' +
               '</par></body></smil>',
@@ -2178,6 +2613,82 @@ suite('thread_ui.js >', function() {
       // test were relocated to link_action_handler_test.js
       // This 'context-menu' was handled properly?
       assert.isFalse(LinkActionHandler.onClick.called);
+    });
+
+  });
+
+
+  suite('updateCarrier', function() {
+    var contacts = [], details, number;
+    var threadMessages, carrierTag;
+
+    suiteSetup(function() {
+      contacts.push(new MockContact());
+      number = contacts[0].tel[0].value;
+      details = Utils.getContactDetails(number, contacts);
+    });
+
+    setup(function() {
+      loadBodyHTML('/index.html');
+      threadMessages = document.getElementById('thread-messages');
+      carrierTag = document.getElementById('contact-carrier');
+      this.sinon.spy(ThreadUI, 'updateInputHeight');
+    });
+
+    teardown(function() {
+      document.body.innerHTML = '';
+    });
+
+    test(' If there is >1 participant, hide carrier info', function() {
+      var thread = {
+        participants: [number, '123123']
+      };
+
+      ThreadUI.updateCarrier(thread, contacts, details);
+      assert.isFalse(threadMessages.classList.contains('has-carrier'));
+    });
+
+    test(' If there is one participant & contacts', function() {
+      var thread = {
+        participants: [number]
+      };
+
+      ThreadUI.updateCarrier(thread, contacts, details);
+      assert.isTrue(threadMessages.classList.contains('has-carrier'));
+    });
+
+    test(' If there is one participant & no contacts', function() {
+      var thread = {
+        participants: [number]
+      };
+
+      ThreadUI.updateCarrier(thread, [], details);
+      assert.isFalse(threadMessages.classList.contains('has-carrier'));
+    });
+
+    test(' input height are updated properly', function() {
+      var thread = {
+        participants: [number]
+      };
+
+      ThreadUI.updateCarrier(thread, contacts, details);
+      assert.ok(ThreadUI.updateInputHeight.calledOnce);
+
+      // Change number of recipients,so now there should be no carrier
+      thread.participants.push('123123');
+
+      ThreadUI.updateCarrier(thread, contacts, details);
+      assert.ok(ThreadUI.updateInputHeight.calledTwice);
+    });
+
+    test(' input height are not updated if its not needed', function() {
+      var thread = {
+        participants: [number]
+      };
+
+      ThreadUI.updateCarrier(thread, contacts, details);
+      ThreadUI.updateCarrier(thread, contacts, details);
+      assert.isFalse(ThreadUI.updateInputHeight.calledTwice);
     });
 
   });
@@ -2691,10 +3202,13 @@ suite('thread_ui.js >', function() {
 
           window.location.hash = '#thread=1';
 
+          var body = document.createElement('ul');
+
           ThreadUI.prompt({
             number: '999',
             contactId: contact.id,
-            isContact: true
+            isContact: true,
+            body: body
           });
 
           assert.equal(MockOptionMenu.calls.length, 1);
@@ -2702,12 +3216,12 @@ suite('thread_ui.js >', function() {
           var call = MockOptionMenu.calls[0];
           var items = call.items;
 
-          // Ensures that the OptionMenu was given
-          // the phone number to diplay
-          assert.equal(call.header, '999');
+          // Ensures that the OptionMenu does not have
+          // the phone number to display since it's a contact
+          assert.equal(call.header, '');
 
           // Only known Contact details should appear in the "section"
-          assert.equal(call.section, '');
+          assert.equal(call.section, body);
 
           assert.equal(items.length, 3);
 
@@ -2808,9 +3322,11 @@ suite('thread_ui.js >', function() {
 
           window.location.hash = '#thread=1';
 
+          var body = document.createElement('ul');
           ThreadUI.prompt({
             number: '999',
-            isContact: true
+            isContact: true,
+            body: body
           });
 
           assert.equal(MockOptionMenu.calls.length, 1);
@@ -2819,8 +3335,11 @@ suite('thread_ui.js >', function() {
           var items = call.items;
 
           // Ensures that the OptionMenu was given
-          // the phone number to diplay
-          assert.equal(call.header, '999');
+          // the contact informations to be displayed
+          assert.equal(call.section, body);
+
+          // ensures we'll show no header
+          assert.equal(call.header, '');
 
           assert.equal(items.length, 3);
 
@@ -2877,6 +3396,7 @@ suite('thread_ui.js >', function() {
 
       suite('onHeaderActivation', function() {
         test('Single known', function() {
+          this.sinon.spy(ThreadUI, 'renderContact');
 
           Threads.set(1, {
             participants: ['+12125559999']
@@ -2893,7 +3413,14 @@ suite('thread_ui.js >', function() {
           var calls = MockOptionMenu.calls;
 
           assert.equal(calls.length, 1);
-          assert.equal(calls[0].header, '+12125559999');
+
+          // contacts do not show the number in the header
+          assert.equal(calls[0].header, '');
+
+          // but do have a body
+          var body = ThreadUI.renderContact.lastCall.args[0].target;
+          assert.equal(calls[0].section, body);
+
           assert.equal(calls[0].items.length, 3);
           assert.equal(typeof calls[0].complete, 'function');
         });
@@ -3273,10 +3800,36 @@ suite('thread_ui.js >', function() {
     setup(function() {
       this.sinon.spy(ThreadUI, 'assimilateRecipients');
     });
+    teardown(function() {
+      Recipients.View.isObscured = false;
+    });
 
     test('assimilate called after mousedown on picker button', function() {
       ThreadUI.contactPickButton.dispatchEvent(new CustomEvent('mousedown'));
       assert.ok(ThreadUI.assimilateRecipients.called);
+    });
+
+    suite('Recipients.View.isObscured', function() {
+      test('true during activity', function() {
+        ThreadUI.requestContact();
+        assert.isTrue(Recipients.View.isObscured);
+      });
+
+      test('false after activity', function() {
+        this.sinon.stub(Utils, 'basicContact').returns({});
+
+        ThreadUI.requestContact();
+
+        var activity = MockMozActivity.instances[0];
+
+        activity.result = {
+          tel: [{ value: true }]
+        };
+
+        MockMozActivity.instances[0].onsuccess();
+
+        assert.isFalse(Recipients.View.isObscured);
+      });
     });
   });
 
@@ -3401,6 +3954,34 @@ suite('thread_ui.js >', function() {
     });
   });
 
+  suite('enableActivityRequestMode', function() {
+    test('calling function change the back button icon', function() {
+      var backButtonSpan = ThreadUI.backButton.querySelector('span');
+
+      ThreadUI.enableActivityRequestMode();
+      assert.isTrue(backButtonSpan.classList.contains('icon-close'));
+      assert.isFalse(backButtonSpan.classList.contains('icon-back'));
+    });
+  });
+
+  suite('back action', function() {
+    setup(function() {
+      this.sinon.stub(ThreadUI, 'isKeyboardDisplayed').returns(false);
+      this.sinon.stub(ThreadUI, 'stopRendering');
+    });
+
+    test('call postResult when there is an activity', function() {
+      var mockActivity = {
+        postResult: sinon.stub()
+      };
+
+      ActivityHandler.currentActivity.new = mockActivity;
+
+      ThreadUI.back();
+      assert.isTrue(mockActivity.postResult.called);
+    });
+  });
+
   suite('New Message banner', function() {
     var notice;
     var testMessage;
@@ -3473,4 +4054,54 @@ suite('thread_ui.js >', function() {
     });
   });
 
+  suite('Open options menu', function() {
+    setup(function() {
+      window.location.hash = '';
+      MockOptionMenu.mSetup();
+    });
+
+    teardown(function() {
+      window.location.hash = '';
+      MockOptionMenu.mTeardown();
+    });
+
+    suite('opens from new message', function() {
+      var options;
+      setup(function() {
+        window.location.hash = '#new';
+      });
+      teardown(function() {
+        window.location.hash = '';
+      });
+      test('should show proper options', function() {
+        ThreadUI.showOptions();
+        options = MockOptionMenu.calls[0].items;
+        assert.equal(MockOptionMenu.calls.length, 1);
+        assert.equal(options.length, 2);
+        assert.equal(options[0].l10nId, 'settings');
+      });
+    });
+
+    suite('opens from existing message', function() {
+      var options;
+      setup(function() {
+        window.location.hash = '#thread=1';
+        ThreadUI.showOptions();
+        options = MockOptionMenu.calls[0].items;
+      });
+      teardown(function() {
+        window.location.hash = '';
+      });
+      test('should show options overlay', function() {
+        assert.equal(MockOptionMenu.calls.length, 1);
+      });
+      test('should show option for deleting messages', function() {
+        assert.equal(options[0].l10nId, 'deleteMessages-label');
+      });
+      test('should show settings options last', function() {
+        assert.equal(options[options.length - 2].l10nId, 'settings');
+      });
+    });
+
+  });
 });

@@ -2,7 +2,11 @@ Keyboards.el = {
   label: 'Greek',
   menuLabel: 'Greek',
   imEngine: 'latin',
+  types: ['text', 'url', 'email'],
   autoCorrectLanguage: 'el',
+  upperCase: {
+    'ς': 'ς'
+  },
   alt: {
     α: 'ά',
     ε: 'έ€',
@@ -12,8 +16,7 @@ Keyboards.el = {
     υ: 'ύϋΰ',
     Ι: 'ΊΪ',
     ι: 'ίϊΐ',
-    η: 'ή',
-    σ: 'ς'
+    η: 'ή'
   },
   keys: [
     [

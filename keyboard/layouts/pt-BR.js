@@ -2,6 +2,7 @@ Keyboards['pt-BR'] = {
   label: 'Portuguese',
   menuLabel: 'Português',
   imEngine: 'latin',
+  types: ['text', 'url', 'email'],
   autoCorrectLanguage: 'pt_br',
   alt: {
     a: 'áãàâäåæª',
@@ -63,27 +64,6 @@ Keyboards['pt-BR'] = {
         { value: 'R$', compositeKey: 'R$' }, { value: '&' },
         { value: '@', hidden: ['email'] },
         { value: '%' }, { value: '_', visible: ['email']}
-      ], [
-        { value: 'ALT', ratio: 1.5, keyCode: KeyEvent.DOM_VK_ALT },
-        { value: '?' }, {value: '!' }, { value: '«' }, { value: '»' },
-        { value: '\"' }, { value: '\'' }, { value: '*' },
-        { value: '⌫', ratio: 1.5, keyCode: KeyEvent.DOM_VK_BACK_SPACE }
-      ], [
-        { value: '&nbsp', ratio: 8, keyCode: KeyboardEvent.DOM_VK_SPACE },
-        { value: '↵', ratio: 2, keyCode: KeyEvent.DOM_VK_RETURN }
-      ]
-    ]
-  },
-  symbolLayout: {
-    keys: [
-      [
-        { value: '[' }, { value: ']' }, { value: '{' }, { value: '}' },
-        { value: '#' }, { value: '%' }, { value: '^' }, { value: '+' },
-        { value: '=' }, { value: '°' }
-      ], [
-        { value: '_' }, { value: '\\' }, { value: '|' }, { value: '~' },
-        { value: '<' }, { value: '>' }, { value: '€' }, { value: '$' },
-        { value: '£' }, { value: '•' }
       ], [
         { value: 'ALT', ratio: 1.5, keyCode: KeyEvent.DOM_VK_ALT },
         { value: '?' }, {value: '!' }, { value: '«' }, { value: '»' },

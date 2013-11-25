@@ -122,6 +122,11 @@ var LockScreen = {
   elasticEnabled: false,
 
   /*
+  * A reference to the media playback widget in the lockscreen.
+  */
+  mediaPlaybackWidget: null,
+
+  /*
   * elastic animation interval
   */
   ELASTIC_INTERVAL: 5000,
@@ -212,7 +217,13 @@ var LockScreen = {
     window.addEventListener('holdhome', this, true);
 
     /* mobile connection state on lock screen */
-    var conn = window.navigator.mozMobileConnection;
+
+    // XXX: check bug-926169
+    // this is used to keep all tests passing while introducing multi-sim APIs
+    var conn = window.navigator.mozMobileConnection ||
+      window.navigator.mozMobileConnections &&
+        window.navigator.mozMobileConnections[0];
+
     if (conn && conn.voice) {
       conn.addEventListener('voicechange', this);
       this.updateConnState();
@@ -220,10 +231,13 @@ var LockScreen = {
     }
 
     /* icc state on lock screen */
-    if (IccHelper.enabled) {
+    if (IccHelper) {
       IccHelper.addEventListener('cardstatechange', this);
       IccHelper.addEventListener('iccinfochange', this);
     }
+
+    /* media playback widget */
+    this.mediaPlaybackWidget = new MediaPlaybackWidget(this.mediaContainer);
 
     var self = this;
 
@@ -446,8 +460,12 @@ var LockScreen = {
           this.camera.removeChild(this.camera.firstElementChild);
         }
 
-        if (!this.locked)
+        if (!this.locked) {
           this.switchPanel();
+          this.overlay.hidden = true;
+          this.dispatchEvent('unlock', this.unlockDetail);
+          this.unlockDetail = undefined;
+        }
         break;
 
       case 'home':
@@ -607,6 +625,8 @@ var LockScreen = {
   // easing {Boolean} true|undefined to bounce back slowly.
   restoreSlide: function(easing) {
 
+    var slideCenter = this.slideCenter;
+
     // Mimic the `getAllElements` function...
     [this.slideLeft, this.slideRight, this.slideCenter]
       .forEach(function ls_rSlide(h) {
@@ -614,6 +634,8 @@ var LockScreen = {
 
           // To prevent magic numbers...
           var bounceBackTime = '0.3s';
+          if ('handle-center' === h.dataset.role)
+            bounceBackTime = '0.4s';  // The center should be slower.
 
           // Add transition to let it bounce back slowly.
           h.style.transition = 'transform ' + bounceBackTime + ' ease 0s';
@@ -629,6 +651,11 @@ var LockScreen = {
             // but we don't need to reset the blue are at such scenario.
             h.classList.remove('touched');
             h.removeEventListener('transitionend', tsEnd);
+
+            // End the center immediately when the ends ended.
+            if ('handle-center' !== h.dataset.role) {
+              slideCenter.classList.remove('touched');
+            }
           };
           h.addEventListener('transitionend', tsEnd);
 
@@ -645,13 +672,10 @@ var LockScreen = {
   },
 
   handleSlideEnd: function() {
-    // Bounce back to the center immediately.
+    // Bounce back to the center.
     if (false === this._slideReachEnd) {
       this.restoreSlide(true);
     } else {
-      // Restore it only after screen changed.
-      var appLaunchDelay = 400;
-      setTimeout(this.restoreSlide.bind(this, true), appLaunchDelay);
       this.handleIconClick('left' === this._slidingToward ?
         this.leftIcon : this.rightIcon);
     }
@@ -765,6 +789,26 @@ var LockScreen = {
     var wasAlreadyUnlocked = !this.locked;
     this.locked = false;
 
+    this.mainScreen.focus();
+    this.mainScreen.classList.remove('locked');
+
+    // The lockscreen will be hidden, stop refreshing the clock.
+    this.clock.stop();
+
+    if (wasAlreadyUnlocked)
+      return;
+
+    this.dispatchEvent('will-unlock', detail);
+    this.writeSetting(false);
+
+    if (this.unlockSoundEnabled) {
+      var unlockAudio = new Audio('./resources/sounds/unlock.ogg');
+      unlockAudio.play();
+    }
+
+    this.overlay.classList.toggle('no-transition', instant);
+
+    // Actually begin unlock until the foreground app is painted
     var repaintTimeout = 0;
     var nextPaint = (function() {
       clearTimeout(repaintTimeout);
@@ -772,44 +816,29 @@ var LockScreen = {
       if (currentFrame)
         currentFrame.removeNextPaintListener(nextPaint);
 
+      this.overlay.classList.add('unlocked');
 
+      // If we don't unlock instantly here,
+      // these are run in transitioned callback.
       if (instant) {
-        this.overlay.classList.add('no-transition');
         this.switchPanel();
-      } else {
-        this.overlay.classList.remove('no-transition');
-      }
+        this.overlay.hidden = true;
 
-      this.mainScreen.classList.remove('locked');
-
-      if (!wasAlreadyUnlocked) {
-        // Any changes made to this,
-        // also need to be reflected in apps/system/js/storage.js
         this.dispatchEvent('unlock', detail);
-        this.writeSetting(false);
-
-        if (instant)
-          return;
-
-        if (this.unlockSoundEnabled) {
-          var unlockAudio = new Audio('./resources/sounds/unlock.ogg');
-          unlockAudio.play();
-        }
+      } else {
+        this.unlockDetail = detail;
       }
     }).bind(this);
 
     if (currentFrame)
       currentFrame.addNextPaintListener(nextPaint);
 
+    // Give up waiting for nextpaint after 400ms
+    // XXX: Does not consider the situation where the app is painted already
+    // behind the lock screen (why?).
     repaintTimeout = setTimeout(function ensureUnlock() {
       nextPaint();
-    }, 200);
-
-    this.mainScreen.focus();
-    this.dispatchEvent('will-unlock');
-
-    // The lockscreen will be hidden, stop refreshing the clock.
-    this.clock.stop();
+    }, 400);
   },
 
   lock: function ls_lock(instant) {
@@ -819,13 +848,12 @@ var LockScreen = {
     this.switchPanel();
 
     this.overlay.focus();
-    if (instant)
-      this.overlay.classList.add('no-transition');
-    else
-      this.overlay.classList.remove('no-transition');
+    this.overlay.classList.toggle('no-transition', instant);
 
     this.mainScreen.classList.add('locked');
-    screen.mozLockOrientation(ScreenLayout.defaultOrientation);
+    this.overlay.classList.remove('unlocked');
+    this.overlay.hidden = false;
+    screen.mozLockOrientation(OrientationManager.defaultOrientation);
 
     if (!wasAlreadyLocked) {
       if (document.mozFullScreen)
@@ -865,12 +893,13 @@ var LockScreen = {
         var frame = document.createElement('iframe');
 
         frame.src = './camera/index.html';
-        var mainScreen = this.mainScreen;
-        frame.onload = function cameraLoaded() {
-          mainScreen.classList.add('lockscreen-camera');
+        frame.onload = (function cameraLoaded() {
+          this.mainScreen.classList.add('lockscreen-camera');
+          this.overlay.classList.add('unlocked');
+
           if (callback)
             callback();
-        };
+        }).bind(this);
         this.overlay.classList.remove('no-transition');
         this.camera.appendChild(frame);
 
@@ -892,6 +921,8 @@ var LockScreen = {
 
       case 'camera':
         this.mainScreen.classList.remove('lockscreen-camera');
+        this.overlay.classList.remove('unlocked');
+        this.overlay.hidden = false;
         break;
 
       case 'emergency-call':
@@ -947,6 +978,12 @@ var LockScreen = {
     }
 
     panel = panel || 'main';
+    if ('main' === panel) {
+      this.restoreSlide();
+      this.slideLeft.classList.remove('touched');
+      this.slideCenter.classList.remove('touched');
+      this.slideRight.classList.remove('touched');
+    }
     var overlay = this.overlay;
     var currentPanel = overlay.dataset.panel;
 
@@ -984,11 +1021,17 @@ var LockScreen = {
   },
 
   updateConnState: function ls_updateConnState() {
-    var conn = window.navigator.mozMobileConnection;
+
+    // XXX: check bug-926169
+    // this is used to keep all tests passing while introducing multi-sim APIs
+    var conn = window.navigator.mozMobileConnection ||
+      window.navigator.mozMobileConnections &&
+        window.navigator.mozMobileConnections[0];
+
     if (!conn)
       return;
 
-    if (!IccHelper.enabled)
+    if (!IccHelper)
       return;
 
     navigator.mozL10n.ready(function() {
@@ -1183,8 +1226,8 @@ var LockScreen = {
     // ID of elements to create references
     var elements = ['connstate', 'clock-numbers', 'clock-meridiem',
         'date', 'area', 'area-unlock', 'area-camera', 'icon-container',
-        'area-handle', 'area-slide', 'passcode-code', 'alt-camera',
-        'alt-camera-button', 'slide-handle',
+        'area-handle', 'area-slide', 'media-container', 'passcode-code',
+        'alt-camera', 'alt-camera-button', 'slide-handle',
         'passcode-pad', 'camera', 'accessibility-camera',
         'accessibility-unlock', 'panel-emergency-call'];
 

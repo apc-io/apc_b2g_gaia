@@ -2431,10 +2431,12 @@ var HTMLParser = (function(){
         var pos = 0;
 
       // Find the closest opened tag of the same type
-      else
+      else {
+        tagName = tagName.toLowerCase();
         for ( var pos = stack.length - 1; pos >= 0; pos-- )
           if ( stack[ pos ] == tagName )
             break;
+      }
 
       if ( pos >= 0 ) {
         // Close all the open elements, up the stack
@@ -3593,7 +3595,7 @@ exports.generateReplyBody = function generateReplyMessage(reps, authorPair,
         textMsg += replyText;
       }
     }
-    else {
+    else if (repType === 'html') {
       if (!htmlMsg) {
         htmlMsg = '';
         // slice off the trailing newline of textMsg
@@ -3635,7 +3637,6 @@ exports.generateReplyBody = function generateReplyMessage(reps, authorPair,
  */
 exports.generateForwardMessage =
   function(author, date, subject, headerInfo, bodyInfo, identity) {
-
   var textMsg = '\n\n', htmlMsg = null;
 
   if (identity.signature)
@@ -3698,7 +3699,7 @@ exports.generateForwardMessage =
         textMsg += forwardText;
       }
     }
-    else {
+    else if (repType === 'html') {
       if (!htmlMsg)
         htmlMsg = '';
       htmlMsg += rep;
@@ -4157,7 +4158,7 @@ exports.chewHeaderAndBodyStructure =
  *    // what just happend?
  *    // 1. the body.bodyReps[n].content is now the value of content.
  *    //
- *    // 2. we update .downloadedAmount with the second argument
+ *    // 2. we update .amountDownloaded with the second argument
  *    //    (number of bytes downloaded).
  *    //
  *    // 3. if snippet has not bee set on the header we create the snippet
@@ -4227,6 +4228,29 @@ exports.canBodyRepFillSnippet = function(bodyRep) {
     bodyRep.type === 'html'
   );
 };
+
+
+/**
+ * Calculates and returns the correct estimate for the number of
+ * bytes to download before we can display the body. For IMAP, that
+ * includes the bodyReps and related parts. (POP3 is different.)
+ */
+exports.calculateBytesToDownloadForImapBodyDisplay = function(body) {
+  var bytesLeft = 0;
+  body.bodyReps.forEach(function(rep) {
+    if (!rep.isDownloaded) {
+      bytesLeft += rep.sizeEstimate - rep.amountDownloaded;
+    }
+  });
+  body.relatedParts.forEach(function(part) {
+    if (!part.file) {
+      bytesLeft += part.sizeEstimate;
+    }
+  });
+  return bytesLeft;
+}
+
+
 
 }); // end define
 ;

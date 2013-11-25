@@ -10,7 +10,13 @@ var TelephonyHelper = (function() {
       displayMessage('BadNumber');
       return;
     }
-    var conn = window.navigator.mozMobileConnection;
+
+    // XXX: check bug-926169
+    // this is used to keep all tests passing while introducing multi-sim APIs
+    var conn = window.navigator.mozMobileConnection ||
+               window.navigator.mozMobileConnections &&
+               window.navigator.mozMobileConnections[0];
+
     if (!conn || !conn.voice) {
       // No voice connection, the call won't make it
       displayMessage('NoNetwork');
@@ -20,13 +26,13 @@ var TelephonyHelper = (function() {
   };
 
   function notifyBusyLine() {
-    // ANSI call waiting tone for a 3 seconds window.
-    var sequence = [[480, 620, 500],
-                    [0, 0, 500],
-                    [480, 620, 500],
-                    [0, 0, 500],
-                    [480, 620, 500],
-                    [0, 0, 500]];
+    // ANSI call waiting tone for a 6 seconds window.
+    var sequence = [[480, 620, 500], [0, 0, 500],
+                    [480, 620, 500], [0, 0, 500],
+                    [480, 620, 500], [0, 0, 500],
+                    [480, 620, 500], [0, 0, 500],
+                    [480, 620, 500], [0, 0, 500],
+                    [480, 620, 500], [0, 0, 500]];
     TonePlayer.playSequence(sequence);
   };
 
@@ -45,7 +51,12 @@ var TelephonyHelper = (function() {
     }
 
     LazyLoader.load('/shared/js/icc_helper.js', function() {
-      var conn = window.navigator.mozMobileConnection;
+      // XXX: check bug-926169
+      // this is used to keep all tests passing while introducing multi-sim APIs
+      var conn = window.navigator.mozMobileConnection ||
+                 window.navigator.mozMobileConnections &&
+                 window.navigator.mozMobileConnections[0];
+
       var cardState = IccHelper.cardState;
       var emergencyOnly = conn.voice.emergencyCallsOnly;
       var call;

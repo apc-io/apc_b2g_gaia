@@ -8,15 +8,18 @@ function noti(win) {
     mozNotification = win.navigator.mozNotification;
   }
 
-  var notification = mozNotification.createNotification('UI Tests mozNotification',
-                                                      'Hello world!',
-                                                      imageData);
+  var notification =
+    mozNotification.createNotification('UI Tests mozNotification',
+                                       'Hello world!',
+                                       imageData);
   notification.show();
   notification.onclick = function() {
     window.alert('Notification clicked');
   };
+  // Using async alert will make following settimeout fail.
+  // So use console.log instead
   notification.onclose = function() {
-    window.alert('Notification closed');
+    console.log('Notification closed');
   };
 }
 

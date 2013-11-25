@@ -49,6 +49,52 @@ function startup(data, reason) {
       }
     }, 'document-element-inserted', false);
 
+    // Watch for app load start in firefox tabs.
+    // We have to set the app id on each docshell where we are trying to load
+    // an app. That's because we can't set mozapp attribute on firefox iframes
+    // as Firefox is still using xul:browser.
+    let nsIWebProgressListener = Ci.nsIWebProgressListener;
+    let appsService = Cc['@mozilla.org/AppsService;1'].getService(Ci.nsIAppsService);
+    let docShellListener = {
+      onStateChange: function onStateChange(webProgress, request, flags, status) {
+        if (!webProgress.chromeEventHandler ||
+             webProgress.chromeEventHandler.tagName != "xul:browser") {
+          // Only set app id for firefox tab <xul:browser> frames
+          return;
+        }
+
+        // Catch any load start request
+        if (flags & nsIWebProgressListener.STATE_START &&
+            flags & nsIWebProgressListener.STATE_IS_DOCUMENT &&
+            (request instanceof Ci.nsIChannel || 'URI' in request)) {
+          // Try to compute the manifest URL out of document URL
+          // We should end up with urls like:
+          //   http://system.gaiamobile.org:8080/manifest.webapp
+          //   app://system.gaiamobile.org/manifest.webapp
+          let manifestURL = request.URI.prePath + '/manifest.webapp';
+          let manifest = appsService.getAppByManifestURL(manifestURL);
+          if (manifest) {
+            let app = manifest.QueryInterface(Ci.mozIApplication);
+            // test-agent expects its iframes to load apps without any permissions
+            // so prevent setting the correct app id to its iframes
+            if (!webProgress.DOMWindow || !webProgress.DOMWindow.top ||
+                !webProgress.DOMWindow.top.location.host.startsWith("test-agent.gaiamobile.org")) {
+              webProgress.QueryInterface(Ci.nsIDocShell).setIsApp(app.localId);
+            }
+          }
+        }
+      }
+    };
+    // Listen for loads happening in all browser windows.
+    Services.obs.addObserver(function(win) {
+      win.addEventListener('DOMContentLoaded', function loaded() {
+        win.removeEventListener('DOMContentLoaded', loaded);
+        if (win.gBrowser) {
+          win.gBrowser.addProgressListener(docShellListener);
+        }
+      });
+    }, 'domwindowopened', false);
+
     Services.obs.addObserver(function() {
       let browserWindow = Services.wm.getMostRecentWindow('navigator:browser');
 
@@ -180,18 +226,7 @@ function startup(data, reason) {
 
       // XXX This code should be loaded by the keyboard/ extension
       Cu.import('resource://gre/modules/Keyboard.jsm')
-      mm.addMessageListener('Forms:Input', Keyboard);
-      mm.addMessageListener('Forms:SelectionChange', Keyboard);
-      mm.addMessageListener('Forms:GetText:Result:OK', Keyboard);
-      mm.addMessageListener('Forms:GetText:Result:Error', Keyboard);
-      mm.addMessageListener('Forms:SetSelectionRange:Result:OK', Keyboard);
-      mm.addMessageListener('Forms:ReplaceSurroundingText:Result:OK', Keyboard);
-      mm.addMessageListener('Forms:SendKey:Result:OK', Keyboard);
-      mm.addMessageListener('Forms:SequenceError', Keyboard);
-      mm.addMessageListener('Forms:GetContext:Result:OK', Keyboard);
-      mm.addMessageListener('Forms:SetComposition:Result:OK', Keyboard);
-      mm.addMessageListener('Forms:EndComposition:Result:OK', Keyboard);
-      mm.loadFrameScript('chrome://keyboard.js/content/forms.js', true);
+      Keyboard.initFormsFrameScript(mm);
     }, 'sessionstore-windows-restored', false);
 
     try {

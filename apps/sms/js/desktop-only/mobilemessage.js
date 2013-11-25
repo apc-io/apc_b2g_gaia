@@ -1,3 +1,4 @@
+/*global Drafts, Draft */
 /* -*- Mode: js; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- /
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 
@@ -67,6 +68,7 @@
       type: 'mms',
       read: true,
       delivery: 'received',
+      deliveryInfo: [{deliveryStatus: 'success'}],
       subject: 'Test MMS Image message',
       smil: '<smil><body><par><img src="example.jpg"/>' +
             '<text src="text1"/></par></body></smil>',
@@ -86,6 +88,7 @@
       type: 'mms',
       read: true,
       delivery: 'sent',
+      deliveryInfo: [{deliveryStatus: 'success'}],
       subject: 'Test MMS Image message',
       smil: '<smil><body><par><text src="text1"/></par>' +
             '<par><img src="example.jpg"/></par></body></smil>',
@@ -108,6 +111,7 @@
       type: 'mms',
       read: true,
       delivery: 'received',
+      deliveryInfo: [{deliveryStatus: 'success'}],
       subject: 'Test MMS Video message',
       smil: '<smil><body><par><video src="example.ogv"/>' +
             '<text src="text1"/></par></body></smil>',
@@ -127,6 +131,7 @@
       type: 'mms',
       read: true,
       delivery: 'sent',
+      deliveryInfo: [{deliveryStatus: 'success'}],
       subject: 'Test MMS Video message',
       smil: '<smil><body><par><text src="text1"/></par>' +
             '<par><video src="example.ogv"/></par></body></smil>',
@@ -148,6 +153,7 @@
       read: true,
       type: 'mms',
       delivery: 'received',
+      deliveryInfo: [{deliveryStatus: 'success'}],
       subject: 'Test MMS audio message',
       smil: '<smil><body><par><audio src="example.ogg"/>' +
             '<text src="text1"/></par></body></smil>',
@@ -167,6 +173,7 @@
       read: true,
       type: 'mms',
       delivery: 'sent',
+      deliveryInfo: [{deliveryStatus: 'success'}],
       subject: 'Test MMS audio message',
       smil: '<smil><body><par><text src="text1"/></par>' +
             '<par><audio src="example.ogg"/></par></body></smil>',
@@ -189,6 +196,7 @@
       type: 'mms',
       read: true,
       delivery: 'received',
+      deliveryInfo: [{deliveryStatus: 'success'}],
       subject: 'Test MMS bmp format Image message',
       smil: '<smil><body><par><img src="example.bmp"/>' +
             '<text src="text1"/></par></body></smil>',
@@ -212,6 +220,7 @@
       type: 'mms',
       read: true,
       delivery: 'received',
+      deliveryInfo: [{deliveryStatus: 'success'}],
       subject: 'Test MMS wbmp format Image message',
       smil: '<smil><body><par><img src="grid.wbmp"/>' +
             '<text src="text1"/></par></body></smil>',
@@ -231,6 +240,54 @@
     '101', '102', '103', '104', '105', '106', '107', '108', '109'
   ];
 
+  // Fake drafts stored in local store
+  (function() {
+    var d1, d2, d3, d4, d5;
+    d1 = new Draft({
+      recipients: ['555', '666'],
+      content: 'This is a draft message',
+      timestamp: 1,
+      threadId: 42,
+      type: 'sms'
+    });
+    d2 = new Draft({
+      recipients: ['555'],
+      content: 'This is a draft message',
+      timestamp: 2,
+      threadId: 42,
+      type: 'sms'
+    });
+    d3 = new Draft({
+      recipients: ['555', '222'],
+      content: 'This is a draft message',
+      timestamp: 3,
+      threadId: 1,
+      type: 'sms'
+    });
+    d4 = new Draft({
+      recipients: ['555', '333'],
+      content: 'This is a draft message',
+      timestamp: 4,
+      threadId: 2,
+      type: 'sms'
+    });
+    d5 = new Draft({
+      recipients: ['555', '444'],
+      content: 'This is a draft message',
+      timestamp: 5,
+      threadId: null,
+      type: 'sms'
+    });
+    Drafts.clear();
+    Drafts.add(d1);
+    Drafts.add(d2);
+    Drafts.add(d3);
+    Drafts.add(d4);
+    Drafts.add(d5);
+    Drafts.store();
+  }());
+
+
   // Fake in-memory message database
   var messagesDb = {
     id: 0,
@@ -243,7 +300,8 @@
         delivery: 'sent',
         read: true,
         type: 'sms',
-        timestamp: new Date(Date.now())
+        timestamp: new Date(Date.now()),
+        deliveryStatus: 'success'
       },
       {
         threadId: 1,
@@ -253,6 +311,7 @@
         delivery: 'sent',
         read: true,
         type: 'sms',
+        deliveryStatus: 'not-applicable',
         timestamp: new Date(Date.now() - 8400000000)
       },
       {
@@ -263,6 +322,7 @@
         delivery: 'sending',
         read: true,
         type: 'sms',
+        deliveryStatus: 'not-applicable',
         timestamp: new Date(Date.now() - 172800000)
       },
       {
@@ -275,6 +335,7 @@
         ' or\ngoogle.com or www.google.es',
         error: true,
         type: 'sms',
+        deliveryStatus: 'not-applicable',
         timestamp: new Date(Date.now() - 900000)
       },
       {
@@ -286,6 +347,7 @@
           'wrapping. (delivery: sending)',
         delivery: 'sending',
         type: 'sms',
+        deliveryStatus: 'pending',
         timestamp: new Date(Date.now() - 800000)
       },
       {
@@ -297,6 +359,7 @@
           'wrapping. (delivery: error)',
         delivery: 'error',
         type: 'sms',
+        deliveryStatus: 'error',
         timestamp: new Date(Date.now() - 700000)
       },
       {
@@ -307,6 +370,7 @@
           'wrapping. (delivery: sent)',
         delivery: 'sent',
         type: 'sms',
+        deliveryStatus: 'not-applicable',
         timestamp: new Date(Date.now() - 600000)
        },
       {
@@ -327,6 +391,7 @@
         body: 'This message is intended to demonstrate natural line ' +
           'wrapping. (delivery: received)',
         delivery: 'received',
+        deliveryStatus: 'success',
         type: 'sms',
         timestamp: new Date(Date.now() - 500000)
       },
@@ -338,6 +403,7 @@
         body: 'short (delivery: sending)',
         delivery: 'sending',
         type: 'sms',
+        deliveryStatus: 'not-applicable',
         timestamp: new Date(Date.now() - 400000)
       },
       {
@@ -348,6 +414,7 @@
         body: 'short (delivery: error)',
         delivery: 'error',
         type: 'sms',
+        deliveryStatus: 'error',
         timestamp: new Date(Date.now() - 300000)
       },
       {
@@ -358,6 +425,7 @@
         body: 'short (delivery: sent)',
         delivery: 'sent',
         type: 'sms',
+        deliveryStatus: 'success',
         timestamp: new Date(Date.now() - 200000)
       },
       {
@@ -378,6 +446,7 @@
         body: 'short (delivery: received)',
         delivery: 'received',
         type: 'sms',
+        deliveryStatus: 'success',
         timestamp: new Date(Date.now() - 100000)
       },
       {
@@ -385,7 +454,7 @@
         sender: '123456',
         type: 'mms',
         delivery: 'not-downloaded',
-        deliveryStatus: ['pending'],
+        deliveryInfo: [{receiver: null, deliveryStatus: 'pending'}],
         subject: 'Pending download',
         timestamp: new Date(Date.now() - 150000),
         expiryDate: new Date(Date.now() + ONE_DAY_TIME)
@@ -395,7 +464,7 @@
         sender: '123456',
         type: 'mms',
         delivery: 'not-downloaded',
-        deliveryStatus: ['error'],
+        deliveryInfo: [{receiver: null, deliveryStatus: 'error'}],
         subject: 'Error download',
         timestamp: new Date(Date.now() - 150000),
         expiryDate: new Date(Date.now() + ONE_DAY_TIME * 2)
@@ -405,7 +474,7 @@
         sender: '123456',
         type: 'mms',
         delivery: 'not-downloaded',
-        deliveryStatus: ['error'],
+        deliveryInfo: [{receiver: null, deliveryStatus: 'error'}],
         subject: 'Error download',
         timestamp: new Date(Date.now() - 150000),
         expiryDate: new Date(Date.now() - ONE_DAY_TIME)
@@ -415,7 +484,7 @@
         sender: '123456',
         type: 'mms',
         delivery: 'received',
-        deliveryStatus: ['success'],
+        deliveryInfo: [{receiver: null, deliveryStatus: 'success'}],
         subject: 'No attachment error',
         smil: '<smil><body><par><text src="text1"/></par></body></smil>',
         attachments: null,
@@ -531,6 +600,7 @@
       id: messagesDb.id++,
       read: true,
       type: 'mms',
+      deliveryInfo: [{deliveryStatus: 'success'}],
       subject: '',
       smil: '<smil><body><par><text src="text1"/></par></body></smil>',
       attachments: [{
@@ -557,6 +627,7 @@
       id: messagesDb.id++,
       read: true,
       type: 'mms',
+      deliveryInfo: [{deliveryStatus: 'success'}],
       subject: '',
       smil: '<smil><body><par><text src="text1"/></par></body></smil>',
       attachments: [{
@@ -576,6 +647,7 @@
     id: messagesDb.id++,
     read: true,
     type: 'mms',
+    deliveryInfo: [{deliveryStatus: 'success'}],
     subject: '',
     smil: '<smil><body><par><text src="text1"/></par></body></smil>',
     attachments: [{
@@ -800,6 +872,7 @@
         receivers: params.receivers,
         type: 'mms',
         delivery: 'sending',
+        deliveryInfo: [{deliveryStatus: 'not-applicable'}],
         read: true,
         subject: '',
         smil: params.smil,
@@ -861,6 +934,7 @@
             timestamp: new Date(),
             threadId: thread.id,
             type: 'mms',
+            deliveryInfo: [{deliveryStatus: 'success'}],
             read: false,
             subject: '',
             smil: '<smil><body><par><text src="text1"/></par></body></smil>',

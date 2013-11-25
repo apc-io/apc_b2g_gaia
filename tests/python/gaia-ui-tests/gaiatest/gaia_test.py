@@ -90,6 +90,10 @@ class GaiaApps(object):
                        name=result.get('name'),
                        origin=result.get('origin'))
 
+    def switch_to_displayed_app(self):
+        self.marionette.switch_to_default_content()
+        self.marionette.switch_to_frame(self.displayed_app.frame)
+
     def is_app_installed(self, app_name):
         self.marionette.switch_to_frame()
         return self.marionette.execute_async_script("GaiaApps.locateWithName('%s')" % app_name)
@@ -179,6 +183,37 @@ class GaiaData(object):
         result = self.marionette.execute_async_script('return GaiaDataLayer.setSetting("%s", %s)' % (name, value), special_powers=True)
         assert result, "Unable to change setting with name '%s' to '%s'" % (name, value)
 
+    def _get_pref(self, datatype, name):
+        return self.marionette.execute_script("return SpecialPowers.get%sPref('%s');" % (datatype, name), special_powers=True)
+
+    def _set_pref(self, datatype, name, value):
+        value = json.dumps(value)
+        self.marionette.execute_script("SpecialPowers.set%sPref('%s', %s);" % (datatype, name, value), special_powers=True)
+
+    def get_bool_pref(self, name):
+        """Returns the value of a Gecko boolean pref, which is different from a Gaia setting."""
+        return self._get_pref('Bool', name)
+
+    def set_bool_pref(self, name, value):
+        """Sets the value of a Gecko boolean pref, which is different from a Gaia setting."""
+        return self._set_pref('Bool', name, value)
+
+    def get_int_pref(self, name):
+        """Returns the value of a Gecko integer pref, which is different from a Gaia setting."""
+        return self._get_pref('Int', name)
+
+    def set_int_pref(self, name, value):
+        """Sets the value of a Gecko integer pref, which is different from a Gaia setting."""
+        return self._set_pref('Int', name, value)
+
+    def get_char_pref(self, name):
+        """Returns the value of a Gecko string pref, which is different from a Gaia setting."""
+        return self._get_pref('Char', name)
+
+    def set_char_pref(self, name, value):
+        """Sets the value of a Gecko string pref, which is different from a Gaia setting."""
+        return self._set_pref('Char', name, value)
+
     def set_volume(self, value):
         channels = ['alarm', 'content', 'notification']
         for channel in channels:
@@ -230,7 +265,12 @@ class GaiaData(object):
 
     @property
     def is_cell_data_connected(self):
-        return self.marionette.execute_script("return window.navigator.mozMobileConnection.data.connected;")
+        # XXX: check bug-926169
+        # this is used to keep all tests passing while introducing multi-sim APIs
+        return self.marionette.execute_script('var mobileConnection = window.navigator.mozMobileConnection || ' +
+                                              'window.navigator.mozMobileConnections && ' +
+                                              'window.navigator.mozMobileConnections[0]; ' +
+                                              'return mobileConnection.data.connected;')
 
     def enable_cell_roaming(self):
         self.set_setting('ril.data.roaming_enabled', True)
@@ -333,6 +373,13 @@ class GaiaData(object):
             return [filename for filename in files if filename.endswith(extension)]
         return files
 
+    def send_sms(self, number, message):
+        import json
+        number = json.dumps(number)
+        message = json.dumps(message)
+        result = self.marionette.execute_async_script('return GaiaDataLayer.sendSMS(%s, %s)' % (number, message), special_powers=True)
+        assert result, 'Unable to send SMS to recipient %s with text %s' % (number, message)
+
 
 class GaiaDevice(object):
 
@@ -373,7 +420,12 @@ class GaiaDevice(object):
 
     @property
     def has_mobile_connection(self):
-        return self.marionette.execute_script('return window.navigator.mozMobileConnection !== undefined')
+        # XXX: check bug-926169
+        # this is used to keep all tests passing while introducing multi-sim APIs
+        return self.marionette.execute_script('var mobileConnection = window.navigator.mozMobileConnection || ' +
+                                              'window.navigator.mozMobileConnections && ' +
+                                              'window.navigator.mozMobileConnections[0]; ' +
+                                              'return mobileConnection !== undefined')
 
     @property
     def has_wifi(self):
@@ -486,10 +538,6 @@ class GaiaTestCase(MarionetteTestCase):
         # Switch off keyboard FTU screen
         self.data_layer.set_setting("keyboard.ftu.enabled", False)
 
-        # Change timezone back to PST
-        self.data_layer.set_setting("time.timezone", "America/Los_Angeles")
-        self.data_layer.set_setting("time.timezone.user-selected", "America/Los_Angeles")
-
         # restore settings from testvars
         [self.data_layer.set_setting(name, value) for name, value in self.testvars.get('settings', {}).items()]
 
@@ -512,10 +560,12 @@ class GaiaTestCase(MarionetteTestCase):
             # Set do not track pref back to the default
             self.data_layer.set_setting('privacy.donottrackheader.value', '-1')
 
-
             if self.data_layer.get_setting('ril.radio.disabled'):
                 # enable the device radio, disable Airplane mode
                 self.data_layer.set_setting('ril.radio.disabled', False)
+
+            # Re-set edge gestures pref to False
+            self.data_layer.set_setting('edgesgesture.enabled', False)
 
             # disable carrier data connection
             if self.device.has_mobile_connection:
@@ -539,22 +589,6 @@ class GaiaTestCase(MarionetteTestCase):
 
         # disable sound completely
         self.data_layer.set_volume(0)
-
-
-    def install_marketplace(self):
-        _yes_button_locator = (By.ID, 'app-install-install-button')
-        mk = {"name": "Marketplace Dev",
-              "manifest": "https://marketplace-dev.allizom.org/manifest.webapp ",
-              }
-
-        if not self.apps.is_app_installed(mk['name']):
-            # install the marketplace dev app
-            self.marionette.execute_script('navigator.mozApps.install("%s")' % mk['manifest'])
-
-            # TODO add this to the system app object when we have one
-            self.wait_for_element_displayed(*_yes_button_locator)
-            self.marionette.find_element(*_yes_button_locator).tap()
-            self.wait_for_element_not_displayed(*_yes_button_locator)
 
     def connect_to_network(self):
         if not self.device.is_online:
@@ -802,8 +836,8 @@ class GaiaEnduranceTestCase(GaiaTestCase):
         # Calculate the average b2g_rss
         total = 0
         for b2g_mem_value in b2g_rss_list:
-            total+=int(b2g_mem_value)
-        avg_rss = total/len(b2g_rss_list)
+            total += int(b2g_mem_value)
+        avg_rss = total / len(b2g_rss_list)
 
         # Create a summary text file
         summary_name = self.log_name.replace('.log', '_summary.log')

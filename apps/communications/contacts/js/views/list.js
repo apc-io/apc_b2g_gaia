@@ -12,16 +12,13 @@ contacts.List = (function() {
       settingsView,
       noContacts,
       imgLoader = null,
+      needImgLoaderReload = false,
       orderByLastName = null,
       photoTemplate,
       headers = {},
       loadedContacts = {},
       viewHeight = -1,
       rowsPerPage = -1,
-      renderTimer = null,
-      toRender = [],
-      releaseTimer = null,
-      toRelease = [],
       monitor = null,
       loading = false,
       cancelLoadCB = null,
@@ -83,38 +80,32 @@ contacts.List = (function() {
 
   var NOP_FUNCTION = function() {};
 
-  var onscreen = function(el) {
-    var id = el.dataset.uuid;
-    var group = el.dataset.group;
+  var onscreen = function(row) {
+    var id = row.dataset.uuid;
+    var group = row.dataset.group;
     if (!id || !group) {
       return;
     }
 
     rowsOnScreen[id] = rowsOnScreen[id] || {};
-    rowsOnScreen[id][group] = el;
-    // Save the element reference to process in a batch from a timer callback.
-    toRender.push(el);
+    rowsOnScreen[id][group] = row;
 
-    // Avoid rescheduling the timer if it has not run yet.
-    if (renderTimer) {
-      return;
+    monitor && monitor.pauseMonitoringMutations();
+    renderLoadedContact(row, id);
+    updateRowStyle(row, true);
+    renderPhoto(row, id);
+    updateSingleRowSelection(row, id);
+
+    // Since imgLoader.reload() causes sync reflows we only want to make this
+    // call when something happens that affects our onscreen view.  Therefore
+    // we defer the call until here when we know the visibility monitor has
+    // detected a change and called onscreen().
+    if (imgLoader && needImgLoaderReload) {
+      needImgLoaderReload = false;
+      imgLoader.reload();
     }
 
-    renderTimer = setTimeout(doRenderTimer);
-  };
-
-  var doRenderTimer = function doRenderTimer() {
-    renderTimer = null;
-    monitor.pauseMonitoringMutations();
-    while (toRender.length) {
-      var row = toRender.shift();
-      var id = row.dataset.uuid;
-      renderLoadedContact(row, id);
-      updateRowStyle(row, true);
-      renderPhoto(row, id);
-      updateSingleRowSelection(row, id);
-    }
-    monitor.resumeMonitoringMutations(false);
+    monitor && monitor.resumeMonitoringMutations(false);
   };
 
   var renderLoadedContact = function(el, id) {
@@ -141,34 +132,21 @@ contacts.List = (function() {
       loadedContacts[id][group] = null;
   };
 
-  var offscreen = function(el) {
-    var id = el.dataset.uuid;
-    var group = el.dataset.group;
+  var offscreen = function(row) {
+    var id = row.dataset.uuid;
+    var group = row.dataset.group;
     if (!id || !group) {
       return;
     }
 
-    delete rowsOnScreen[id][group];
-
-    // Save the element reference to process in a batch from a timer callback.
-    toRelease.push(el);
-
-    // Avoid rescheduling the timer if it has not run yet.
-    if (releaseTimer)
-      return;
-
-    releaseTimer = setTimeout(doReleaseTimer);
-  };
-
-  var doReleaseTimer = function doReleaseTimer() {
-    releaseTimer = null;
-    monitor.pauseMonitoringMutations();
-    while (toRelease.length) {
-      var row = toRelease.shift();
-      updateRowStyle(row, false);
-      releasePhoto(row);
+    if (rowsOnScreen[id]) {
+      delete rowsOnScreen[id][group];
     }
-    monitor.resumeMonitoringMutations(false);
+
+    monitor && monitor.pauseMonitoringMutations();
+    updateRowStyle(row, false);
+    releasePhoto(row);
+    monitor && monitor.resumeMonitoringMutations(false);
   };
 
   var init = function load(element, reset) {
@@ -194,6 +172,22 @@ contacts.List = (function() {
       resetDom();
     }
   };
+
+  function hide() {
+    contactsListView.classList.add('hide');
+    if (monitor) {
+      monitor.pauseMonitoringMutations();
+    }
+  }
+
+  function show() {
+    contactsListView.classList.remove('hide');
+    needImgLoaderReload = true;
+    if (monitor) {
+      monitor.resumeMonitoringMutations(true);
+    }
+    FixedHeader.refresh();
+  }
 
   // Define a source adapter object to pass to contacts.Search.
   //
@@ -240,7 +234,7 @@ contacts.List = (function() {
       renderPhoto(node, id);
       updateRowStyle(node, true);
       updateSingleRowSelection(node, id);
-      return node.cloneNode();
+      return node.cloneNode(true);
     },
 
     getNodeById: function(id) {
@@ -351,6 +345,7 @@ contacts.List = (function() {
     // Create the DOM for the group list
     var letteredSection = document.createElement('section');
     letteredSection.id = 'section-group-' + group;
+    letteredSection.className = 'group-section';
     var title = document.createElement('header');
     title.id = 'group-' + group;
     title.className = 'hide';
@@ -663,7 +658,7 @@ contacts.List = (function() {
       var scrollMargin = ~~(getViewHeight() * 1.5);
       // NOTE: Making scrollDelta too large will cause janky scrolling
       //       due to bursts of onscreen() calls from the monitor.
-      var scrollDelta = ~~(scrollMargin / 10);
+      var scrollDelta = ~~(scrollMargin / 15);
       monitor = monitorTagVisibility(scrollable, 'li', scrollMargin,
                                      scrollDelta, onscreen, offscreen);
     });
@@ -828,22 +823,39 @@ contacts.List = (function() {
     return !!photosById[id];
   };
 
+  // Utility function to manage the dataset-src URL for images.  Its important
+  // to only modify this attribute from this function in order to ensure that
+  // the URLs are properly revoked.
+  function setImageURL(img, photo) {
+    var oldURL = img.dataset.src;
+    if (oldURL) {
+      window.URL.revokeObjectURL(oldURL);
+      img.dataset.src = '';
+    }
+    if (photo) {
+      try {
+        img.dataset.src = window.URL.createObjectURL(photo);
+      } catch (err) {
+        // Warn, but do nothing else.  We cleared the old URL above.
+        console.warn('Failed to create URL for contacts image blob: ' + photo +
+                     ', error: ' + err);
+      }
+    }
+  }
+
   // "Render" the photo by setting the img tag's dataset-src attribute to the
   // value in our photo cache.  This in turn will allow the imgLoader to load
   // the image once we have stopped scrolling.
   var renderPhoto = function renderPhoto(link, id) {
     id = id || link.dataset.uuid;
     var photo = photosById[id];
-    if (!photo)
+    if (!photo) {
       return;
+    }
 
     var img = link.querySelector('aside > img');
     if (img) {
-      try {
-        img.dataset.src = window.URL.createObjectURL(photo);
-      } catch (err) {
-        img.dataset.src = '';
-      }
+      setImageURL(img, photo);
       return;
     }
     if (!photoTemplate) {
@@ -855,11 +867,7 @@ contacts.List = (function() {
 
     var figure = photoTemplate.cloneNode(true);
     var img = figure.children[0];
-    try {
-      img.dataset.src = window.URL.createObjectURL(photo);
-    } catch (err) {
-      img.dataset.src = '';
-    }
+    setImageURL(img, photo);
 
     link.insertBefore(figure, link.children[0]);
     return;
@@ -869,14 +877,16 @@ contacts.List = (function() {
   // however, so the image can be reloaded later.
   var releasePhoto = function releasePhoto(el) {
     // If the imgLoader isn't ready yet, we should have nothing to release
-    if (!imgLoader)
+    if (!imgLoader) {
       return;
+    }
 
     var img = imgLoader.releaseImage(el);
-    if (!img)
+    if (!img) {
       return;
+    }
 
-    img.dataset.src = '';
+    setImageURL(img, null);
   };
 
   var renderOrg = function renderOrg(contact, link, add) {
@@ -1078,14 +1088,21 @@ contacts.List = (function() {
     // If is favorite add as well to the favorite group
     if (isFavorite(contact)) {
       list = getGroupList('favorites');
-      var cloned = renderedNode.cloneNode();
+      var cloned = renderedNode.cloneNode(true);
       cloned.dataset.group = 'favorites';
       addToGroup(cloned, list);
     }
     toggleNoContactsScreen(false);
-    FixedHeader.refresh();
-    if (imgLoader)
-      imgLoader.reload();
+
+    // Avoid calling imgLoader.reload() here because it causes a sync reflow
+    // of the entire list.  Ideally it would only do this if the new contact
+    // was added on screen or earlier, but unfortunately it doesn't have
+    // enough information.  The visibility monitor, however, does have this
+    // information.  Therefore set a flag here and then defer the reload until
+    // the next monitor onscreen() call.
+    if (imgLoader) {
+      needImgLoaderReload = true;
+    }
 
     // When we add a new contact to the list we will by default
     // select it depending on this two cases:
@@ -1122,29 +1139,53 @@ contacts.List = (function() {
     return { givenName: givenName, modified: true };
   };
 
+  // Search the given array of DOM li nodes using a binary search.  Return
+  // the index that the new node should be inserted before.
+  function searchNodes(nodes, name) {
+    var len = nodes.length;
+    var begin = 0;
+    var end = len;
+    var comp = 0;
+    var target = len;
+    while (begin <= end) {
+      var target = ~~((begin + end) / 2);
+      if (target >= len) {
+        break;
+      }
+      var targetNode = nodes[target];
+      renderOrderString(targetNode);
+      var targetName = targetNode.dataset.order;
+      comp = name.localeCompare(targetName);
+      if (comp < 0) {
+        end = target - 1;
+      } else if (comp > 0) {
+        begin = target + 1;
+      } else {
+        return target;
+      }
+    }
+
+    if (target >= len) {
+      return len;
+    }
+
+    if (comp <= 0) {
+      return target;
+    }
+
+    return target + 1;
+  }
+
   var addToGroup = function addToGroup(renderedNode, list) {
     renderOrderString(renderedNode);
     var newLi = renderedNode;
     var cName = newLi.dataset.order;
 
     var liElems = list.getElementsByTagName('li');
-    var len = liElems.length;
-    for (var i = 0; i < len; i++) {
-      var liElem = liElems[i];
-
-      // This may just be a placeholder that has not been rendered yet.
-      // Therefore, make sure the order string has been rendered before
-      // trying to compare against it.
-      renderOrderString(liElem);
-
-      var name = liElem.dataset.order;
-      if (name.localeCompare(cName) >= 0) {
-        list.insertBefore(newLi, liElem);
-        break;
-      }
-    }
-
-    if (i === len) {
+    var insertAt = searchNodes(liElems, cName);
+    if (insertAt < liElems.length) {
+      list.insertBefore(newLi, liElems[insertAt]);
+    } else {
       list.appendChild(newLi);
     }
 
@@ -1168,6 +1209,11 @@ contacts.List = (function() {
   };
 
   var remove = function remove(id) {
+    // Nothing to do if we don't know about this contact
+    if (!(id in selectedContacts)) {
+      return;
+    }
+
     // Could be more than one item if it's in favorites
     var items = groupsList.querySelectorAll('li[data-uuid=\"' + id + '\"]');
     // We have a node list, not an array, and we want to walk it
@@ -1269,7 +1315,7 @@ contacts.List = (function() {
     });
   };
 
-  var refreshContact = function refreshContact(contact, enriched, callback) {
+  function refreshContact(contact, enriched, callback) {
     remove(contact.id);
     addToList(contact, enriched);
     if (callback)
@@ -1751,6 +1797,8 @@ contacts.List = (function() {
     'getContactById': getContactById,
     'getAllContacts': getAllContacts,
     'handleClick': handleClick,
+    'hide': hide,
+    'show': show,
     'initAlphaScroll': initAlphaScroll,
     'initSearch': initSearch,
     'remove': remove,

@@ -78,7 +78,6 @@ var KeyboardContext = (function() {
           if (!newValue) {
             KeyboardHelper.checkDefaults(notifyDefaultEnabled);
           }
-          KeyboardHelper.saveToSettings();
         }
       });
 
@@ -104,8 +103,9 @@ var KeyboardContext = (function() {
         return app[layout.layoutId];
       }
       return app[layout.layoutId] = Layout(layout.layoutId,
-        layout.manifest.name, layout.app.origin, layout.entryPoint.name,
-        layout.entryPoint.description, layout.entryPoint.types, layout.enabled);
+        layout.manifest.name, layout.app.origin, layout.inputManifest.name,
+        layout.inputManifest.description, layout.inputManifest.types,
+        layout.enabled);
     }
 
     function reduceApps(carry, layout) {
@@ -159,12 +159,12 @@ var KeyboardContext = (function() {
       _keyboards.forEach(function(keyboard) {
         var keyboardAppInstance = keyboard.app;
         var keyboardManifest = new ManifestHelper(keyboardAppInstance.manifest);
-        var entryPoints = keyboardManifest.entry_points;
+        var inputs = keyboardManifest.inputs;
         keyboard.name = keyboardManifest.name;
         keyboard.description = keyboardManifest.description;
         keyboard.layouts.forEach(function(layout) {
           var key = layout.id;
-          var layoutInstance = entryPoints[key];
+          var layoutInstance = inputs[key];
           layout.appName = keyboardManifest.name;
           layout.name = layoutInstance.name;
           layout.description = layoutInstance.description;
@@ -205,13 +205,13 @@ var KeyboardContext = (function() {
         callback(_keyboards);
       });
     },
-    defaultKeyboardEnabled: function(callback) {
-      _defaultEnabledCallbacks.push(callback);
-    },
     enabledLayouts: function(callback) {
       _ready(function() {
         callback(_enabledLayouts);
       });
+    },
+    defaultKeyboardEnabled: function(callback) {
+      _defaultEnabledCallbacks.push(callback);
     }
   };
 })();
@@ -228,9 +228,12 @@ var Panel = function(id) {
     visible: (_id === Settings.currentPanel)
   });
 
-  window.addEventListener('panelready', function() {
-    _panel.visible = (_id === Settings.currentPanel);
-  });
+  var _refreshVisibility = function() {
+    _panel.visible = !document.hidden && (_id === Settings.currentPanel);
+  };
+
+  window.addEventListener('panelready', _refreshVisibility);
+  document.addEventListener('visibilitychange', _refreshVisibility);
 
   return _panel;
 };
@@ -329,55 +332,23 @@ var EnabledLayoutsPanel = (function() {
   };
 })();
 
-var DefaultKeyboardEnabledDialog = (function() {
-  function showDialog(layout) {
-    var l10n = navigator.mozL10n;
-    l10n.localize(
-      document.getElementById('keyboard-default-title'),
-      'mustHaveOneKeyboard',
-      {
-        type: l10n.get('keyboardType-' +
-          layout.entryPoint.types.sort()[0])
-      }
-    );
-    l10n.localize(
-      document.getElementById('keyboard-default-text'),
-      'defaultKeyboardEnabled',
-      {
-        layoutName: layout.entryPoint.name,
-        appName: layout.manifest.name
-      }
-    );
-    openDialog('keyboard-enabled-default');
-  }
-
-  return {
-    init: function() {
-      KeyboardContext.defaultKeyboardEnabled(showDialog);
-    },
-    show: showDialog
-  };
-})();
-
 var InstalledLayoutsPanel = (function() {
   var _panel = null;
-  var _listView = null;
+  var _listViews = [];
 
   // A template function for generating an UI element for a layout object.
   var _layoutTemplate = function ksa_layoutTemplate(layout, recycled) {
     var container = null;
-    var layoutName, checkbox;
+    var span, checkbox;
     if (recycled) {
       container = recycled;
       checkbox = container.querySelector('input');
       span = container.querySelector('span');
-      layoutName = container.querySelector('a');
     } else {
       container = document.createElement('li');
       checkbox = document.createElement('input');
-      layoutName = document.createElement('a');
       var label = document.createElement('label');
-      var span = document.createElement('span');
+      span = document.createElement('span');
 
       label.className = 'pack-checkbox';
       checkbox.type = 'checkbox';
@@ -386,7 +357,6 @@ var InstalledLayoutsPanel = (function() {
       label.appendChild(span);
 
       container.appendChild(label);
-      container.appendChild(layoutName);
     }
 
     checkbox.onchange = function() {
@@ -394,7 +364,7 @@ var InstalledLayoutsPanel = (function() {
     };
 
     var refreshName = function() {
-      layoutName.textContent = layout.name;
+      span.textContent = layout.name;
     };
     var refreshCheckbox = function() {
       checkbox.checked = layout.enabled;
@@ -424,15 +394,22 @@ var InstalledLayoutsPanel = (function() {
         header.appendChild(h2);
         container.appendChild(header);
         container.appendChild(ul);
-        _listView = ListView(ul, keyboard.layouts,
+        var listView = ListView(ul, keyboard.layouts,
           _layoutTemplate);
-        _listView.enabled = _panel.visible;
+        listView.enabled = _panel.visible;
+        _listViews.push(listView);
       });
     });
   };
 
   var _visibilityChanged = function(visible) {
-    _listView.enabled = visible;
+    _listViews.forEach(function(listView) {
+      listView.enabled = visible;
+    });
+
+    if (!visible) {
+      KeyboardHelper.saveToSettings(); // save changes to settings
+    }
   };
 
   return {
@@ -441,6 +418,36 @@ var InstalledLayoutsPanel = (function() {
       _panel.observe('visible', _visibilityChanged);
       _initInstalledLayoutListView();
     }
+  };
+})();
+
+var DefaultKeyboardEnabledDialog = (function() {
+  function showDialog(layout) {
+    var l10n = navigator.mozL10n;
+    l10n.localize(
+      document.getElementById('keyboard-default-title'),
+      'mustHaveOneKeyboard',
+      {
+        type: l10n.get('keyboardType-' +
+          layout.inputManifest.types.sort()[0])
+      }
+    );
+    l10n.localize(
+      document.getElementById('keyboard-default-text'),
+      'defaultKeyboardEnabled',
+      {
+        layoutName: layout.inputManifest.name,
+        appName: layout.manifest.name
+      }
+    );
+    openDialog('keyboard-enabled-default');
+  }
+
+  return {
+    init: function() {
+      KeyboardContext.defaultKeyboardEnabled(showDialog);
+    },
+    show: showDialog
   };
 })();
 

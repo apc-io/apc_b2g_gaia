@@ -8,8 +8,10 @@ var icc = {
   _displayTextTimeout: 40000,
   _defaultURL: null,
   _inputTimeout: 40000,
+  _toneDefaultTimeout: 5000,
 
   init: function icc_init() {
+    this._iccManager = window.navigator.mozIccManager;
     this._icc = this.getICC();
     this.hideViews();
     this.protectForms();
@@ -30,12 +32,34 @@ var icc = {
       self._displayTextTimeout =
         reqDisplayTimeout.result['icc.displayTextTimeout'];
     };
+    window.navigator.mozSettings.addObserver('icc.displayTextTimeout',
+      function(e) {
+        self._displayTextTimeout = e.settingValue;
+      }
+    );
     // Update inputTimeout with settings parameter
     var reqInputTimeout = window.navigator.mozSettings.createLock().get(
       'icc.inputTextTimeout');
     reqInputTimeout.onsuccess = function icc_getInputTimeout() {
       self._inputTimeout = reqInputTimeout.result['icc.inputTextTimeout'];
     };
+    window.navigator.mozSettings.addObserver('icc.inputTextTimeout',
+      function(e) {
+        self._inputTimeout = e.settingValue;
+      }
+    );
+    // Update toneDefaultTimeout with settings parameter
+    var reqToneDefaultTimeout = window.navigator.mozSettings.createLock().get(
+      'icc.toneDefaultTimeout');
+    reqToneDefaultTimeout.onsuccess = function icc_getToneDefaultTimeout() {
+      self._toneDefaultTimeout =
+        reqToneDefaultTimeout.result['icc.toneDefaultTimeout'];
+    };
+    window.navigator.mozSettings.addObserver('icc.toneDefaultTimeout',
+      function(e) {
+        self._toneDefaultTimeout = e.settingValue;
+      }
+    );
   },
 
   getIccInfo: function icc_getIccInfo() {
@@ -54,18 +78,10 @@ var icc = {
   },
 
   getICC: function icc_getICC() {
-    if (!window.navigator.mozMobileConnection) {
-      return;
-    }
-
-    // See bug 859712
-    // To have the backward compatibility for bug 859220.
-    // If we could not get iccManager from navigator,
-    // try to get it from mozMobileConnection.
-    // 'window.navigator.mozMobileConnection.icc' can be dropped
-    // after bug 859220 is landed.
-    return window.navigator.mozIccManager ||
-           window.navigator.mozMobileConnection.icc;
+    // See bug 932134
+    // To keep all tests passed while introducing multi-sim APIs, in bug 928325
+    // we use IccHelper. Stop using IccHelper after the APIs land.
+    return IccHelper;
   },
 
   clearMenuCache: function icc_clearMenuCache(callback) {
@@ -121,13 +137,13 @@ var icc = {
    */
   terminateResponse: function() {
     this.responseSTKCommand({
-      resultCode: this._icc.STK_RESULT_UICC_SESSION_TERM_BY_USER
+      resultCode: this._iccManager.STK_RESULT_UICC_SESSION_TERM_BY_USER
     });
   },
 
   backResponse: function() {
     this.responseSTKCommand({
-      resultCode: this._icc.STK_RESULT_BACKWARD_MOVE_BY_USER
+      resultCode: this._iccManager.STK_RESULT_BACKWARD_MOVE_BY_USER
     });
   },
 
@@ -169,13 +185,13 @@ var icc = {
     timeInterval) {
     var timeout = timeInterval;
     switch (timeUnit) {
-      case this._icc.STK_TIME_UNIT_MINUTE:
+      case this._iccManager.STK_TIME_UNIT_MINUTE:
         timeout *= 3600000;
         break;
-      case this._icc.STK_TIME_UNIT_SECOND:
+      case this._iccManager.STK_TIME_UNIT_SECOND:
         timeout *= 1000;
         break;
-      case this._icc.STK_TIME_UNIT_TENTH_SECOND:
+      case this._iccManager.STK_TIME_UNIT_TENTH_SECOND:
         timeout *= 100;
         break;
     }
@@ -444,7 +460,7 @@ var icc = {
       clearInputTimeout();
       self.hideViews();
       self.responseSTKCommand({
-        resultCode: self._icc.STK_RESULT_HELP_INFO_REQUIRED
+        resultCode: self._iccManager.STK_RESULT_HELP_INFO_REQUIRED
       });
       callback(null);
     };

@@ -29,6 +29,7 @@ var SleepMenu = {
     window.addEventListener('click', this, true);
     window.addEventListener('screenchange', this, true);
     window.addEventListener('home', this);
+    window.addEventListener('batteryshutdown', this);
     this.elements.cancel.addEventListener('click', this);
 
     var self = this;
@@ -50,8 +51,7 @@ var SleepMenu = {
     var options = {
       airplane: {
         label: _('airplane'),
-        value: 'airplane',
-        icon: '/style/sleep_menu/images/airplane.png'
+        value: 'airplane'
       },
       airplaneOff: {
         label: _('airplaneOff'),
@@ -59,8 +59,7 @@ var SleepMenu = {
       },
       silent: {
         label: _('silent'),
-        value: 'silent',
-        icon: '/style/sleep_menu/images/vibration.png'
+        value: 'silent'
       },
       silentOff: {
         label: _('normal'),
@@ -68,13 +67,11 @@ var SleepMenu = {
       },
       restart: {
         label: _('restart'),
-        value: 'restart',
-        icon: '/style/sleep_menu/images/restart.png'
+        value: 'restart'
       },
       power: {
         label: _('power'),
-        value: 'power',
-        icon: '/style/sleep_menu/images/power-off.png'
+        value: 'power'
       }
     };
 
@@ -123,6 +120,11 @@ var SleepMenu = {
 
   handleEvent: function sm_handleEvent(evt) {
     switch (evt.type) {
+      case 'batteryshutdown':
+        window.dispatchEvent(
+            new CustomEvent('requestshutdown', {detail: this}));
+        break;
+
       case 'screenchange':
         if (!evt.detail.screenEnabled)
           this.hide();
@@ -166,14 +168,7 @@ var SleepMenu = {
         //
         // It should also save the status of the latter 4 items
         // so when leaving the airplane mode we could know which one to turn on.
-
-        if (!window.navigator.mozSettings)
-          return;
-
-        SettingsListener.getSettingsLock().set({
-          'ril.radio.disabled': !this.isFlightModeEnabled
-        });
-
+        AirplaneMode.enabled = !this.isFlightModeEnabled;
         break;
 
       // About silent and silentOff

@@ -7,10 +7,11 @@
   background-color: #000;
   -moz-user-select: none;
   opacity: 1;
+  /* Utilzing a cubic bezier timing function to hide the fact
+     that we might be slow at the beginning of the transition. */
   transition:
-    transform 0.5s ease,
-    opacity 0.5s ease,
-    visibility 0.5s ease;
+    transform 0.5s cubic-bezier(0.7, 0.0, 1.0, 1.0),
+    opacity 0.5s cubic-bezier(0.7, 0.0, 1.0, 1.0),
 }
 
 #screen.active-statusbar > #lockscreen {
@@ -18,11 +19,9 @@
   height: calc(100% - 4rem);
 }
 
-#screen:not(.locked) > #lockscreen,
-#screen.lockscreen-camera > #lockscreen {
+#lockscreen.unlocked {
   transform: scale(2);
   opacity: 0;
-  visibility: hidden;
   pointer-events: none;
 }
 
@@ -273,8 +272,6 @@
   background-color: rgba(0, 0, 0, 0.3);
   -moz-box-sizing: border-box;
   border: 0.2rem solid rgba(255, 255, 255, 0.8);
-  /* Will become wider while user pull it */
-  transition: width 0.2s ease, background-color 0.5s linear, border-color 0.5s linear;
 }
 
 #lockscreen-slide-track .lockscreen-slide-left.lockscreen-icon {
@@ -303,6 +300,7 @@
 
 .lockscreen-slide-left.lockscreen-icon > span {
   background: url(/style/lockscreen/images/larrow.png) no-repeat top left;
+  background-size: 1rem 2rem;
 
   /* float to prevent its parent got wrong place */
   float: left;
@@ -371,6 +369,7 @@
 
 .lockscreen-slide-right.lockscreen-icon > span {
   background: url(/style/lockscreen/images/larrow.png) no-repeat top left;
+  background-size: 1rem 2rem;
 
   /* float to prevent its parent got wrong place */
   float: right;

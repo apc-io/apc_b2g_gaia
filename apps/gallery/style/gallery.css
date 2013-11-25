@@ -10,13 +10,13 @@ html {
 }
 
 body {
-  background-color: black;
-  color: #fff;
-  font-size: 1rem;
+  width: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
-  height: 100%;
-  width: 100%;
+  color: #fff;
+  font-size: 1rem;
+  background-color: #0E1214;
   overflow: hidden;
 }
 
@@ -142,7 +142,7 @@ section {
    * the body background is black, but remind the UA of that here to
    * keep the thumbnail view opaque if possible.
    */
-  background-color: black;
+  background-color: #0E1214;
 }
 
 /* thumbnails in regular thumbnail list view */
@@ -168,6 +168,32 @@ section {
   bottom: 0;
   visibility: hidden;
 }
+
+.thumbnail-group-header {
+  font-size: 1.6rem;
+  font-weight: 400;
+  color: #8a9699;
+  padding: 0 0 0 0.5rem;
+  height: 4rem;
+  line-height: 4rem;
+  width:100%;
+  float:left;
+}
+.thumbnail-group-container {
+  padding: 0;
+}
+
+#thumbnails>li {
+  /* no list item bullets */
+  list-style-type: none;
+}
+
+
+#thumbnails>li:first-child .thumbnail-group-header {
+  border-top: 0.1rem solid;
+  border-color:rgba(255,255,255, 0.1);
+}
+
 
 .thumbnail {
   margin-right: 0.1rem;
@@ -217,8 +243,8 @@ section {
  * give the very last thumbnail a large bottom margin so that it doesn't
  * get stuck hidden behind the overlaid toolbar.
  */
-.thumbnail:last-child {
-  margin-bottom: 4rem;
+#thumbnails>li:last-child {
+  margin-bottom: 4.5rem;
 }
 
 @media (orientation: landscape) {
@@ -359,7 +385,7 @@ a.button {
   /* for buttons that display text */
   font-size: 1.4rem;
   text-align: center;
-  line-height: 4rem;
+  line-height: 4.5rem;
 }
 
 a.button:active, a.button:focus {
@@ -373,7 +399,7 @@ a.button.disabled {
 
 footer {
   background: rgba(0, 0, 0, 0.75);
-  height: 4rem;
+  height: 4.5rem;
   position: absolute;
   bottom: 0;
   left: 0;
@@ -421,7 +447,7 @@ footer {
 }
 
 #fullscreen-toolbar {
-  height: 4rem;
+  height: 4.5rem;
   position: absolute;
   bottom: 0;
   left: 0;
@@ -437,7 +463,7 @@ footer {
 }
 
 #fullscreen-view.toolbarhidden #fullscreen-toolbar {
-  transform: translate(0, 4rem);
+  transform: translate(0, 4.5rem);
 }
 
 #fullscreen-view.toolbarhidden #fullscreen-back-button {
@@ -507,15 +533,15 @@ footer {
   left: 0;
   right: 0;
   top: 5rem;
-  bottom: 10rem;
+  bottom: 9.5rem; /* 4.5rem for edit-toolbar, 5rem for edit-options */
 }
 
 #edit-preview-canvas {
   position: absolute;
-  top: 1rem;
-  left: 1rem;
-  width: calc(100% - 2rem);  /* I can't do right: 1rem here. Bug? */
-  height: calc(100% - 2rem);  /* can't just set bottom: 1rem here */
+  top: 1.5rem;
+  left: 1.5rem;
+  width: calc(100% - 3rem);  /* I can't do right: 1.5rem here. Bug? */
+  height: calc(100% - 3rem);  /* can't just set bottom: 1.5rem here */
 }
 
 #edit-crop-canvas {
@@ -530,9 +556,16 @@ footer {
   position: absolute;
   left: 0;
   width: 100%;
-  height: 5.5rem;
-  bottom: 4rem;
+  height: 5rem;
+  bottom: 4.5rem;
   background: url(images/options-background.png);
+}
+
+/* The progress has higer selectivity css in progress.css to control display.
+ * The hidden attribute in progress is not working in this case. We need to use
+ * css to override it. */
+#save-progress.hidden {
+  display: none;
 }
 
 /* All the effect options radio buttons share these styles */
@@ -552,8 +585,8 @@ footer {
 }
 
 #edit-effect-options a.selected.radio.button {
-  outline: solid #00aacc 0.3rem;
-  outline-offset: -0.3rem;
+  outline: solid #00aacc 0.2rem;
+  outline-offset: -0.2rem;
 }
 
 #edit-crop-options a.button {
@@ -704,7 +737,7 @@ a.filter-faded {
 }
 
 #edit-toolbar {
-  height: 4rem;
+  height: 4.5rem;
   position: absolute;
   bottom: 0;
   left: 0;
@@ -716,13 +749,8 @@ a.filter-faded {
 /* all buttons in the toolbar share these styles */
 #edit-toolbar > a {
   display: inline-block;
-  width: 25%;
+  width: 20%;
   height: 100%;
-}
-
-#edit-toolbar a.selected.radio.button {
-  outline: solid #00aacc 0.2rem;
-  outline-offset: -0.2rem;
 }
 
 #edit-exposure-button {
@@ -731,18 +759,72 @@ a.filter-faded {
 }
 
 #edit-crop-button {
-  left: 25%;
+  left: 20%;
   background-image: url('images/actionicon_gallery_edit_crop_30x30.png');
 }
 
 #edit-effect-button {
-  left: 50%;
+  left: 40%;
   background-image: url('images/actionicon_gallery_edit_effects_30x30.png');
 }
 
 #edit-border-button {
-  left: 75%;
+  left: 60%;
   background-image: url('images/actionicon_gallery_edit_borders_30x30.png');
+}
+
+#edit-enhance-button {
+  left: 80%;
+  background-image: url('images/actionicon_gallery_edit_enhance_30x30.png');
+}
+
+#edit-effect-button.selected{
+  background-image: url('images/actionicon_gallery_edit_effect_selected_30x30.png');
+}
+
+#edit-crop-button.selected {
+  background-image: url('images/actionicon_gallery_edit_crop_selected_30x30.png');
+}
+
+#edit-border-button.selected {
+  background-image: url('images/actionicon_gallery_edit_border_selected_30x30.png');
+}
+
+#edit-exposure-button.selected {
+  background-image: url('images/actionicon_gallery_edit_exposure_selected_30x30.png');
+}
+
+#edit-enhance-button.selected {
+  background-image: url('images/actionicon_gallery_edit_enhance_selected_30x30.png');
+}
+
+#edit-enhance-button.on {
+  background-image: url('images/actionicon_gallery_edit_enhance_on_30x30.png');
+}
+
+#edit-enhance-button.selected.on {
+  background-image: url('images/actionicon_gallery_edit_enhance_on_selected_30x30.png');
+}
+
+#edit-enhance-options {
+  line-height: 5.5rem;
+  text-align: center;
+}
+
+#edit-enhance-options a.button {
+  position: absolute;
+  display: block;
+  top: 0;
+  bottom: 0;
+  width: 20%;
+  margin: 0;
+  padding: 0;
+  border-width: 0;
+  border-right: solid black 0.1rem;
+  overflow: hidden;
+  padding-top: 1.6rem;
+  font-size: 1.4rem;
+  background-position: center;
 }
 
 /*

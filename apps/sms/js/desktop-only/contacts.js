@@ -192,6 +192,9 @@
 
   // // Do not use the native API.
   navigator.mozContacts = {
+    addEventListener: function(type, handler, capture) {
+      return this;
+    },
     find: function(filter) {
       // attribute DOMString     filterValue;    // e.g. 'Tom'
       // attribute DOMString     filterOp;       // e.g. 'contains'
@@ -425,6 +428,20 @@
         {
           value: '+18001114321',
           type: ['Mobile']
+        }
+      ]
+    })
+  );
+
+  ContactsDB.push(
+    new Contact({
+      familyName: '',
+      givenName: 'Bob',
+      tel: [
+        {
+          value: '555-666-1234',
+          type: ['Mobile'],
+          carrier: 'ScamCo'
         }
       ]
     })

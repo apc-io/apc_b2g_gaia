@@ -1,7 +1,12 @@
 const { Cc, Ci, Cr, Cu } = require('chrome');
+const { btoa } = Cu.import("resource://gre/modules/Services.jsm", {});
+const FILE_TYPE_FILE = 0;
+const FILE_TYPE_DIRECTORY = 1;
+
 Cu.import('resource://gre/modules/XPCOMUtils.jsm');
 Cu.import('resource://gre/modules/FileUtils.jsm');
 Cu.import('resource://gre/modules/Services.jsm');
+Cu.import("resource://gre/modules/osfile.jsm")
 
 function isSubjectToBranding(path) {
   return /shared[\/\\][a-zA-Z]+[\/\\]branding$/.test(path) ||
@@ -115,6 +120,20 @@ function getJSON(file) {
   }
 }
 
+function getFileAsDataURI(file) {
+  var contentType = Cc["@mozilla.org/mime;1"]
+                    .getService(Ci.nsIMIMEService)
+                    .getTypeFromFile(file);
+  var inputStream = Cc["@mozilla.org/network/file-input-stream;1"]
+                    .createInstance(Ci.nsIFileInputStream);
+  inputStream.init(file, 0x01, 0600, 0);
+  var stream = Cc["@mozilla.org/binaryinputstream;1"]
+               .createInstance(Ci.nsIBinaryInputStream);
+  stream.setInputStream(inputStream);
+  var encoded = btoa(stream.readBytes(stream.available()));
+  return "data:" + contentType + ";base64," + encoded;
+}
+
 function makeWebappsObject(appdirs, domain, scheme, port) {
   return {
     forEach: function(fun) {
@@ -204,7 +223,6 @@ function registerProfileDirectory(profileDir) {
 }
 
 function getGaia(options) {
-  registerProfileDirectory(options.PROFILE_DIR);
   return {
     engine: options.GAIA_ENGINE,
     sharedFolder: getFile(options.GAIA_DIR, 'shared'),
@@ -212,7 +230,7 @@ function getGaia(options) {
       options.GAIA_DOMAIN, options.GAIA_SCHEME, options.GAIA_PORT),
     aggregatePrefix: 'gaia_build_',
     distributionDir: options.GAIA_DISTRIBUTION_DIR
-  }
+  };
 }
 
 function gaiaOriginURL(name, scheme, domain, port) {
@@ -241,9 +259,270 @@ function getAbsoluteOrRelativePath(path, gaiaDir) {
     try {
       // Then check absolute path
       return getFile(path);
-    } catch(e) {}
+    } catch (e) {}
   }
   return file;
+}
+
+/**
+ * Delete the specified file path.
+ *
+ * @param  {boolean} recursive set to true in order to delete recursively.
+ * Note: this function is a wrapper function  for node.js
+ */
+function deleteFile(path, recursive) {
+  var file = getFile(path);
+  if (file.exists()) {
+    file.remove(recursive === true);
+  }
+}
+
+/**
+ *
+ * Returns an array of file name's for a given directory
+ *
+ * @param  {string} path       directory to read.
+ * @param  {int}    type       FILE_TYPE_FILE for files,
+ *                             FILE_TYPE_DIRECTORY for directories
+ * @param  {boolean} recursive set to true in order to walk recursively.
+ * @param  {RegExp}  exclude   optional filter to exclude file/directories.
+ *
+ * @return {Array}   list of string which contains all files' full path.
+ * Note: this function is a wrapper function  for node.js
+ */
+function listFiles(path, type, recursive, exclude) {
+  var file = getFile(path);
+  if (!file.isDirectory()) {
+    throw new Error('the path is not a directory.');
+  }
+  var files = ls(file, recursive === true, exclude);
+  var detectFunc = (type === 0 ? 'isFile' : 'isDirectory');
+  // To return simple JavaScript type, We need to put the file path to the array
+  // instead of nsIFile.
+  var results = [];
+  files.forEach(function(file) {
+    if (file[detectFunc]()) {
+      results.push(file.path);
+    }
+  });
+
+  return results;
+}
+
+/**
+ * check if a file or directory exists.
+ * Note: this function is a wrapper function  for node.js
+ */
+function fileExists(path) {
+  return getFile(path).exists();
+}
+
+/**
+ * create dir and its parents.
+ * Note: this function is a wrapper function  for node.js
+ */
+function mkdirs(path) {
+  ensureFolderExists(getFile(path));
+}
+
+/**
+ * join all path.
+ * Note: this function is a wrapper function  for node.js
+ */
+function joinPath() {
+  return OS.Path.join.apply(OS.Path, arguments);
+}
+
+/**
+ * copy path to parentPath/name.
+ * @param  {string}  path       directory to be copied,
+ * @param  {string}  toParent   the parent folder of destination,
+ * @param  {string}  name       the parent folder of destination,
+ * @param  {boolean} override   set to true to overwride it if it is existed.
+
+ * Note: this function is a wrapper function for node.js
+ */
+function copyFileTo(path, toParent, name, override) {
+  var file = getFile(path);
+  var parentFile = getFile(toParent);
+  ensureFolderExists(parentFile);
+  if (override) {
+    var toFile = getFile(toParent, name);
+    if (toFile.exists()) {
+      toFile.remove(true);
+    }
+  }
+  file.copyTo(parentFile, name);
+}
+
+/**
+ * create standard XMLHttpRequest object.
+ * Note: this function is a wrapper function  for node.js
+ */
+function createXMLHttpRequest() {
+  let XMLHttpRequest = Cc['@mozilla.org/xmlextras/xmlhttprequest;1'];
+
+  var ret = new XMLHttpRequest();
+  ret.mozBackgroundRequest = true;
+  return ret;
+}
+
+/**
+ * download JSON file from internet
+ * Note: this function is a wrapper function  for node.js
+ */
+function downloadJSON(url, callback) {
+  var xhr = createXMLHttpRequest();
+  xhr.open('GET', url, true);
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === 4) {
+      if (xhr.status === 200) {
+        callback(JSON.parse(xhr.responseText));
+      } else if (url.substring(0, 5) === 'https') {
+        // if error with https, fallback to http mode.
+        downloadJSON('http' + url.substring(5), callback);
+      } else {
+        callback(null);
+      }
+    }
+  };
+  xhr.send();
+}
+
+
+/**
+ * read JSON object from path, if the path is folder, it returns null.
+ * Note: this function is a wrapper for node.js
+ */
+function readJSONFromPath(path) {
+  var file = getFile(path);
+  if (file.isFile()) {
+    return getJSON(file);
+  } else {
+    throw new Error('The path is not a file.');
+  }
+}
+
+/**
+ * write content to a file
+ * Note: this function is a wrapper for node.js
+ */
+function writeContentToFile(path, content) {
+  writeContent(getFile(path), content);
+}
+
+/**
+ * To have XPCShell working, this function pumps the event for current thread.
+ * @param  {function}  exitResultFunc it should return an object for exit
+ *                     information:
+ *         {
+ *           wait: true, // a boolean to indicate we need to wait or not.
+ *           error: null // an Error object or null to indicate an error should
+ *                       // be thrown to outside.
+ *         }
+ * Note: this function is a wrapper for node.js
+ */
+function processEvents(exitResultFunc) {
+  let thread = Services.tm.currentThread;
+  let exitResult;
+  do {
+    exitResult = exitResultFunc();
+    thread.processNextEvent(true);
+  } while(thread.hasPendingEvents() || exitResult.wait);
+  if (exitResult.error) {
+    throw exitResult.error;
+  }
+}
+
+/**
+ * Simple log with the following format [tag] msg1 msg2. The first argument is
+ * used as tag.
+ */
+function log(/*tag, ...*/) {
+  if (!arguments.length) {
+    dump('\n');
+    return;
+  }
+  var msg = '[' + arguments[0] + ']';
+  for(var i = 1; i < arguments.length; i++) {
+    msg += ' ' + arguments[i];
+  }
+  dump(msg + '\n');
+}
+
+function getBuildConfig(builddir) {
+  var result = {};
+  ls(getFile(builddir), false).forEach(function(file) {
+    var matched = file.leafName.match(/apps-(.+)\.list$/);
+    if (matched) {
+      result[matched[1]] = {
+        'path': file.path,
+        'content': getFileContent(file)
+      };
+    }
+  });
+  return result;
+}
+
+function getAppsByList(content, gaiadir, distdir) {
+  var re = /(.+)\/(.+)/;
+  var apps = {};
+  content.split('\n').forEach(function(line) {
+    line = line.trim();
+    var matched = line.match(re);
+    if (matched) {
+      if (matched[2] === '*') {
+        ls(getFile(gaiadir, matched[1])).forEach(function(file) {
+          if (file.isDirectory()) {
+            var app = getApp(matched[1], file.leafName, gaiadir, distdir);
+            if (apps[app.name]) {
+              throw new Error('two apps with same name: \n  - ' + app.path +
+                      '\n  ' + apps[app.name]);
+            }
+            apps[app.name] = app;
+          }
+        });
+      } else {
+        var app = getApp(matched[1], matched[2], gaiadir, distdir);
+        if (apps[app.name]) {
+          throw new Error('two apps with same name: \n  - ' + app.path +
+                      '\n  ' + apps[app.name]);
+        }
+        apps[app.name] = app;
+      }
+    } else if (line) {
+      var msg = 'Unsupported path "' + line + '" in app list file.';
+      log('utils', msg);
+      throw new Error(msg);
+    }
+  });
+  return apps;
+}
+
+function getApp(parent, appname, gaiadir, distdir) {
+  var app = { 'name': appname, 'parent': parent };
+  var appInGaia = getFile(gaiadir, parent, appname);
+  var appInDist = getFile(distdir, parent, appname);
+
+  if (appInGaia.exists()) {
+    app.path = appInGaia.path;
+  } else if (appInDist.exists()) {
+    app.path = appInDist.path;
+  } else {
+    throw new Error('app doesn\'t exist: ' + app.name);
+  }
+
+  var filename;
+  if (getFile(app.path, 'manifest.webapp').exists()) {
+    filename = 'manifest.webapp';
+  } else if (getFile(app.path, 'update.webapp').exists()) {
+    filename = 'update.webapp';
+  } else {
+    throw new Error('manifest or update.webapp deosn\'t exists: ' + appname);
+  }
+  app.manifest = getJSON(getFile(app.path, filename));
+
+  return app;
 }
 
 exports.isSubjectToBranding = isSubjectToBranding;
@@ -253,9 +532,28 @@ exports.writeContent = writeContent;
 exports.getFile = getFile;
 exports.ensureFolderExists = ensureFolderExists;
 exports.getJSON = getJSON;
+exports.getFileAsDataURI = getFileAsDataURI;
 exports.makeWebappsObject = makeWebappsObject;
 exports.gaiaOriginURL = gaiaOriginURL;
 exports.gaiaManifestURL = gaiaManifestURL;
 exports.getDistributionFileContent = getDistributionFileContent;
-exports.getAbsoluteOrRelativePath = getAbsoluteOrRelativePath
+exports.getAbsoluteOrRelativePath = getAbsoluteOrRelativePath;
 exports.getGaia = getGaia;
+exports.getBuildConfig = getBuildConfig;
+exports.getAppsByList = getAppsByList;
+exports.getApp = getApp;
+// ===== the following functions support node.js compitable interface.
+exports.FILE_TYPE_FILE = FILE_TYPE_FILE;
+exports.FILE_TYPE_DIRECTORY = FILE_TYPE_DIRECTORY;
+exports.deleteFile = deleteFile;
+exports.listFiles = listFiles;
+exports.fileExists = fileExists;
+exports.mkdirs = mkdirs;
+exports.joinPath = joinPath;
+exports.copyFileTo = copyFileTo;
+exports.createXMLHttpRequest = createXMLHttpRequest;
+exports.downloadJSON = downloadJSON;
+exports.readJSONFromPath = readJSONFromPath;
+exports.writeContentToFile = writeContentToFile;
+exports.processEvents = processEvents;
+exports.log = log;

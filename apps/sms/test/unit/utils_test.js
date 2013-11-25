@@ -95,6 +95,9 @@ suite('Utils', function() {
     var spy;
 
     setup(function() {
+      // choose a date that is far away from a DST change
+      var today = new Date('Tue Jan 29 2013 14:18:15 GMT+0100 (CET)').getTime();
+      this.sinon.useFakeTimers(today);
       spy = this.sinon.spy(MockL10n.DateTimeFormat.prototype,
         'localeFormat');
     });
@@ -931,7 +934,6 @@ suite('getContactDisplayInfo', function() {
         assert.deepEqual(Utils.getContactDetails.args[0][0], tel);
         assert.ok(Utils.getDisplayObject.called);
         assert.deepEqual(Utils.getDisplayObject.args[0][1], tel);
-        MockContact.list.restore();
         done();
       }
     );
@@ -954,7 +956,6 @@ suite('getContactDisplayInfo', function() {
         assert.deepEqual(Utils.getContactDetails.args[0][0], tel);
         assert.ok(Utils.getDisplayObject.called);
         assert.deepEqual(Utils.getDisplayObject.args[0][1], tel);
-        MockContact.list.restore();
         done();
       }
     );
@@ -971,7 +972,6 @@ suite('getContactDisplayInfo', function() {
         assert.isFalse(Utils.getContactDetails.called);
         assert.isFalse(Utils.getDisplayObject.called);
         assert.equal(data, null);
-        MockContact.list.restore();
         done();
       }
     );

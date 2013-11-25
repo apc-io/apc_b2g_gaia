@@ -87,6 +87,15 @@ var NotificationScreen = {
 
     this.ringtoneURL = new SettingsURL();
 
+    // set up the media playback widget, but only if |MediaPlaybackWidget| is
+    // defined (we don't define it in tests)
+    if (typeof MediaPlaybackWidget !== 'undefined') {
+      this.mediaPlaybackWidget = new MediaPlaybackWidget(
+        document.getElementById('media-playback-container'),
+        {nowPlayingAction: 'openapp'}
+      );
+    }
+
     var self = this;
     SettingsListener.observe('notification.ringtone', '', function(value) {
       self._sound = self.ringtoneURL.set(value);
@@ -135,9 +144,20 @@ var NotificationScreen = {
     }
   },
 
+  // TODO: Workaround for bug 929895 until bug 890440 is addressed
+  clearBlacklist: [
+    window.location.protocol + '//wappush.gaiamobile.org/manifest.webapp'
+  ],
+
   handleAppopen: function ns_handleAppopen(evt) {
     var manifestURL = evt.detail.manifestURL,
         selector = '[data-manifest-u-r-l="' + manifestURL + '"]';
+
+    var isBlacklisted = (this.clearBlacklist.indexOf(manifestURL) >= 0);
+
+    if (isBlacklisted) {
+      return;
+    }
 
     var nodes = this.container.querySelectorAll(selector);
 
@@ -387,6 +407,9 @@ var NotificationScreen = {
       }
     }
 
+    // must be at least one notification now
+    this.clearAllButton.disabled = false;
+
     return notificationNode;
   },
 
@@ -415,6 +438,11 @@ var NotificationScreen = {
       lockScreenNotificationNode.parentNode
         .removeChild(lockScreenNotificationNode);
     this.updateStatusBarIcon();
+
+    if (!this.container.firstElementChild) {
+      // no notifications left
+      this.clearAllButton.disabled = true;
+    }
   },
 
   clearAll: function ns_clearAll() {
