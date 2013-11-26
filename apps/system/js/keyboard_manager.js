@@ -499,7 +499,6 @@ var KeyboardManager = {
 
   showKeyboard: function km_showKeyboard(callback) {
     if (navigator.hardwareKeyboardManager.isPresent) {
-      self._debug("not show virtual keyboard since hw keyboard present");
       return;
     }
     // Are we already shown and not currently in a transition? Continue.
