@@ -160,3 +160,10 @@ body[data-mode = 'normal'] ol > li span.options {
   .apps > div { height: 100% !important; }
   #bg-overlay { height: 100%;}
 }
+
+/* For Desktop Device */
+@media (min-width: 800px) {
+  #paginationBar {
+    height: 1rem;
+  }
+}

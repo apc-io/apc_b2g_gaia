@@ -97,3 +97,19 @@
     background: url(../resources/images/delete.png) no-repeat left top / 4.5rem;
   }
 }
+
+/* For Desktop Device */
+@media (min-width: 800px) {
+  #footer {
+    height: 6rem;
+  }
+    
+  #footer ol {
+    margin-top: 0;  
+  }
+
+  #footer > div li,
+  #footer > div.scrollable li {
+    width: 8rem;
+  }
+}

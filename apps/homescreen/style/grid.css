@@ -262,3 +262,29 @@ body[data-transitioning] .loading:after {
     margin-top: 0;
   }
 }
+
+/* For Desktop Device */
+@media (min-width: 800px) {
+  #bg-overlay {
+    height: calc(100% - 7.5rem);    
+  }
+    
+  .apps > div {
+    height: calc(100% - 7.5rem);
+  }   
+    
+  .apps ol {
+    padding-left: 9rem;
+    padding-right: 9rem;
+  }
+    
+  .apps ol > li {
+    width: 8rem; /* six a line */
+    margin: 1rem;
+  }
+  
+  ol > li > div > img {
+    width: 6rem;
+    height: 6rem;
+  }
+}

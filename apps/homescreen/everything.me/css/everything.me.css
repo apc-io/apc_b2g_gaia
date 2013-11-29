@@ -110,3 +110,29 @@
 .evme-suggest-collections-loading #evme-fullscreen-loading {
   display: none;
 }
+
+/* For Desktop Device */
+@media (min-width: 800px) {  
+  #evme-activation-icon {
+    width: 50rem;
+    margin: 5rem auto 0;
+    position: static;
+    border-radius: 5rem;
+    padding: 1rem;
+    height: 4.5rem;
+    text-align: left;
+      -moz-box-sizing: border-box;
+    box-sizing: border-box;
+  }
+  
+  #evme-activation-icon input {
+    position: static;
+    height: 100%;
+    font-size: 2rem;
+    padding: 0 1rem;
+  }
+    
+  .apps > div.evmePage ol {
+    margin-top: 0;
+  }
+}
