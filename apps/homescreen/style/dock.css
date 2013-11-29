@@ -99,7 +99,7 @@
 }
 
 /* For Desktop Device */
-@media (min-width: 800px) {
+@media (min-width: 1000px) {
   #footer {
     height: 6rem;
   }

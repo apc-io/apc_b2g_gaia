@@ -112,7 +112,7 @@
 }
 
 /* For Desktop Device */
-@media (min-width: 800px) {  
+@media (min-width: 1000px) {  
   #evme-activation-icon {
     width: 50rem;
     margin: 5rem auto 0;

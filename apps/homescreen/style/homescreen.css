@@ -162,7 +162,7 @@ body[data-mode = 'normal'] ol > li span.options {
 }
 
 /* For Desktop Device */
-@media (min-width: 800px) {
+@media (min-width: 1000px) {
   #paginationBar {
     height: 1rem;
   }

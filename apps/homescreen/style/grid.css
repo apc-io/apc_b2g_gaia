@@ -264,7 +264,7 @@ body[data-transitioning] .loading:after {
 }
 
 /* For Desktop Device */
-@media (min-width: 800px) {
+@media (min-width: 1000px) {
   #bg-overlay {
     height: calc(100% - 7.5rem);    
   }
