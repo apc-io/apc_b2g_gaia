@@ -92,6 +92,7 @@ var KeyboardManager = {
   },
   keyboardHeight: 0,
   isOutOfProcessEnabled: false,
+  hwkeyboardManager: null,
 
   init: function km_init() {
     // generate typeTable
@@ -125,6 +126,24 @@ var KeyboardManager = {
 
     this.keyboardFrameContainer.classList.add('hide');
 
+    this.hwkeyboardManager = window.navigator.hardwareKeyboardManager;
+    this.hwkeyboardManager.addEventListener('hwkeyboardpresentchange', function(e) {
+      var self = this;
+      if (self.hwkeyboardManager.isPresent && self.keyboardHeight) {
+        self.hideKeyboard();
+        self.hideIMESwitcher();
+      } else if (!self.hwkeyboardManager.isPresent) {
+        self._debug("hardware keyboard unplugged, show virtual keyboard");
+        // if we already have layouts for the group, no need to check default
+        self.setKeyboardToShow(this.showingLayout.type);
+        self.showKeyboard();
+
+        // We also want to show the permanent notification
+        // in the UtilityTray.
+        self.showIMESwitcher();
+      }
+    }.bind(this));
+
     // get enabled keyboard from mozSettings, parse their manifest
 
     // For Bug 812115: hide the keyboard when the app is closed here,
@@ -142,6 +161,9 @@ var KeyboardManager = {
       var type = evt.detail.type;
       switch (type) {
         case 'inputmethod-showall':
+          if (this.hardwareKeyboardManager.isPresent) {
+            break;
+          }
           this.showAll();
           break;
         case 'inputmethod-next':
@@ -290,6 +312,9 @@ var KeyboardManager = {
         // ensure the helper has apps and settings data first:
         KeyboardHelper.getLayouts(showKeyboard);
       } else {
+        if (self.hwkeyboardManager.isPresent) {
+          return;
+        }
         showKeyboard();
       }
     }
