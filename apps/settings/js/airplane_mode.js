@@ -23,7 +23,7 @@ var AirplaneMode = {
    */
   _doNotify: false,
 
-  element: document.querySelector('input[name="ril.radio.disabled"]'),
+  element: document.getElementById('airplaneMode-input'),
 
   /**
    * Enable the radio state
@@ -48,25 +48,56 @@ var AirplaneMode = {
     }
   },
 
-  /**
-   * Called when the user interacts with the airplane_mode switch
-   */
-  handleEvent: function(e) {
-    this.element.disabled = true;
+  _initRadioSwitch: function() {
+    var mobileConnection = getMobileConnection();
+    // See bug 933659
+    // Gecko stops using the settings key 'ril.radio.disabled' to turn
+    // off RIL radio, but use mobileConnection.setRadioEnabled instead. We need
+    // to remove the code that checks existence of the new API after bug 856553
+    // lands.
+    var _setRadioEnabled = function(enabled) {
+      if (mobileConnection && !!mobileConnection.setRadioEnabled) {
+        var req = mobileConnection.setRadioEnabled(enabled);
+        req.onsuccess = function() {
+          SettingsListener.getSettingsLock().set(
+            {'ril.radio.disabled': !enabled}
+          );
+        };
+        req.onerror = function() {
+          SettingsListener.getSettingsLock().set(
+            {'ril.radio.disabled': enabled}
+          );
+        };
+      } else {
+        SettingsListener.getSettingsLock().set(
+          {'ril.radio.disabled': !enabled}
+        );
+      }
+    };
+
+    var self = this;
+    SettingsListener.observe('ril.radio.disabled', false, function(value) {
+      self.element.disabled = false;
+      self.element.checked = value;
+    });
+    this.element.addEventListener('change', function(e) {
+      this.disabled = true;
+      var enabled = !this.checked;
+      _setRadioEnabled(enabled);
+    });
   },
 
   init: function apm_init() {
     var mobileConnection = getMobileConnection();
     var wifiManager = WifiHelper.getWifiManager();
+    var nfcManager = getNfc();
 
     var settings = Settings.mozSettings;
     if (!settings)
       return;
 
     var self = this;
-
-    // Disable airplane mode when we interact with it
-    this.element.addEventListener('change', this);
+    this._initRadioSwitch();
 
     var mobileDataEnabled = false;
     settings.addObserver('ril.data.enabled', function(e) {
@@ -77,6 +108,7 @@ var AirplaneMode = {
     var bluetoothEnabled = false;
     var wifiEnabled = false;
     var geolocationEnabled = false;
+    var nfcEnabled = false;
     settings.addObserver('geolocation.enabled', function(e) {
       geolocationEnabled = e.settingValue;
       self.notify('geolocation.enabled');
@@ -107,11 +139,17 @@ var AirplaneMode = {
         self.notify('bluetooth.enabled');
       });
     }
+    settings.addObserver('nfc.enabled', function(e) {
+      nfcEnabled = e.settingValue;
+      self.notify('nfc.enabled');
+    });
+
 
     var restoreMobileData = false;
     var restoreBluetooth = false;
     var restoreWifi = false;
     var restoreGeolocation = false;
+    var restoreNfc = false;
 
     settings.addObserver('ril.radio.disabled', function(e) {
       // Reset notification params
@@ -144,6 +182,12 @@ var AirplaneMode = {
         if (geolocationEnabled)
           self._ops++;
 
+        // NFC
+        restoreNfc = nfcEnabled;
+        if (nfcManager) {
+          self._ops++;
+        }
+
       } else {
         // Don't count mobile data if it's already on
         if (mobileConnection && !mobileDataEnabled && restoreMobileData)
@@ -159,6 +203,10 @@ var AirplaneMode = {
 
         // Don't count Geolocation if it's already on
         if (!geolocationEnabled && restoreGeolocation)
+          self._ops++;
+
+        // Don't count NFC if it's already on
+        if (nfcManager && !nfcEnabled && restoreNfc)
           self._ops++;
       }
 

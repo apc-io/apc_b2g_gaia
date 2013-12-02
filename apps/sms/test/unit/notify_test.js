@@ -46,6 +46,7 @@ suite('check the ringtone and vibrate function', function() {
     this.sinon.spy(Audio.prototype, 'play');
     this.sinon.spy(navigator, 'vibrate');
     this.sinon.spy(window, 'Audio');
+    this.sinon.useFakeTimers();
 
     this.sinon.stub(SettingsURL.prototype, 'get', function() {
       return 'ringtone';
@@ -79,6 +80,17 @@ suite('check the ringtone and vibrate function', function() {
       Notify.vibrate();
 
       assert.ok(Audio.prototype.play.called);
+
+      // As document is not shown in the test, we launch the
+      // event of visibility
+      var visibilityEvent = new CustomEvent(
+        'visibilitychange',
+        {
+          bubbles: true
+        }
+      );
+
+      window.dispatchEvent(visibilityEvent);
       assert.ok(navigator.vibrate.called);
 
       assert.ok(Audio.called);
@@ -125,6 +137,17 @@ suite('check the ringtone and vibrate function', function() {
 
       Notify.ringtone();
       Notify.vibrate();
+
+      // As document is not shown in the test, we launch the
+      // event of visibility
+      var visibilityEvent = new CustomEvent(
+        'visibilitychange',
+        {
+          bubbles: true
+        }
+      );
+
+      window.dispatchEvent(visibilityEvent);
 
       assert.ok(!Audio.prototype.play.called);
       assert.ok(navigator.vibrate.called);

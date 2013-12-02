@@ -3,71 +3,13 @@
 
 'use strict';
 
-var fbContacts = {};
-
-// Searcher object for FB Data
-var _FbDataSearcher = function(variants) {
-  var pointer = 0;
-  var self = this;
-  this.variants = variants;
-
-  window.console.log('Num Variants ', variants.length);
-
-  function checkVariant(variant, successCb, notFoundCb) {
-    fb.getContactByNumber(variant, function success(result) {
-      var contact = result;
-
-      if (contact) {
-        fb.utils.getMozContactByUid(contact.uid, function merge(e) {
-          var devContact = e.target.result[0];
-          var finalContact = fb.mergeContact(devContact, contact);
-          successCb(finalContact, {
-            value: variant,
-            // Facebook telephone are always of type personal
-            type: 'personal',
-            // We don't know the carrier from FB phones
-            carrier: null
-          });
-        }, function error_get_mozContact() {
-            console.error('Error getting mozContact');
-            notFoundCb();
-        });
-      }
-      else {
-        notFoundCb();
-      }
-    }, function error_getContactByNumber() {
-        console.error('Error getting FB contacts');
-        notFoundCb();
-    });
-  }
-
-  function successCb(fbContact, matchingTel) {
-    self.onsuccess(fbContact, matchingTel);
-  }
-
-  function notFoundCb() {
-    pointer++;
-    if (pointer < self.variants.length) {
-      window.console.log('******* Checking variant *****', pointer);
-      check(self.variants[pointer]);
-    }
-    else {
-      self.onNotFound();
-    }
-  }
-
-  function check(variant) {
-    checkVariant(variant, successCb, notFoundCb);
-  }
-
-  this.start = function() {
-    check(self.variants[0]);
-  };
-
-};
-
 var Contacts = {
+
+  _FB_FILES: [
+    '/shared/js/fb/fb_request.js',
+    '/shared/js/fb/fb_data_reader.js',
+    '/shared/js/fb/fb_reader_utils.js'
+  ],
 
   // The mozContact API stores a revision of its database that allow us to know
   // if we have a proper and updated contact cache.
@@ -89,12 +31,16 @@ var Contacts = {
   },
 
   findByNumber: function findByNumber(number, callback) {
-    LazyLoader.load(['/contacts/js/fb/fb_data.js',
-                     '/contacts/js/fb/fb_contact_utils.js'],
-                  this._findByNumber.bind(this, number, callback));
+    LazyLoader.load(this._FB_FILES,
+                    this._findByNumber.bind(this, number, callback));
   },
 
   _findByNumber: function _findByNumber(number, callback) {
+    if (!number) {
+      callback(null);
+      return;
+    }
+
     var options;
     var variants;
 
@@ -121,8 +67,10 @@ var Contacts = {
     }
 
     var mozContacts = navigator.mozContacts;
-    if (!mozContacts)
+    if (!mozContacts) {
       callback(null);
+      return;
+    }
 
     var request = mozContacts.find(options);
     request.onsuccess = function findCallback() {
@@ -136,15 +84,23 @@ var Contacts = {
             return;
           }
 
-          // Searching each variant on the fbContacts cache
-          var searcher = new _FbDataSearcher(variants);
-          searcher.start();
-          searcher.onsuccess = callback;
-          searcher.onNotFound = function not_found() {
-            callback(null);
-          };
-        });
-
+          // It is only necessary to search for one variant as FB takes care
+          fb.getContactByNumber(number, function fb_ready(finalContact) {
+              var objMatching = null;
+              if (finalContact) {
+                objMatching = {
+                  value: number,
+                  // Facebook telephone are always of type personal
+                  type: 'personal',
+                  // We don't know the carrier from FB phones
+                  carrier: null
+                };
+              }
+              callback(finalContact, objMatching);
+            }, function fb_err(err) {
+                callback(null);
+            });
+          });
         return;
       }
 
@@ -167,10 +123,9 @@ var Contacts = {
       var matchingTel = contact.tel[matchResult.localIndex];
       if (fb.isFbLinked(contact)) {
         // Merge with the FB data
-        var req = fb.contacts.get(fb.getFriendUid(contact));
+        var req = fb.getData(contact);
         req.onsuccess = function() {
-          callback(fb.mergeContact(contact, req.result), matchingTel,
-            contactsWithSameNumber);
+          callback(req.result, matchingTel, contactsWithSameNumber);
         };
         req.onerror = function() {
           window.console.error('Error while getting FB Data');
@@ -195,13 +150,12 @@ var Contacts = {
       callback(null);
     }
 
-    LazyLoader.load(['/contacts/js/fb/fb_data.js',
-                     '/contacts/js/fb/fb_contact_utils.js'], function() {
+    LazyLoader.load(this._FB_FILES, function() {
       for (var i = 0, length = contacts.length; i < length; i++) {
-        if (fb.isFbLinked(contacts[i])) {
-          var fbReq = fb.contacts.get(fb.getFriendUid(contacts[i]));
+        if (fb.isFbContact(contacts[i])) {
+          var fbReq = fb.getData(contacts[i]);
           fbReq.onsuccess = function() {
-            contacts[i] = fb.mergeContact(contacts[i], fbReq.result);
+            contacts[i] = fbReq.result;
             if (i === (length - 1)) {
               callback(contacts);
             }

@@ -10,10 +10,13 @@ requireApp('system/test/unit/mock_utility_tray.js');
 requireApp('system/test/unit/mock_modal_dialog.js');
 requireApp('system/test/unit/mock_l10n.js');
 requireApp('system/test/unit/mock_template.js');
+requireApp('system/test/unit/mock_ftu_launcher.js');
+requireApp('system/test/unit/mock_keyboard_manager.js');
 
 require('/shared/test/unit/mocks/mock_lazy_loader.js');
 require('/shared/test/unit/mocks/mock_manifest_helper.js');
 require('/shared/test/unit/mocks/mock_navigator_wake_lock.js');
+require('/shared/test/unit/mocks/mock_navigator_moz_apps.js');
 
 requireApp('system/js/app_install_manager.js');
 
@@ -26,13 +29,16 @@ var mocksForAppInstallManager = new MocksHelper([
   'ModalDialog',
   'ManifestHelper',
   'LazyLoader',
-  'Template'
+  'FtuLauncher',
+  'Template',
+  'KeyboardManager'
 ]).init();
 
 suite('system/AppInstallManager >', function() {
   var realL10n;
   var realDispatchResponse;
   var realRequestWakeLock;
+  var realMozApps;
   var realTemplate;
 
   var fakeDialog, fakeNotif;
@@ -67,6 +73,9 @@ suite('system/AppInstallManager >', function() {
 
     realRequestWakeLock = navigator.requestWakeLock;
     navigator.requestWakeLock = MockNavigatorWakeLock.requestWakeLock;
+
+    realMozApps = navigator.mozApps;
+    navigator.mozApps = MockNavigatormozApps;
   });
 
   suiteTeardown(function() {
@@ -86,6 +95,8 @@ suite('system/AppInstallManager >', function() {
     navigator.requestWakeLock = realRequestWakeLock;
     realRequestWakeLock = null;
 
+    navigator.mozApps = realMozApps;
+    realMozApps = null;
   });
 
   setup(function() {
@@ -552,6 +563,51 @@ suite('system/AppInstallManager >', function() {
 
       dispatchEvent(evtName, partialApp);
     }
+
+    suite('Do not display a confirmation message when ftu is running >',
+    function() {
+      var testCases = [
+        {
+          'name': 'FTU is running. Should not display a confirmation',
+          'value': true
+        },
+        {
+          'name': 'FTU is not running. Should display a confirmation',
+          'value': false
+        }
+      ];
+
+      suiteTeardown(function() {
+        MockFtuLauncher.mIsRunning = false;
+      });
+
+      setup(function() {
+        mockAppName = 'FTU Fake hosted app';
+        mockApp = new MockApp({
+          manifest: {
+            name: mockAppName,
+            developer: {
+              name: 'Fake dev',
+              url: 'http://fakesoftware.com'
+            }
+          },
+          updateManifest: null,
+          installState: 'installed'
+        });
+        MockSystemBanner.mTeardown();
+      });
+
+      testCases.forEach(function(testCase) {
+        test(testCase.name, function() {
+          MockFtuLauncher.mIsRunning = testCase.value;
+          dispatchInstallEvent();
+          assert.equal(MockSystemBanner.mMessage,
+                       FtuLauncher.isFtuRunning() ?
+                        null :
+                        'app-install-success{"appName":"' + mockAppName + '"}');
+        });
+      });
+    });
 
     suite('hosted app without cache >', function() {
       setup(function() {
@@ -1257,17 +1313,19 @@ suite('system/AppInstallManager >', function() {
     var mockApp, mockAppTwo, mockAppName, mockAppTwoName;
     setup(function() {
       AppInstallManager.init();
+      KeyboardManager.isOutOfProcessEnabled = true;
+
       navigator.mozL10n = MockL10n;
       mockAppName = 'Fake keyboard app';
       mockApp = new MockApp({
         manifest: {
           name: mockAppName,
-          role: 'keyboard',
+          role: 'input',
           developer: {
             name: 'Fake dev',
             url: 'http://fakesoftware.com'
           },
-          entry_points: {
+          inputs: {
             'english': {
               launch_path: '/index.html#en',
               name: 'english',
@@ -1294,12 +1352,13 @@ suite('system/AppInstallManager >', function() {
       mockAppTwo = new MockApp({
         manifest: {
           name: mockAppTwoName,
-          role: 'keyboard',
+          type: 'privileged',
+          role: 'input',
           developer: {
             name: 'Fake dev',
             url: 'http://fakesoftware.com'
           },
-          entry_points: {
+          inputs: {
             'english': {
               launch_path: '/index.html#en',
               name: 'english',
@@ -1312,9 +1371,23 @@ suite('system/AppInstallManager >', function() {
               description: 'number layout',
               types: ['number']
             }
+          },
+          permissions: {
+            input: {}
           }
         }
       });
+    });
+
+    test('should be uninstalled if disabled', function() {
+      // Disabling keyboard app installation.
+      // Set MockKeyboardManager.isOutOfProcessEnabled to false
+      KeyboardManager.isOutOfProcessEnabled = false;
+
+      this.sinon.spy(navigator.mozApps.mgmt, 'uninstall');
+      AppInstallManager.handleInstallSuccess(mockApp);
+
+      assert.isTrue(navigator.mozApps.mgmt.uninstall.calledOnce);
     });
 
     test('should show setup dialog', function() {
@@ -1364,11 +1437,11 @@ suite('system/AppInstallManager >', function() {
     });
 
     test('should not show list', function() {
-      // keyboard app without entry_points
+      // keyboard app without inputs
       var badKeyboardApp = new MockApp({
         manifest: {
           name: mockAppName,
-          role: 'keyboard',
+          role: 'input',
           developer: {
             name: 'Fake dev',
             url: 'http://fakesoftware.com'
@@ -1382,5 +1455,64 @@ suite('system/AppInstallManager >', function() {
                       imeLayoutDialog.classList.contains('visible'));
     });
 
+    test('should not show list if no permission', function() {
+      // keyboard app without permissions
+      var badKeyboardApp = new MockApp({
+        manifest: {
+          name: mockAppName,
+          role: 'input',
+          type: 'privileged',
+          developer: {
+            name: 'Fake dev',
+            url: 'http://fakesoftware.com'
+          },
+          inputs: {
+            'english': {
+              launch_path: '/index.html#en',
+              name: 'english',
+              description: 'English layout',
+              types: ['text', 'url', 'number']
+            }
+          },
+          permissions: {
+          }
+        }
+      });
+      AppInstallManager.handleInstallSuccess(badKeyboardApp);
+      AppInstallManager.setupConfirmButton.click();
+      assert.equal(0, AppInstallManager.setupQueue.length);
+      assert.isFalse(AppInstallManager.
+                      imeLayoutDialog.classList.contains('visible'));
+    });
+
+    test('should not show list if not privileged app', function() {
+      // keyboard app without permissions
+      var badKeyboardApp = new MockApp({
+        manifest: {
+          name: mockAppName,
+          role: 'input',
+          developer: {
+            name: 'Fake dev',
+            url: 'http://fakesoftware.com'
+          },
+          inputs: {
+            'english': {
+              launch_path: '/index.html#en',
+              name: 'english',
+              description: 'English layout',
+              types: ['text', 'url', 'number']
+            }
+          },
+          permissions: {
+            input: {}
+          }
+        }
+      });
+      AppInstallManager.handleInstallSuccess(badKeyboardApp);
+      AppInstallManager.setupConfirmButton.click();
+      assert.equal(0, AppInstallManager.setupQueue.length);
+      assert.isFalse(AppInstallManager.
+                      imeLayoutDialog.classList.contains('visible'));
+    });
   });
 });

@@ -139,9 +139,9 @@ function execute(options) {
    'camera.recording.preferredSizes': [],
    'clear.remote-windows.data': false,
    'debug.console.enabled': false,
+   'developer.menu.enabled': false,
    'debug.grid.enabled': false,
    'debug.oop.disabled': false,
-   'debug.keyboard-oop.enabled': false,
    'debug.fps.enabled': false,
    'debug.ttl.enabled': false,
    'debug.log-animations.enabled': false,
@@ -167,6 +167,7 @@ function execute(options) {
    'icc.data': null,
    'icc.displayTextTimeout': 40000,
    'icc.inputTextTimeout': 40000,
+   'icc.toneDefaultTimeout': 5000,
    'icc.goBackTimeout': 1000,
    'icc.selectTimeout': 150000,
    'keyboard.layouts.english': true,
@@ -176,6 +177,7 @@ function execute(options) {
    'keyboard.layouts.german': false,
    'keyboard.layouts.hungarian': false,
    'keyboard.layouts.norwegian': false,
+   'keyboard.layouts.myanmar': false,
    'keyboard.layouts.slovak': false,
    'keyboard.layouts.turkish': false,
    'keyboard.layouts.romanian': false,
@@ -195,8 +197,9 @@ function execute(options) {
    'keyboard.clicksound': false,
    'keyboard.autocorrect': true,
    'keyboard.wordsuggestion': true,
-   'keyboard.current': 'en',
-   'keyboard.ftu.enabled': true,
+   'keyboard.current': undefined,
+   'keyboard.ftu.enabled': false,
+   'keyboard.3rd-party-app.enabled': false,
    'language.current': 'en-US',
    'layers.draw-borders': false,
    'lockscreen.passcode-lock.code': '0000',
@@ -208,6 +211,8 @@ function execute(options) {
    'lockscreen.unlock-sound.enabled': false,
    'mail.sent-sound.enabled': true,
    'message.sent-sound.enabled': true,
+   'nfc.enabled': false,
+   'nfc.suspended': false,
    'operatorvariant.mcc': '000',
    'operatorvariant.mnc': '00',
    'phone.ring.keypad': true,
@@ -216,6 +221,11 @@ function execute(options) {
    'powersave.threshold': -1,
    'privacy.donottrackheader.value': '-1',
    'privacy.donottrackheader.enabled': false,
+   'ril.telephony.defaultServiceId': '0',
+   'ril.voicemail.defaultServiceId': '0',
+   'ril.sms.defaultServiceId': '0',
+   'ril.mms.defaultServiceId': '0',
+   'ril.data.defaultServiceId': '0',
    'ril.data.suspended': false,
    'ril.iccInfo.mbdn': '',
    'ril.sms.requestStatusReport.enabled': false,
@@ -265,6 +275,7 @@ function execute(options) {
    'screen.timeout': 60,
    'software-button.enabled': false,
    'homegesture.enabled': false,
+   'edgesgesture.enabled': false,
    'support.onlinesupport.title': '',
    'support.onlinesupport.href': '',
    'support.callsupport1.title': '',
@@ -288,7 +299,7 @@ function execute(options) {
    'tethering.wifi.connectedClients': 0,
    'tethering.usb.connectedClients': 0,
    'time.clock.automatic-update.enabled': true,
-   'time.timezone.automatic-update.enabled': true, 
+   'time.timezone.automatic-update.enabled': true,
    'time.timezone': null,
    'ums.enabled': false,
    'ums.mode': 0,
@@ -305,9 +316,14 @@ function execute(options) {
    'wap.push.enabled': true
   };
 
-  // We want the console to be disabled for device builds using the user variant.
-  if (config.TARGET_BUILD_VARIANT != 'user')
+  if (config.TARGET_BUILD_VARIANT != 'user') {
+    // We want the console to be disabled for device builds using the user variant.
     settings['debug.console.enabled'] = true;
+
+    // Activate developer menu under the system menu when long pressing
+    // the power button by default for devs.
+    settings['developer.menu.enabled'] = true;
+  }
 
   // Set the homescreen URL
   settings['homescreen.manifestURL'] = utils.gaiaManifestURL('homescreen',

@@ -170,7 +170,6 @@ suite('Timer.Panel', function() {
       this.sinon.spy(panel.timer, 'start');
       this.sinon.spy(panel.timer, 'pause');
       this.sinon.spy(panel.timer, 'cancel');
-      this.sinon.spy(panel.nodes.sound, 'focus');
     });
 
     test('click: start ', function() {
@@ -207,17 +206,6 @@ suite('Timer.Panel', function() {
       assert.isNull(panel.timer);
     });
 
-    test('click: menu ', function() {
-      var menu = panel.nodes.menu;
-      var sound = panel.nodes.sound;
-
-      menu.dispatchEvent(
-        new CustomEvent('click')
-      );
-      assert.ok(panel.onclick.called);
-      assert.ok(sound.focus.called);
-    });
-
     test('click: create ', function() {
       panel.nodes.create.dispatchEvent(
         new CustomEvent('click')
@@ -228,7 +216,7 @@ suite('Timer.Panel', function() {
     });
 
     test('blur: sound', function() {
-      var menu = panel.nodes.menu;
+      var menu = panel.soundButton.button;
       var sound = panel.nodes.sound;
       Utils.changeSelectByValue(sound, 'ac_normal_gem_echoes.opus');
       sound.dispatchEvent(
@@ -236,6 +224,49 @@ suite('Timer.Panel', function() {
       );
 
       assert.equal(menu.textContent, 'ac_normal_gem_echoes_opus');
+    });
+
+    test('change: sound', function() {
+      var sound = panel.nodes.sound;
+      Utils.changeSelectByValue(sound, 'ac_normal_gem_echoes.opus');
+      var mockAudio = {
+        pause: this.sinon.spy(),
+        play: this.sinon.spy()
+      };
+      this.sinon.stub(window, 'Audio').returns(mockAudio);
+
+      sound.dispatchEvent(
+        new CustomEvent('change')
+      );
+
+      assert.isTrue(mockAudio.play.called);
+      assert.isTrue(mockAudio.loop);
+      assert.equal(mockAudio.mozAudioChannelType, 'alarm');
+      var expected = 'shared/resources/media/alarms/ac_normal_gem_echoes.opus';
+      assert.equal(mockAudio.src, expected);
+    });
+
+    test('blur: pause playing alarm', function() {
+      var sound = panel.nodes.sound;
+      Utils.changeSelectByValue(sound, 'ac_normal_gem_echoes.opus');
+      var mockAudio = {
+        pause: this.sinon.spy(),
+        play: this.sinon.spy()
+      };
+      this.sinon.stub(window, 'Audio').returns(mockAudio);
+
+      sound.dispatchEvent(
+        new CustomEvent('change')
+      );
+
+      assert.isTrue(mockAudio.play.called);
+      assert.isTrue(mockAudio.pause.calledOnce);
+
+      sound.dispatchEvent(
+        new CustomEvent('blur')
+      );
+
+      assert.isTrue(mockAudio.pause.calledTwice);
     });
   });
 

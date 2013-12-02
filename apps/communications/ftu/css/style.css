@@ -32,9 +32,8 @@ a {
   right: 0;
   bottom: 0;
   overflow-x: auto;
-  background: url(images/bg_light.png);
-  background-size: 100% auto;
-}
+  background-color: #ffffff;
+ }
 
 [role=region].show {
   visibility: visible;
@@ -469,8 +468,8 @@ aside.connecting {
   height: auto;
 }
 
-#hidden-wifi-authentication label span,
-#configure_network_params label span {
+#hidden-wifi-authentication label span:after,
+#configure_network_params label span:after {
   top: 2rem;
   left: 3rem;
 }
@@ -841,7 +840,7 @@ aside.connecting {
   margin: 0 3rem 0 0;
 }
 
-#welcome_browser #form_share_statistics span {
+#welcome_browser #form_share_statistics span:after {
   top: 1rem;
   left: 1rem;
 }
@@ -1044,13 +1043,13 @@ i.hack-first-child {
   height: 100%
 }
 
-[data-type="list"].pack-value-selector li label:not([for]) input + span {
+[data-type="list"].pack-value-selector li label:not([for]) input + span:after {
   background: none;
   left: 100%;
   margin-left: -2.2rem;
 }
 
-[data-type="list"].pack-value-selector li label:not([for]) input:checked + span {
+[data-type="list"].pack-value-selector li label:not([for]) input:checked + span:after {
   background: url("images/checked.png") no-repeat right center / 100%;
 }
 

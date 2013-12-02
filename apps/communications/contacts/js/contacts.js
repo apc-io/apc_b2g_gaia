@@ -36,7 +36,7 @@ var Contacts = (function() {
   var contactsDetails;
   var contactsForm;
 
-  var customTag, tagDone, tagCancel, lazyLoadedTagsDom = false;
+  var customTag, customTagReset, tagDone, tagCancel, lazyLoadedTagsDom = false;
 
   var checkUrl = function checkUrl() {
     var hasParams = window.location.hash.split('?');
@@ -318,7 +318,7 @@ var Contacts = (function() {
     var attr;
     for (var i = 0; i < fields.length; i++) {
       attr = fields[i];
-      if (obj.hasOwnProperty(attr) && obj[attr]) {
+      if (obj[attr]) {
         if (Array.isArray(obj[attr])) {
           if (obj[attr].length > 0) {
             return false;
@@ -340,6 +340,10 @@ var Contacts = (function() {
       customTag = document.querySelector('#custom-tag');
       customTag.addEventListener('keydown', handleCustomTag);
       customTag.addEventListener('touchend', handleCustomTag);
+    }
+    if (!customTagReset) {
+      customTagReset = document.getElementById('custom-tag-reset');
+      customTagReset.addEventListener('touchstart', handleCustomTagReset);
     }
     if (!tagDone) {
       tagDone = document.querySelector('#settings-done');
@@ -436,6 +440,13 @@ var Contacts = (function() {
     ContactsTag.touchCustomTag();
   };
 
+  var handleCustomTagReset = function handleCustomTagReset(ev) {
+    ev.preventDefault();
+    if (customTag) {
+      customTag.value = '';
+    }
+  };
+
   var sendEmailOrPick = function sendEmailOrPick(address) {
     if (ActivityHandler.currentlyHandling) {
       // Placeholder for the email app if we want to
@@ -501,7 +512,8 @@ var Contacts = (function() {
       callback();
     } else {
       Contacts.view('Settings', function viewLoaded() {
-        LazyLoader.load(['/shared/js/icc_helper.js'], function() {
+        LazyLoader.load(['/contacts/js/utilities/sim_dom_generator.js',
+          '/contacts/js/utilities/icc_handler.js'], function() {
           settingsReady = true;
           contacts.Settings.init();
           callback();
@@ -554,11 +566,21 @@ var Contacts = (function() {
   };
 
   var showOverlay = function c_showOverlay(message, progressClass, textId) {
-    return utils.overlay.show(message, progressClass, textId);
+    var out = utils.overlay.show(message, progressClass, textId);
+    // When we are showing the overlay we are often performing other
+    // significant work, such as importing.  While performing this work
+    // it would be nice to avoid the overhead of any accidental reflows
+    // due to touching the list DOM.  For example, importing incrementally
+    // adds contacts to the list which triggers many reflows.  Therefore,
+    // minimize this impact by hiding the list while we are showing the
+    // overlay.
+    contacts.List.hide();
+    return out;
   };
 
   var hideOverlay = function c_hideOverlay() {
     Contacts.utility('Overlay', function _loaded() {
+      contacts.List.show();
       utils.overlay.hide();
     });
   };

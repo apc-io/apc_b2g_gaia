@@ -25,10 +25,9 @@ marionette('Contacts > Details', function() {
       client.helper.waitForElement(selectors.listContactFirstText)
         .click();
 
-      client.helper.waitForElement(selectors.details);
+      subject.waitSlideLeft('details');
 
-      var telSelector = 'button.icon-call[data-tel="' + tel + '"]';
-      client.helper.waitForElement(telSelector)
+      client.helper.waitForElement(selectors.detailsTelButtonFirst)
         .click();
 
       var header = client.helper.waitForElement(selectors.confirmHeader);

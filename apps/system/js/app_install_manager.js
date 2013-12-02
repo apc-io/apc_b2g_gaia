@@ -186,7 +186,7 @@ var AppInstallManager = {
   },
 
   configurations: {
-    'keyboard': {
+    'input': {
       fnName: 'showIMEList'
     }
   },
@@ -194,6 +194,15 @@ var AppInstallManager = {
   handleInstallSuccess: function ai_handleInstallSuccess(app) {
     var manifest = app.manifest || app.updateManifest;
     var role = manifest.role;
+
+    // We must stop 3rd-party keyboard app from being installed
+    // if the feature is not enabled.
+    if (role === 'input' && !KeyboardManager.isOutOfProcessEnabled) {
+      navigator.mozApps.mgmt.uninstall(app);
+
+      return;
+    }
+
     if (this.configurations[role]) {
       this.setupQueue.push(app);
       this.checkSetupQueue();
@@ -207,6 +216,9 @@ var AppInstallManager = {
   },
 
   showInstallSuccess: function ai_showInstallSuccess(app) {
+    if (FtuLauncher.isFtuRunning()) {
+      return;
+    }
     var manifest = app.manifest || app.updateManifest;
     var appManifest = new ManifestHelper(manifest);
     var name = appManifest.name;
@@ -245,6 +257,7 @@ var AppInstallManager = {
     navigator.mozL10n.localize(this.setupAppName,
                               'app-install-success', { appName: appName });
     this.setupInstalledAppDialog.classList.add('visible');
+    window.dispatchEvent(new CustomEvent('applicationsetupdialogshow'));
   },
 
   handleSetupCancelAction: function ai_handleSetupCancelAction() {
@@ -260,10 +273,21 @@ var AppInstallManager = {
 
   showIMEList: function ai_showIMEList() {
     var app = this.setupQueue[0];
-    var entryPoints = app.manifest.entry_points;
-    if (typeof entryPoints !== 'object') {
-      console.error('entry_points must be an object for ' +
-                                          'third-party keyboard layouts');
+    var inputs = app.manifest.inputs;
+    if (typeof inputs !== 'object') {
+      console.error('inputs must be an object for ' +
+                    'third-party keyboard layouts');
+      this.completedSetupTask();
+      return;
+    }
+
+    // Check permission level is correct
+    var hasInputPermission = (app.manifest.type === 'certified' ||
+                              app.manifest.type === 'privileged') &&
+                             (app.manifest.permissions &&
+                              'input' in app.manifest.permissions);
+    if (!hasInputPermission) {
+      console.error('third-party IME does not have correct input permission');
       this.completedSetupTask();
       return;
     }
@@ -271,8 +295,8 @@ var AppInstallManager = {
     // build the list of keyboard layouts
     var listHtml = '';
     var imeListWrap = Template(this.imeListTemplate);
-    for (var name in entryPoints) {
-      var displayIMEName = new ManifestHelper(entryPoints[name]).name;
+    for (var name in inputs) {
+      var displayIMEName = new ManifestHelper(inputs[name]).name;
       listHtml += imeListWrap.interpolate({
         imeName: name,
         displayName: displayIMEName

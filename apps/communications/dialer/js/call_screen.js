@@ -4,6 +4,7 @@ var CallScreen = {
   _ticker: null,
   _screenWakeLock: null,
   _typedNumber: '',
+  callEndPromptTime: 2000,
 
   body: document.body,
   screen: document.getElementById('call-screen'),
@@ -14,6 +15,7 @@ var CallScreen = {
   groupCallsList: document.getElementById('group-call-details-list'),
 
   mainContainer: document.getElementById('main-container'),
+  contactBackground: document.getElementById('contact-background'),
   callToolbar: document.getElementById('co-advanced'),
 
   muteButton: document.getElementById('mute'),
@@ -30,10 +32,11 @@ var CallScreen = {
 
   incomingContainer: document.getElementById('incoming-container'),
   incomingNumber: document.getElementById('incoming-number'),
+  incomingNumberAdditionalInfo:
+    document.getElementById('incoming-number-additional-info'),
   incomingAnswer: document.getElementById('incoming-answer'),
   incomingEnd: document.getElementById('incoming-end'),
   incomingIgnore: document.getElementById('incoming-ignore'),
-  lockedContactPhoto: document.getElementById('locked-contact-photo'),
   lockedClockNumbers: document.getElementById('lockscreen-clock-numbers'),
   lockedClockMeridiem: document.getElementById('lockscreen-clock-meridiem'),
   lockedDate: document.getElementById('lockscreen-date'),
@@ -44,7 +47,8 @@ var CallScreen = {
     var self = this;
     self.statusMessage.querySelector('p').textContent = text;
     self.statusMessage.classList.add('visible');
-    self.statusMessage.addEventListener('transitionend', function tend() {
+    self.statusMessage.addEventListener('transitionend', function tend(evt) {
+      evt.stopPropagation();
       self.statusMessage.removeEventListener('transitionend', tend);
       setTimeout(function hide() {
         self.statusMessage.classList.remove('visible');
@@ -52,7 +56,9 @@ var CallScreen = {
     });
   },
 
-  set singleLine(enabled) {
+  updateSingleLine: function cs_updateSingleLine() {
+    var enabled =
+      (this.calls.querySelectorAll('section:not([hidden])').length <= 1);
     this.calls.classList.toggle('single-line', enabled);
     this.calls.classList.toggle('big-duration', enabled);
   },
@@ -115,7 +121,7 @@ var CallScreen = {
     }
     CallScreen.showClock(new Date());
 
-    this.setDefaultContactImage({force: false});
+    this.setWallpaper();
 
     // Handle resize events
     window.addEventListener('resize', this.resizeHandler.bind(this));
@@ -138,7 +144,10 @@ var CallScreen = {
     }
 
     /* We need CSS transitions for the status bar state and the regular state */
-    screen.addEventListener('transitionend', function trWait() {
+    screen.addEventListener('transitionend', function trWait(evt) {
+      if (evt.target != screen) {
+        return;
+      }
       screen.removeEventListener('transitionend', trWait);
       callback();
     });
@@ -146,6 +155,13 @@ var CallScreen = {
 
   insertCall: function cs_insertCall(node) {
     this.calls.appendChild(node);
+    this.updateSingleLine();
+  },
+
+  removeCall: function cs_removeCall(node) {
+    // The node can be either inside groupCallsList or calls.
+    node.parentNode.removeChild(node);
+    this.updateSingleLine();
   },
 
   moveToGroup: function cs_moveToGroup(node) {
@@ -167,26 +183,28 @@ var CallScreen = {
     }
   },
 
-  setCallerContactImage: function cs_setContactImage(image_url, opt) {
-    var isString = (typeof image_url == 'string');
-    var isLocked = (this.screen.dataset.layout === 'incoming-locked');
-    var target = isLocked ? this.lockedContactPhoto : this.mainContainer;
-    var photoURL = isString ? image_url : URL.createObjectURL(image_url);
-
-    if (!target.style.backgroundImage || (opt && opt.force)) {
-      target.style.backgroundImage = 'url(' + photoURL + ')';
+  _contactImage: null,
+  setCallerContactImage: function cs_setContactImage(blob) {
+    if (this._contactImage == blob) {
+      return;
     }
+
+    this._contactImage = blob;
+
+    var background = blob ? 'url(' + URL.createObjectURL(blob) + ')' : '';
+    this.contactBackground.style.backgroundImage = background;
   },
 
-
-  setDefaultContactImage: function cs_setDefaultContactImage(opt) {
+  setWallpaper: function cs_setWallpaper() {
     if (!navigator.mozSettings) {
       return;
     }
 
+    var self = this;
     var req = navigator.mozSettings.createLock().get('wallpaper.image');
     req.onsuccess = function cs_wi_onsuccess() {
-      CallScreen.setCallerContactImage(req.result['wallpaper.image'], opt);
+      var image = URL.createObjectURL(req.result['wallpaper.image']);
+      self.mainContainer.style.backgroundImage = 'url(' + image + ')';
     };
   },
 
@@ -304,5 +322,54 @@ var CallScreen = {
       evt.preventDefault();
     }
     this.groupCalls.classList.remove('display');
+  },
+
+  createTicker: function(durationNode) {
+    var durationChildNode = durationNode.querySelector('span');
+
+    if (durationNode.dataset.tickerId)
+      return false;
+
+    durationChildNode.textContent = '00:00';
+    durationNode.classList.add('isTimer');
+
+    function padNumber(n) {
+      return n > 9 ? n : '0' + n;
+    }
+
+    LazyL10n.get(function localized(_) {
+      var ticker = setInterval(function ut_updateTimer(startTime) {
+        // Bug 834334: Ensure that 28.999 -> 29.000
+        var delta = Math.round((Date.now() - startTime) / 1000) * 1000;
+        var elapsed = new Date(delta);
+        var duration = {
+          h: padNumber(elapsed.getUTCHours()),
+          m: padNumber(elapsed.getUTCMinutes()),
+          s: padNumber(elapsed.getUTCSeconds())
+        };
+        durationChildNode.textContent = _(elapsed.getUTCHours() > 0 ?
+          'callDurationHours' : 'callDurationMinutes', duration);
+      }, 1000, Date.now());
+      durationNode.dataset.tickerId = ticker;
+    });
+    return true;
+  },
+
+  stopTicker: function(durationNode) {
+    durationNode.classList.remove('isTimer');
+    clearInterval(durationNode.dataset.tickerId);
+    delete durationNode.dataset.tickerId;
+  },
+
+  // XXX: This is a workaround before bug 936982 is fixed.
+  // the last call quitting conference changes its status with one additional
+  // connected for now, namely disconnecting-->**connected**-->disconnected
+  // so we just hide disconnecting calls to prevent it from appearing on call
+  // screen again.
+  setCallsEndedInGroup: function cs_markEndOnCallsInGroup() {
+    var callElems = this.groupCallsList.getElementsByTagName('SECTION');
+    for (var i = 0; i < callElems.length; i++) {
+      callElems[i].classList.add('groupended');
+    }
   }
 };

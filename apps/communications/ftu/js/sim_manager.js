@@ -6,11 +6,16 @@ var SimManager = {
   _unlocked: false,
 
   init: function sm_init() {
-    this.mobConn = window.navigator.mozMobileConnection;
+    // XXX: check bug-926169
+    // this is used to keep all tests passing while introducing multi-sim APIs
+    this.mobConn = window.navigator.mozMobileConnection ||
+                   window.navigator.mozMobileConnections &&
+                   window.navigator.mozMobileConnections[0];
+
     if (!this.mobConn)
       return;
 
-    if (!IccHelper.enabled)
+    if (!IccHelper)
       return;
 
     _ = navigator.mozL10n.get;
@@ -69,7 +74,7 @@ var SimManager = {
   },
 
   available: function sm_available() {
-    if (!IccHelper.enabled)
+    if (!IccHelper)
       return false;
     return (IccHelper.cardState === 'ready');
   },
@@ -77,7 +82,6 @@ var SimManager = {
  /**
   * Possible values:
   *   null,
-  *   'absent',
   *   'unknown',
   *   'pinRequired',
   *   'pukRequired',
@@ -110,6 +114,11 @@ var SimManager = {
   },
 
   checkSIMButton: function sm_checkSIMButton() {
+    if (!this.mobConn) {
+      UIManager.simImport.classList.add('hidden');
+      return;
+    }
+
     var simOption = UIManager.simImportButton;
     // If there is an unlocked SIM we activate import from SIM
     if (!SimManager.alreadyImported && SimManager.available()) {
@@ -123,7 +132,7 @@ var SimManager = {
     }
   },
 
-  showPinScreen: function sm_showScreen() {
+  showPinScreen: function sm_showPinScreen() {
     if (this._unlocked)
       return;
 
@@ -368,6 +377,27 @@ var SimManager = {
     }).bind(this);
   },
 
+  // Try to infer whats the default SIM
+  guessIcc: function guessIcc() {
+    var guessIcc = null;
+    if (navigator.mozMobileConnections) {
+      // New multi-sim api, use mozMobileConnection to guess
+      // the first inserted sim
+      for (var i = 0;
+        i < navigator.mozMobileConnections.length && guessIcc === null; i++) {
+        if (navigator.mozMobileConnections[i] !== null &&
+          navigator.mozMobileConnections[i].iccId !== null) {
+          guessIcc = navigator.mozIccManager.getIccById(
+            navigator.mozMobileConnections[i].iccId);
+        }
+      }
+    } else {
+      guessIcc = navigator.mozIccManager;
+    }
+
+    return guessIcc;
+  },
+
   importContacts: function sm_importContacts() {
     // Delay for showing feedback to the user after importing
     var DELAY_FEEDBACK = 300;
@@ -378,8 +408,9 @@ var SimManager = {
     var importButton = UIManager.simImportButton;
     importButton.setAttribute('disabled', 'disabled');
 
-    var cancelled = false, contactsRead = false;
-    var importer = new SimContactsImporter();
+    var cancelled = false,
+        contactsRead = false;
+    var importer = new SimContactsImporter(SimManager.guessIcc());
     utils.overlay.showMenu();
     utils.overlay.oncancel = function oncancel() {
       cancelled = true;
@@ -398,9 +429,11 @@ var SimManager = {
 
     importer.onread = function sim_import_read(n) {
       contactsRead = true;
-      progress.setClass('progressBar');
-      progress.setHeaderMsg(_('simContacts-importing'));
-      progress.setTotal(n);
+      if (n > 0) {
+        progress.setClass('progressBar');
+        progress.setHeaderMsg(_('simContacts-importing'));
+        progress.setTotal(n);
+      }
     };
 
     importer.onimported = function imported_contact() {
@@ -414,13 +447,14 @@ var SimManager = {
       window.setTimeout(function do_sim_import_finish() {
         UIManager.navBar.removeAttribute('aria-disabled');
         utils.overlay.hide();
-        if (importedContacts !== 0) {
+        if (importedContacts > 0) {
           window.importUtils.setTimestamp('sim');
           SimManager.alreadyImported = true;
-          if (!cancelled) {
-            utils.status.show(_('simContacts-imported3',
-                                {n: importedContacts}));
-          }
+        }
+        if (!cancelled) {
+          utils.status.show(_('simContacts-imported3',
+                              {n: importedContacts})
+          );
         }
       }, DELAY_FEEDBACK);
 

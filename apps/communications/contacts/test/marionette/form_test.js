@@ -44,12 +44,17 @@ marionette('Contacts > Form', function() {
       client.helper.waitForElement(selectors.listContactFirstText)
         .click();
 
-      client.helper.waitForElement(selectors.details);
+      subject.waitSlideLeft('details');
+
       client.helper.waitForElement(selectors.detailsEditContact)
         .click();
 
+      subject.waitForFormShown();
+
       client.helper.waitForElement(selectors.formTelLabelFirst)
         .click();
+
+      subject.waitSlideLeft('formCustomTagPage');
 
       client.helper.waitForElement(selectors.formCustomTag)
         .sendKeys('BFF');
@@ -58,15 +63,17 @@ marionette('Contacts > Form', function() {
         .click();
 
       // Wait for the custom tag page to disappear
+      var bodyWidth = client.findElement(selectors.body).size().width;
       client.waitFor(function waiting() {
         var tagPage = client.findElement(selectors.formCustomTagPage);
-        var className = tagPage.getAttribute('className');
-        return className.indexOf('app-go-left-in') === -1;
+        var location = tagPage.location();
+        return location.x >= bodyWidth;
       });
 
       client.findElement(selectors.formSave)
         .click();
 
+      subject.waitForFormTransition();
       client.helper.waitForElement(selectors.detailsTelLabelFirst);
       client.waitFor(function waiting() {
         var label = client.findElement(selectors.detailsTelLabelFirst).text();

@@ -4,8 +4,7 @@
   position: fixed;
   bottom: 0;
   z-index: 10000;
-  background-image: url('../resources/images/footer/background.png');
-  background-size: 100%;
+  background-color: rgba(0,0,0,.4);
   overflow: visible;
 }
 
@@ -89,26 +88,6 @@
   #footer > div li,
   #footer > div.scrollable li {
     width: 17.5rem;
-  }
-
-  #footer > div li:first-child {
-    width: 9rem;
-    padding-left: 14.5rem;
-    padding-right: 4.5rem;
-  }
-
-  #footer li:first-child span.options {
-    left: 16rem;
-  }
-
-  #footer > div li:last-child:not(:first-child) {
-    width: 9rem;
-    padding-right: 14.5rem;
-    padding-left: 4.5rem;
-  }
-
-  #footer li:last-child:not(:first-child) span.options {
-    left: 4.2rem;
   }
 
   #footer li span.options {

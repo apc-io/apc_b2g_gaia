@@ -2,16 +2,13 @@
   Compose Tests
 */
 
-/*global mocha, MocksHelper, MockAttachment, MockL10n, loadBodyHTML, ThreadUI,
+/*global MocksHelper, MockAttachment, MockL10n, loadBodyHTML,
          Compose, Attachment, MockMozActivity, Settings, Utils,
          AttachmentMenu */
 
 'use strict';
 
-mocha.globals(['0', '6']);
-
 requireApp('sms/js/compose.js');
-requireApp('sms/js/thread_ui.js');
 requireApp('sms/js/utils.js');
 
 requireApp('sms/test/unit/mock_l10n.js');
@@ -88,9 +85,7 @@ suite('compose_test.js', function() {
 
     setup(function() {
       loadBodyHTML('/index.html');
-      // if we don't do the ThreadUI.init - it breaks when run in a full suite
-      ThreadUI.init();
-      // Compose.init('messages-compose-form');
+      Compose.init('messages-compose-form');
       message = document.querySelector('[contenteditable]');
     });
 
@@ -153,6 +148,19 @@ suite('compose_test.js', function() {
         var txt = Compose.getContent();
         assert.equal(txt[0], 'start', 'text is appended');
       });
+
+      test('Message appended with html', function() {
+        var message = document.querySelector(
+          '#messages-compose-form [contenteditable]'
+        );
+
+        Compose.append('<b>hi!</b>\ntest');
+        var txt = Compose.getContent();
+
+        assert.equal(message.innerHTML, '&lt;b&gt;hi!&lt;/b&gt;<br>test<br>');
+        assert.equal(txt[0], '<b>hi!</b>\ntest');
+      });
+
       test('Message prepend', function() {
         Compose.append('end');
         Compose.prepend('start');
@@ -218,7 +226,7 @@ suite('compose_test.js', function() {
       });
       test('Just text - line breaks', function() {
         Compose.append('start');
-        Compose.append('<br>');
+        Compose.append('\n');
         Compose.append('end');
         var txt = Compose.getContent();
         assert.equal(txt.length, 1, 'Single text content');
@@ -226,19 +234,31 @@ suite('compose_test.js', function() {
       });
       test('Trailing line breaks not stripped', function() {
         Compose.append('start');
-        Compose.append('<br>');
+        Compose.append('\n');
         Compose.append('end');
-        Compose.append(new Array(5).join('<br>'));
+        Compose.append(new Array(5).join('\n'));
         var expected = 'start\nend\n\n\n\n';
         var txt = Compose.getContent();
         assert.equal(txt.length, 1, 'Single text content');
         assert.equal(txt[0], expected, 'correct content');
       });
+      test('Text with several spaces', function() {
+        Compose.append('start');
+        Compose.append('    ');
+        Compose.append('end');
+        var expected = 'start    end';
+        var txt = Compose.getContent();
+        assert.equal(txt.length, 1, 'Single text content');
+        assert.equal(txt[0], expected, 'correct content');
+
+        // the CSS we use is pre-wrap so we can use plain spaces
+        var html = message.innerHTML;
+        var expectedHTML = 'start    end<br>';
+        assert.equal(html, expectedHTML, 'correct markup');
+      });
       test('Text with non-break spaces', function() {
         Compose.append('start');
-        Compose.append('&nbsp;');
-        Compose.append('&nbsp;');
-        Compose.append('&nbsp;');
+        Compose.append('\u00A0\u00A0\u00A0');
         Compose.append(' ');
         Compose.append('end');
         var expected = 'start    end';
@@ -270,7 +290,7 @@ suite('compose_test.js', function() {
       });
       test('attachment with excess breaks', function() {
         Compose.append('start');
-        Compose.append('<br><br><br><br>');
+        Compose.append('\n\n\n\n');
         Compose.append(mockAttachment());
         Compose.append('end');
         var txt = Compose.getContent();
@@ -279,6 +299,18 @@ suite('compose_test.js', function() {
         assert.ok(txt[1] instanceof MockAttachment, 'Sub 1 is an attachment');
         assert.equal(txt[2], 'end', 'Last line is end text');
       });
+
+      test('text split in several text nodes', function() {
+        var lastChild = message.lastChild;
+        message.insertBefore(document.createTextNode('hello'), lastChild);
+        message.insertBefore(document.createTextNode(''), lastChild);
+        message.insertBefore(document.createTextNode('world'), lastChild);
+
+        var content = Compose.getContent();
+        assert.equal(content.length, 1);
+        assert.equal(content[0], 'helloworld');
+      });
+
       teardown(function() {
         Compose.clear();
       });

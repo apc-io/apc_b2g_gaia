@@ -2,7 +2,7 @@
   "name": "Built-in Keyboard",
   "description": "Built-in Keyboard",
   "type": "certified",
-  "role": "keyboard",
+  "role": "input",
   "launch_path": "/settings.html",
   "developer": {
     "name": "The Gaia Team",
@@ -10,9 +10,9 @@
   },
   "permissions": {
     "settings": { "access": "readwrite" },
-    "keyboard": {}
+    "input": {}
   },
-  "entry_points": {
+  "inputs": {
     "number": {
       "launch_path": "/index.html#numberLayout",
       "name": "Number",

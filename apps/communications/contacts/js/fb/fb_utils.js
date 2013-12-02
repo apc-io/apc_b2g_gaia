@@ -1,6 +1,7 @@
 'use strict';
 
 var fb = window.fb || {};
+window.fb = fb;
 
   (function(document) {
     var Utils = fb.utils || {};
@@ -12,6 +13,11 @@ var fb = window.fb || {};
     var CACHE_FRIENDS_KEY = Utils.CACHE_FRIENDS_KEY = 'numFacebookFriends';
     var LAST_UPDATED_KEY = Utils.LAST_UPDATED_KEY = 'lastUpdatedTime';
     Utils.ALARM_ID_KEY = 'nextAlarmId';
+
+    function getContact(contact) {
+      return (contact instanceof mozContact) ?
+        contact : new mozContact(contact);
+    }
 
     var REDIRECT_LOGOUT_URI = window.oauthflow ?
       oauthflow.params.facebook['redirectLogout'] : '';
@@ -67,10 +73,10 @@ var fb = window.fb || {};
       var outReq = new Utils.Request();
 
       window.setTimeout(function get_mozContact_ByUid() {
-        Utils.getMozContactByUid(uid,
-          function onsuccess(e) {
-            if (e.target.result && e.target.result.length > 0) {
-              outReq.done(e.target.result[0]);
+        fb.getMozContactByUid(uid,
+          function onsuccess(result) {
+            if (Array.isArray(result) && result.length > 0) {
+              outReq.done(result[0]);
             } else {
               outReq.done(null);
             }
@@ -89,16 +95,16 @@ var fb = window.fb || {};
       var outReq = new Utils.Request();
 
       window.setTimeout(function get_mozContact_ByUid() {
-        Utils.getMozContactByUid(uid,
-          function onsuccess(e) {
-            if (e.target.result && e.target.result.length > 0) {
-              outReq.done(e.target.result.length);
+        fb.getMozContactByUid(uid,
+          function onsuccess(result) {
+            if (Array.isArray(result)) {
+              outReq.done(result.length);
             } else {
               outReq.done(0);
             }
           },
           function onerror(e) {
-            outReq.failed(e.target.error);
+            outReq.failed(error);
           }
         );
       },0);
@@ -440,9 +446,7 @@ var fb = window.fb || {};
               req = fbContact.remove();
             }
             else {
-              var theContact = (contact instanceof mozContact) ?
-                               contact : new mozContact(contact);
-              var req = navigator.mozContacts.remove(theContact);
+              var req = navigator.mozContacts.remove(getContact(contact));
             }
           }
           req.number = number;

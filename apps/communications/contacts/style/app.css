@@ -263,6 +263,11 @@ li a[role="button"].activity > b em{
   font-style: normal;
 }
 
+[data-type="list"] li p {
+  line-height: 3rem !important;
+  margin-left: 1.5rem;
+}
+
 /* Long strings (email) */
 li button.activity > b ,
 li a[role="button"].activity > b{
@@ -396,7 +401,7 @@ form p + p {
 /* ICONS */
 
 span[role="button"] {
-  font: 0/0 a;
+  font-size: 0;
   background: transparent no-repeat center center;
   background-size: 100% auto;
   display: inline-block;

@@ -18,7 +18,9 @@ marionette('go to local drafts page', function() {
 
   var server = serverHelper.use(null, this);
 
-  test('should show the correct email address ' +
+  // Disable the test because of http://bugzil.la/925961#c36,
+  // and we follow up the issue in http://bugzil.la/936328.
+  test.skip('should show the correct email address ' +
        'in a item of mail list', function() {
     const EMAIL_ADDRESS = 'firefox-os-drafts@example.com';
     const EMAIL_SUBJECT = 'I still have a dream';

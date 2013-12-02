@@ -28,14 +28,14 @@ class TestCameraUnlockWithPasscode(GaiaTestCase):
         # https://github.com/mozilla/gaia-ui-tests/issues/479
 
         camera = self.lock_screen.unlock_to_camera()
-
         self.lock_screen.wait_for_lockscreen_not_visible()
+
+        self.assertTrue(self.lockscreen.is_locked)
 
         camera.switch_to_camera_frame()
 
         self.assertFalse(camera.is_gallery_button_visible)
 
         camera.tap_switch_source()
-        camera.wait_for_capture_ready()
 
         self.assertFalse(camera.is_gallery_button_visible)

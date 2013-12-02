@@ -8,6 +8,8 @@
 
   HomescreenWindow.prototype.__proto__ = AppWindow.prototype;
 
+  HomescreenWindow.prototype.CLASS_NAME = 'HomescreenWindow';
+
   HomescreenWindow.prototype.setBrowserConfig =
     function hw_setBrowserConfig(manifestURL) {
       var app = Applications.getByManifestURL(manifestURL);
@@ -177,8 +179,8 @@
     if (!AttentionScreen.isFullyVisible())
       this.setVisible(true);
     this.resetTransition();
-    this.resize();
     this.setOrientation();
+    this.resize();
   };
 
   // Should be the same as defined in system.css animation time.

@@ -2,6 +2,7 @@ Keyboards['jp-kanji'] = {
   label: 'Japanese - Kanji',
   menuLabel: 'Japanese - Kanji',
   imEngine: 'jskanji',
+  types: ['text', 'url', 'email'],
   needsCandidatePanel: true,
   disableAlternateLayout: true,
   hidesSwitchKey: true,
@@ -29,7 +30,7 @@ Keyboards['jp-kanji'] = {
     ], [
       { value: '&#x1f310;', keyCode: -3},
       { value: 'あ', keyCode: -20 },
-      { value: '大小', keyCode: -16, ratio: 2 },
+      { value: '小゛゜', keyCode: -16, ratio: 2 },
       { value: 'わ', ratio: 2 },
       { value: '、', ratio: 2},
       { value: '↵', ratio: 2, keyCode: KeyEvent.DOM_VK_RETURN }
@@ -37,7 +38,7 @@ Keyboards['jp-kanji'] = {
   ]
 };
 
-Keybords['jp-kanji-en'] = {
+Keyboards['jp-kanji-en'] = {
   needsCandidatePanel: true,
   disableAlternateLayout: true,
   hidesSwitchKey: true,

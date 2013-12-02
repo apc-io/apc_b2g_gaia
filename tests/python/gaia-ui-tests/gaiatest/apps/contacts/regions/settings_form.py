@@ -12,7 +12,7 @@ class SettingsForm(Base):
     _settings_close_button_locator = (By.ID, 'settings-close')
     _order_by_last_name_locator = (By.CSS_SELECTOR, 'p[data-l10n-id="contactsOrderBy"]')
     _order_by_last_name_switch_locator = (By.CSS_SELECTOR, 'input[name="order.lastname"]')
-    _import_from_sim_button_locator = (By.CSS_SELECTOR, 'button.icon-sim[data-l10n-id="importSim2"]')
+    _import_from_sim_button_locator = (By.CSS_SELECTOR, "li[id*='import-sim-option'] button")
     _import_from_sdcard_locator = (By.CSS_SELECTOR, 'button.icon-sd[data-l10n-id="importMemoryCard"]')
     _import_from_gmail_button_locator = (By.CSS_SELECTOR, 'button.icon-gmail[data-l10n-id="importGmail"]')
     _import_from_windows_live_button_locator = (By.CSS_SELECTOR, 'button.icon-live[data-l10n-id="importLive"]')
@@ -20,6 +20,7 @@ class SettingsForm(Base):
     _export_to_sd_button_locator = (By.CSS_SELECTOR, 'button[data-l10n-id="memoryCard"]')
     _import_contacts_locator = (By.CSS_SELECTOR, 'button[data-l10n-id="importContactsTitle"]')
     _export_contacts_locator = (By.CSS_SELECTOR, 'button[data-l10n-id="exportContactsTitle"]')
+    _contacts_imported_locator = (By.CSS_SELECTOR, '.icon.icon-gmail > p > span')
 
     def __init__(self, marionette):
         Base.__init__(self, marionette)
@@ -48,6 +49,16 @@ class SettingsForm(Base):
         self.wait_for_element_displayed(*self._import_from_sim_button_locator)
         self.marionette.find_element(*self._import_from_sim_button_locator).tap()
         self.wait_for_element_not_displayed(*self._loading_overlay_locator)
+
+    @property
+    def gmail_imported_contacts(self):
+        return self.marionette.find_element(*self._contacts_imported_locator).text
+
+    def tap_import_from_gmail(self):
+        self.wait_for_element_displayed(*self._import_from_gmail_button_locator)
+        self.marionette.find_element(*self._import_from_gmail_button_locator).tap()
+        from gaiatest.apps.contacts.regions.gmail import GmailLogin
+        return GmailLogin(self.marionette)
 
     def tap_import_from_sdcard(self):
         self.wait_for_element_displayed(*self._import_from_sdcard_locator)

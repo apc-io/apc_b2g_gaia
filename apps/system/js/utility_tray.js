@@ -19,7 +19,9 @@ var UtilityTray = {
   init: function ut_init() {
     var touchEvents = ['touchstart', 'touchmove', 'touchend'];
     touchEvents.forEach(function bindEvents(name) {
-      window.addEventListener(name, this);
+      this.overlay.addEventListener(name, this);
+      this.statusbar.addEventListener(name, this);
+      this.grippy.addEventListener(name, this);
     }, this);
 
     window.addEventListener('screenchange', this);
@@ -28,7 +30,7 @@ var UtilityTray = {
     window.addEventListener('attentionscreenshow', this);
     window.addEventListener('displayapp', this);
 
-    // Firing when the keyboard and the IME switcher shows/hides.
+    // Listen to the IME switcher shows/hide
     window.addEventListener('keyboardimeswitchershow', this);
     window.addEventListener('keyboardimeswitcherhide', this);
 
@@ -37,6 +39,10 @@ var UtilityTray = {
     window.addEventListener('keyboardchangecanceled', this);
 
     this.overlay.addEventListener('transitionend', this);
+
+    if (window.navigator.mozMobileConnections) {
+      LazyLoader.load('js/cost_control.js');
+    }
   },
 
   startY: undefined,
@@ -65,11 +71,9 @@ var UtilityTray = {
         this.overlay.removeEventListener('mousedown', this._pdIMESwitcherShow);
         break;
 
-
       case 'screenchange':
         if (this.shown && !evt.detail.screenEnabled)
           this.hide(true);
-
         break;
 
       case 'touchstart':

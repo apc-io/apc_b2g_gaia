@@ -62,7 +62,8 @@ class FullscreenImage(Base):
         self.wait_for_element_not_displayed(*self._confirm_delete_locator)
         from gaiatest.apps.gallery.app import Gallery
         gallery = Gallery(self.marionette)
-        gallery.launch()
+        self.wait_for_condition(lambda m: self.apps.displayed_app.name == gallery.name)
+        self.marionette.switch_to_frame(self.apps.displayed_app.frame)
         return gallery
 
     def tap_edit_button(self):
@@ -88,3 +89,8 @@ class FullscreenImage(Base):
     @property
     def is_image_displayed(self):
         return self.is_element_displayed(*self._current_image_locator)
+
+    @property
+    def current_scale(self):
+        style = self.marionette.find_element(*self._current_image_locator).get_attribute('style')
+        return style.split('scale(')[1].split(') ')[0]

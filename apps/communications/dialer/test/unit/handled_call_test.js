@@ -89,10 +89,6 @@ suite('dialer/handled_call', function() {
   });
 
   suite('initialization', function() {
-    test('ticker', function() {
-      assert.equal(subject._ticker, null);
-    });
-
     test('photo', function() {
       assert.equal(subject.photo, MockContacts.mPhoto);
     });
@@ -274,7 +270,7 @@ suite('dialer/handled_call', function() {
     });
 
     test('start the timer', function() {
-      assert.ok(subject._ticker);
+      assert.isTrue(MockCallScreen.mCalledCreateTicker);
     });
 
     test('keypad enabled', function() {
@@ -290,15 +286,17 @@ suite('dialer/handled_call', function() {
     });
 
     suite('with a contact with no picture', function() {
+      var setContactStub;
+
       setup(function() {
         subject.photo = null;
-        MockCallScreen.mSetCallerContactImageCalled = false;
+        setContactStub = this.sinon.stub(MockCallScreen,
+                                         'setCallerContactImage');
         mockCall._connect();
       });
 
       test('wallpaper displaying', function() {
-        assert.isFalse(MockCallScreen.mSetCallerContactImageCalled);
-        assert.isTrue(MockCallScreen.mSetDefaultContactImageCalled);
+        assert.isTrue(setContactStub.calledWith(null));
       });
     });
 
@@ -332,10 +330,16 @@ suite('dialer/handled_call', function() {
 
     suite('from a regular call', function() {
       setup(function() {
+        this.sinon.useFakeTimers();
         mockCall._disconnect();
       });
       test('should save the recents entry', function() {
         assert.equal(subject.recentsEntry, MockCallsHandler.mLastEntryAdded);
+      });
+
+      test('should show call ended', function() {
+        assert.equal(
+          subject.node.querySelector('.duration').textContent, 'callEnded');
       });
 
       test('should remove listener on the call', function() {
@@ -351,16 +355,21 @@ suite('dialer/handled_call', function() {
       });
 
       test('should clear the ticker', function() {
-        assert.equal(subject._ticker, null);
+        assert.isTrue(MockCallScreen.mCalledStopTicker);
       });
 
       test('should remove the node from the dom', function() {
-        assert.isNull(node.parentNode);
+        assert.isFalse(MockCallScreen.mRemoveCallCalled);
+        this.sinon.clock.tick(2000);
+        assert.isTrue(MockCallScreen.mRemoveCallCalled);
       });
 
       test('should nullify the node', function() {
+        assert.isNotNull(subject.node);
+        this.sinon.clock.tick(2000);
         assert.isNull(subject.node);
       });
+
       test('it does not show the banner', function() {
         assert.isFalse(MockCallScreen.mShowStatusMessageCalled);
       });
@@ -369,9 +378,11 @@ suite('dialer/handled_call', function() {
     suite('from a group', function() {
       setup(function() {
         mockCall.group = null;
+        mockCall.mChangeState('disconnecting');
         mockCall.ongroupchange(mockCall);
         mockCall._disconnect();
       });
+
       test('show the banner', function() {
         assert.isTrue(MockCallScreen.mShowStatusMessageCalled);
       });
@@ -393,12 +404,13 @@ suite('dialer/handled_call', function() {
   });
 
   suite('resuming', function() {
+    var setContactStub;
+
     setup(function() {
       mockCall._hold();
       MockCallScreen.mSyncSpeakerCalled = false;
       MockCallScreen.mEnableKeypadCalled = false;
-      MockCallScreen.mSetCallerContactImageCalled = false;
-      MockCallScreen.mSetDefaultContactImageCalled = false;
+      setContactStub = this.sinon.stub(MockCallScreen, 'setCallerContactImage');
       subject.photo = 'dummy_photo_1';
       mockCall._resume();
     });
@@ -416,15 +428,8 @@ suite('dialer/handled_call', function() {
     });
 
     test('changed the user photo', function() {
+      assert.isTrue(setContactStub.calledWith(subject.photo));
       assert.isTrue(MockCallScreen.mSetCallerContactImageCalled);
-    });
-
-    test('change image to default if there are no user images', function() {
-      assert.isFalse(MockCallScreen.mSetDefaultContactImageCalled);
-      subject.photo = null;
-      mockCall._hold();
-      mockCall._resume();
-      assert.isTrue(MockCallScreen.mSetDefaultContactImageCalled);
     });
   });
 
@@ -825,10 +830,20 @@ suite('dialer/handled_call', function() {
       assert.isFalse(subject.node.hidden);
     });
 
+    test('calling show should update singleLine status', function() {
+      subject.show();
+      assert.isTrue(MockCallScreen.mUpdateSingleLineCalled);
+    });
+
     test('calling hide should hide the node', function() {
       subject.node.hidden = false;
       subject.hide();
       assert.isTrue(subject.node.hidden);
+    });
+
+    test('calling hide should update singleLine status', function() {
+      subject.show();
+      assert.isTrue(MockCallScreen.mUpdateSingleLineCalled);
     });
 
     suite('when the node got nullified', function() {

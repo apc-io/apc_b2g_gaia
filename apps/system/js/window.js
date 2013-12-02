@@ -1,9 +1,12 @@
 /* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- /
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
+'use strict';
 
 (function(window) {
   'use strict';
   var DEBUG = false;
+  var _id = 0;
+  var _start = new Date().getTime() / 1000;
   window.AppWindow = function AppWindow(configuration) {
     for (var key in configuration) {
       this[key] = configuration[key];
@@ -20,13 +23,24 @@
     }
     this._fullScreen = 'fullscreen' in manifest ? manifest.fullscreen : false;
 
+    this.element = this.frame;
+
     this.render();
 
     this.publish('created');
 
+    if (DEBUG) {
+      window.AppWindow['app' + (_id++)] = this;
+    }
+
     return this;
   };
 
+  AppWindow.prototype.focus = function aw_focus() {
+    var iframe = this.iframe || this.browser.element;
+    if (iframe)
+      iframe.focus();
+  };
 
   /**
    * Represent the current screenshoting state,
@@ -115,15 +129,15 @@
     if (this._screenshotOverlayState != 'frame')
       return;
 
-    // Require a next paint event
-    // to remove the screenshot overlay if it exists.
-    if (this.screenshotOverlay.classList.contains('visible')) {
-      this._waitForNextPaint(this._hideScreenshotOverlay.bind(this));
-    }
-
     this.iframe.classList.remove('hidden');
     if ('setVisible' in this.iframe)
       this.iframe.setVisible(true);
+
+    // Getting a new screenshot to force compositing before
+    // removing the screenshot overlay if it exists.
+    if (this.screenshotOverlay.classList.contains('visible')) {
+      this.tryWaitForFullRepaint(this._hideScreenshotOverlay.bind(this));
+    }
   };
 
   /**
@@ -143,18 +157,67 @@
     this.iframe.reload(true);
   };
 
-  AppWindow.prototype.kill = function aw_kill() {
-    // XXX: A workaround because a AppWindow instance shouldn't
-    // reference Window Manager directly here.
-    // In the future we should make every app maintain and execute the events
-    // in itself like resize, setVisibility...
-    // And Window Manager is in charge of cross app management.
-    WindowManager.kill(this.origin);
+  AppWindow.prototype.isActive = function aw_isActive() {
+    if (this._transitionState) {
+      return (this._transitionState == 'opened');
+    } else {
+      // Fallback
+      return (this._visibilityState == 'foreground' ||
+            this.element.classList.contains('active'));
+    }
   };
+
+  AppWindow.prototype.kill = function aw_kill() {
+    // As we can't immediatly remove runningApps entry,
+    // we flag it as being killed in order to avoid trying to remove it twice.
+    // (Check required because of bug 814583)
+    if (this._killed) {
+      return;
+    }
+    this.killed = true;
+
+    // Remove callee <-> caller reference before we remove the window.
+    if (this.activityCaller) {
+      delete this.activityCaller.activityCallee;
+      delete this.activityCaller;
+    }
+
+    if (this.activityCallee) {
+      if (this.activityCallee instanceof ActivityWindow) {
+        this.activityCallee.kill();
+      } else if (this.activityCallee instanceof AppWindow) {
+        delete this.activityCallee.activityCaller;
+        delete this.activityCallee;
+      } else {
+        // TODO: new WindowClass is delt here.
+      }
+    }
+
+    this.debug(this._transitionState);
+
+    // If the app is the currently displayed app, switch to the homescreen
+    if (this.isActive() && !this.isHomescreen) {
+      // XXX: Refine this in transition state controller.
+      var self = this;
+      window.addEventListener('homescreenopened', function onhomeopen() {
+        window.removeEventListener('homescreenopened', onhomeopen);
+        self.publish('closedbykilling');
+      });
+      WindowManager.setDisplayedApp(HomescreenLauncher.origin);
+    } else {
+      this.publish('closedbykilling');
+    }
+    this.publish('terminated');
+  };
+
+  AppWindow.prototype._transitionState = 'closed';
 
   AppWindow.prototype.render = function aw_render() {
     var screenshotOverlay = document.createElement('div');
     screenshotOverlay.classList.add('screenshot-overlay');
+
+    this.element = this.iframe;
+
     this.frame.appendChild(screenshotOverlay);
     this.screenshotOverlay = screenshotOverlay;
 
@@ -168,6 +231,65 @@
         var type = e.detail.visible ? 'foreground' : 'background';
         this.publish(type);
       }.bind(this));
+
+    // In case we're not ActivityWindow but we're launched
+    // as window disposition activity.
+    this.iframe.addEventListener('mozbrowseractivitydone',
+      function activitydone(e) {
+        if (this.activityCaller &&
+            this.activityCaller instanceof AppWindow) {
+          // XXX: Do call appWindow.open()
+          WindowManager.setDisplayedApp(this.activityCaller.origin);
+          this.activityCaller.activityCallee = null;
+          this.activityCaller = null;
+        }
+      }.bind(this));
+
+    this.iframe.addEventListener('mozbrowserclose',
+      function onclose(e) {
+        this.kill();
+      }.bind(this));
+
+    this.iframe.addEventListener('mozbrowsererror',
+      function onerror(e) {
+        if (e.detail.type !== 'fatal')
+          return;
+        // If the crashing app is currently displayed, we will present
+        // the user with a banner notification.
+        if (this.isActive()) {
+          CrashReporter.setAppName(this.name);
+        }
+
+        this.kill();
+      }.bind(this));
+
+    // XXX: Refine in bug 907013
+    this.element.addEventListener('appopen', function onopen() {
+      this.debug('[transition state]: ',
+        this._transitionState, '->', 'opened');
+      this._transitionState = 'opened';
+    }.bind(this));
+
+    // XXX: Refine in bug 907013
+    this.element.addEventListener('appwillopen', function onopening() {
+      this.debug('[transition state]: ',
+        this._transitionState, '->', 'opening');
+      this._transitionState = 'opening';
+    }.bind(this));
+
+    // XXX: Refine in bug 907013
+    this.element.addEventListener('appclose', function onclose() {
+      this.debug('[transition state]: ',
+        this._transitionState, '->', 'closed');
+      this._transitionState = 'closed';
+    }.bind(this));
+
+    // XXX: Refine in bug 907013
+    this.element.addEventListener('appwillclose', function onclosing() {
+      this.debug('[transition state]: ',
+        this._transitionState, '->', 'closing');
+      this._transitionState = 'closing';
+    }.bind(this));
 
     // Pre determine the rotation degree.
     this.determineRotationDegree();
@@ -188,10 +310,13 @@
    */
   AppWindow.prototype.NEXTPAINT_TIMEOUT = 1000;
 
+  AppWindow.prototype.CLASS_NAME = 'AppWindow';
+
   AppWindow.prototype.debug = function aw_debug(msg) {
     if (DEBUG) {
-      console.log('[appWindow][' + this.origin + ']' +
-        '[' + new Date().getTime() / 1000 + ']' +
+      console.log('[' + this.CLASS_NAME + ']' +
+        '[' + (this.name || this.origin) + ']' +
+        '[' + (new Date().getTime() / 1000 - _start).toFixed(3) + ']' +
         Array.slice(arguments).concat());
     }
   };
@@ -199,15 +324,28 @@
   /**
    * Wait for a full repaint of the mozbrowser iframe.
    */
-  AppWindow.prototype.ensureFullRepaint = function onFullRepaint(callback) {
+  AppWindow.prototype.tryWaitForFullRepaint = function onTWFRepaint(callback) {
     if (!callback)
       return;
 
     var iframe = this.iframe;
     if ('getScreenshot' in iframe) {
+      // Sometimes it takes forever to have a screenshot. And even if it is
+      // theorically better to show the frame fully rendered it makes the
+      // device feel slower than what is is if there is no user feedback
+      // quickly. So let's add a timeout...
+      var timeout = setTimeout(function ifNoScreenshoot() {
+        timeout = 0;
+        callback();
+      }, 400);
+
       var request = iframe.getScreenshot(1, 1);
       request.onsuccess = request.onerror = function onRepainted() {
-        setTimeout(callback);
+        // Ensure the callback is not called twice.
+        if (timeout !== 0) {
+          clearTimeout(timeout);
+          setTimeout(callback);
+        }
       };
     } else {
       setTimeout(callback);
@@ -398,21 +536,22 @@
     this.debug('publish: ' + event);
 
     if (this.frame) {
-      this.frame.dispatchEvent(evt);
+      // for testability.
+      window.dispatchEvent(evt);
     } else {
       window.dispatchEvent(evt);
     }
   };
 
   var isDefaultPortrait =
-    (ScreenLayout.defaultOrientation === 'portrait-primary');
+    (OrientationManager.defaultOrientation === 'portrait-primary');
 
   var OrientationRotationArray = [
     'portrait-primary', 'portrait-secondary', 'portrait',
     'landscape-primary', 'landscape-secondary', 'landscape', 'default'];
   var OrientationRotationTable = {
     'portrait-primary': [0, 180, 0, 90, 270, 90, isDefaultPortrait ? 0 : 90],
-    'landscape-primary': [270, 90, 270, 0, 180, 0, isDefaultPortrait ? 0 : 270]
+    'landscape-primary': [270, 90, 270, 0, 180, 0, isDefaultPortrait ? 270 : 0]
   };
 
   AppWindow.prototype.determineRotationDegree =
@@ -422,7 +561,8 @@
 
       var appOrientation = this.manifest.orientation;
       var orientation = this.determineOrientation(appOrientation);
-      var table = OrientationRotationTable[ScreenLayout.defaultOrientation];
+      var table =
+        OrientationRotationTable[OrientationManager.defaultOrientation];
       var degree = table[OrientationRotationArray.indexOf(orientation)];
       this.rotatingDegree = degree;
       if (degree == 90 || degree == 270) {
@@ -437,8 +577,8 @@
         return 0;
 
       // XXX: Assume homescreen's orientation is just device default.
-      var homeOrientation = ScreenLayout.defaultOrientation;
-      var currentOrientation = ScreenLayout.fetchCurrentOrientation();
+      var homeOrientation = OrientationManager.defaultOrientation;
+      var currentOrientation = OrientationManager.fetchCurrentOrientation();
       var table = OrientationRotationTable[currentOrientation];
       var degree = table[OrientationRotationArray.indexOf(homeOrientation)];
       return degree;
@@ -475,36 +615,45 @@
   // orientation could have changed since it was last displayed
   // @param {changeActivityFrame} to denote if needed to change inline
   //                              activity size
-  AppWindow.prototype.resize = function aw_resize(changeActivityFrame) {
-    var keyboardHeight = KeyboardManager.getHeight();
-    var cssWidth = window.innerWidth + 'px';
-    var cssHeight = window.innerHeight -
-                    StatusBar.height -
-                    SoftwareButtonManager.height -
-                    keyboardHeight;
-    if (!keyboardHeight && 'wrapper' in this.frame.dataset) {
-      cssHeight -= 10;
+  AppWindow.prototype.resize = function aw_resize() {
+    if (this.isActive() || this.isHomescreen) {
+      var keyboardHeight = KeyboardManager.getHeight();
+      var cssWidth = window.innerWidth + 'px';
+      var cssHeight = window.innerHeight -
+                      StatusBar.height -
+                      SoftwareButtonManager.height -
+                      keyboardHeight;
+      if (!keyboardHeight && 'wrapper' in this.frame.dataset) {
+        cssHeight -= 10;
+      }
+      cssHeight += 'px';
+
+      if (!AttentionScreen.isFullyVisible() && !AttentionScreen.isVisible() &&
+          this.isFullScreen() && !this.isHomescreen) {
+        cssHeight = window.innerHeight - keyboardHeight -
+                    SoftwareButtonManager.height + 'px';
+      }
+
+      this.frame.style.width = cssWidth;
+      this.frame.style.height = cssHeight;
+
+      this.publish('resize');
+      this.debug('W:', cssWidth, 'H:', cssHeight);
+      this.resized = true;
     }
-    cssHeight += 'px';
 
-    if (!AttentionScreen.isFullyVisible() && !AttentionScreen.isVisible() &&
-        this.isFullScreen()) {
-      cssHeight = window.innerHeight - keyboardHeight -
-                  SoftwareButtonManager.height + 'px';
+    if (this.activityCallee &&
+        this.activityCallee instanceof ActivityWindow) {
+      this.activityCallee.resize();
     }
-
-    this.frame.style.width = cssWidth;
-    this.frame.style.height = cssHeight;
-
-    this.publish('resize', {changeActivityFrame: changeActivityFrame});
-    this.resized = true;
   };
 
   AppWindow.prototype.setOrientation =
-    function aw_setOrientation(globalOrientation) {
+    function aw_setOrientation(noCapture) {
       var manifest = this.manifest || this.config.manifest;
 
-      var orientation = manifest.orientation || globalOrientation;
+      var orientation = manifest.orientation ||
+                        OrientationManager.globalOrientation;
       if (orientation) {
         var rv = false;
         if ('lockOrientation' in screen) {
@@ -523,6 +672,11 @@
           screen.mozUnlockOrientation();
         }
       }
+
+      if (!noCapture && this.activityCallee &&
+          this.activityCallee instanceof ActivityWindow) {
+        this.activityCallee.setOrientation(noCapture);
+      }
     };
 
 
@@ -535,5 +689,15 @@
     this.frame.classList.remove('fadeout');
     this.iframe.style.display = 'block';
   };
+
+  AppWindow.prototype.setActivityCallee =
+    function aw_setActivityCallee(callee) {
+      this.activityCallee = callee;
+    };
+
+  AppWindow.prototype.unsetActivityCallee =
+    function aw_setActivityCallee() {
+      this.activityCallee = null;
+    };
 
 }(this));

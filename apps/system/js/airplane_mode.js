@@ -4,7 +4,64 @@
 'use strict';
 
 var AirplaneMode = {
-  enabled: false,
+  _enabled: null,
+  set enabled(value) {
+    if (value !== this._enabled) {
+      // XXX: check bug-926169
+      // this is used to keep all tests passing while introducing multi-sim APIs
+      var mobileConnection = window.navigator.mozMobileConnection ||
+        window.navigator.mozMobileConnections &&
+          window.navigator.mozMobileConnections[0];
+
+      var self = this;
+      var doSetRadioEnabled = function(enabled) {
+        var req = mobileConnection.setRadioEnabled(enabled);
+
+        req.onsuccess = function() {
+          self._enabled = value;
+          SettingsListener.getSettingsLock().set(
+            {'ril.radio.disabled': self._enabled}
+          );
+        };
+        req.onerror = function() {
+          self._enabled = !value;
+          SettingsListener.getSettingsLock().set(
+            {'ril.radio.disabled': self._enabled}
+          );
+        };
+      };
+
+      // See bug 933659
+      // Gecko stops using the settings key 'ril.radio.disabled' to turn
+      // off RIL radio. We need to remove the code that checks existence of the
+      // new API after bug 856553 lands.
+      if (mobileConnection && !!mobileConnection.setRadioEnabled) {
+        if (mobileConnection.radioState !== 'enabling' &&
+            mobileConnection.radioState !== 'disabling') {
+          doSetRadioEnabled(!value);
+        } else {
+          mobileConnection.addEventListener('radiostatechange',
+            function radioStateChangeHandler() {
+              if (mobileConnection.radioState == 'enabling' ||
+                  mobileConnection.radioState == 'disabling')
+                return;
+              mobileConnection.removeEventListener('radiostatechange',
+                radioStateChangeHandler);
+              doSetRadioEnabled(!value);
+          });
+        }
+      } else {
+        this._enabled = value;
+        SettingsListener.getSettingsLock().set(
+          {'ril.radio.disabled': this._enabled}
+        );
+      }
+    }
+  },
+
+  get enabled() {
+    return this._enabled;
+  },
 
   init: function apm_init() {
     if (!window.navigator.mozSettings)
@@ -16,12 +73,14 @@ var AirplaneMode = {
       'bluetooth.enabled': false,
       'wifi.enabled': false,
       'geolocation.enabled': false,
+      'nfc.enabled': false,
 
       // remember the mozSetting states before the airplane mode disables them
       'ril.data.suspended': false,
       'bluetooth.suspended': false,
       'wifi.suspended': false,
-      'geolocation.suspended': false
+      'geolocation.suspended': false,
+      'nfc.suspended': false
     };
 
     // observe the corresponding mozSettings
@@ -72,10 +131,16 @@ var AirplaneMode = {
       }
     }
 
+    var mozSettings = window.navigator.mozSettings;
     var bluetooth = window.navigator.mozBluetooth;
     var wifiManager = window.navigator.mozWifiManager;
-    var mobileData = window.navigator.mozMobileConnection &&
-      window.navigator.mozMobileConnection.data;
+    // XXX: check bug-926169
+    // this is used to keep all tests passing while introducing multi-sim APIs
+    var mobileConnection = window.navigator.mozMobileConnection ||
+      window.navigator.mozMobileConnections &&
+        window.navigator.mozMobileConnections[0];
+
+    var mobileData = mobileConnection && mobileConnection.data;
     var fmRadio = window.navigator.mozFMRadio;
 
     // Note that we don't restore Wifi tethering when leaving airplane mode
@@ -83,7 +148,7 @@ var AirplaneMode = {
     // established.
 
     var self = this;
-    SettingsListener.observe('ril.radio.disabled', false, function(value) {
+    function updateStatus(value) {
       if (value) {
         // Entering airplane mode.
         self.enabled = true;
@@ -112,6 +177,9 @@ var AirplaneMode = {
         // Turn off Geolocation.
         suspend('geolocation');
 
+        // Turn off NFC
+        suspend('nfc');
+
         // Turn off FM Radio.
         if (fmRadio && fmRadio.enabled) {
           fmRadio.disable();
@@ -139,10 +207,38 @@ var AirplaneMode = {
         if (!settings['geolocation.enabled']) {
           restore('geolocation');
         }
+
+        if (!settings['nfc.enabled']) {
+          restore('nfc');
+        }
       }
+    }
+
+    // Initialize radio state
+    var request = SettingsListener.getSettingsLock().get('ril.radio.disabled');
+    request.onsuccess = function() {
+      var enabled = !!request.result['ril.radio.disabled'];
+      // See bug 933659
+      // Gecko stops using the settings key 'ril.radio.disabled' to turn
+      // off RIL radio. We need to remove the code that checks existence of the
+      // new API after bug 856553 lands.
+      self.enabled = enabled;
+    };
+
+    // Observe settings changes
+    mozSettings.addObserver('ril.radio.disabled', function(e) {
+      updateStatus(e.settingValue);
     });
   }
 };
 
-AirplaneMode.init();
 
+if (document && (document.readyState === 'complete' ||
+                 document.readyState === 'interactive')) {
+  setTimeout(AirplaneMode.init.bind(AirplaneMode));
+} else {
+  window.addEventListener('load', function onload() {
+    window.removeEventListener('load', onload);
+    AirplaneMode.init();
+  });
+}

@@ -33,7 +33,7 @@ section[role="region"] > header:first-child .icon.icon-edit-contact {
 }
 
 .view-contacts-list .view-body-inner {
-  padding-left: 1.5rem;
+  padding-left: 0.5rem;
 }
 
 #contact-name-title {
@@ -363,17 +363,13 @@ form p textarea + button[type="reset"].hide {
   padding: 0;
 }
 
-section[role="region"] > header .icon.icon-settings
-     { background-image: url(/contacts/style/gphx/bitmap/default/vw-header/icons/settings.png); }
-
-#view-settings .view-body-inner {
-  padding: 0;
-  background: #e6e7e2;
+section[role="region"] > header .icon.icon-settings { 
+  background-image: url(/contacts/style/gphx/bitmap/default/vw-header/icons/settings.png);
 }
 
 #view-settings .view-body-inner {
   padding: 0;
-  background: #e6e7e2;
+  background: #f4f4f4;
 }
 
 /* Order switch */
@@ -669,4 +665,9 @@ section[role="region"] > header .icon.icon-settings
 #groups-container {
   height: 100%;
   overflow: scroll;
+}
+
+.group-section {
+  overflow: hidden;
+  padding-left: 1rem;
 }

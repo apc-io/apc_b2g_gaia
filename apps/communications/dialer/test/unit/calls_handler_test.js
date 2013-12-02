@@ -10,8 +10,9 @@ requireApp('communications/dialer/test/unit/mock_contacts.js');
 requireApp('communications/dialer/test/unit/mock_tone_player.js');
 requireApp('communications/dialer/test/unit/mock_swiper.js');
 requireApp('communications/dialer/test/unit/mock_bluetooth_helper.js');
-requireApp('communications/shared/test/unit/mocks/mock_settings_listener.js');
-requireApp('sms/shared/test/unit/mocks/mock_settings_url.js');
+requireApp('communications/dialer/test/unit/mock_utils.js');
+require('/shared/test/unit/mocks/mock_settings_listener.js');
+require('/shared/test/unit/mocks/mock_settings_url.js');
 
 // The CallsHandler binds stuff when evaluated so we load it
 // after the mocks and we don't want it to show up as a leak.
@@ -28,7 +29,8 @@ var mocksHelperForCallsHandler = new MocksHelper([
   'TonePlayer',
   'SettingsURL',
   'Swiper',
-  'BluetoothHelper'
+  'BluetoothHelper',
+  'Utils'
 ]).init();
 
 suite('calls handler', function() {
@@ -87,11 +89,6 @@ suite('calls handler', function() {
         var toggleSpy = this.sinon.spy(MockCallScreen, 'toggle');
         MockMozTelephony.mTriggerCallsChanged();
         assert.isTrue(toggleSpy.calledOnce);
-      });
-
-      test('should update the CallScreen\'s duration style', function() {
-        MockMozTelephony.mTriggerCallsChanged();
-        assert.equal(MockCallScreen.mSingleLine, true);
       });
 
       test('should unmute', function() {
@@ -163,9 +160,21 @@ suite('calls handler', function() {
         assert.isTrue(playSpy.calledOnce);
       });
 
-      test('should update the CallScreen\'s duration style', function() {
+      test('should show the contact information', function() {
         MockMozTelephony.mTriggerCallsChanged();
-        assert.equal(MockCallScreen.mSingleLine, false);
+        assert.equal(CallScreen.incomingNumber.textContent, 'test name');
+        assert.isTrue(MockUtils.mCalledGetPhoneNumberAdditionalInfo);
+        assert.equal(CallScreen.incomingNumberAdditionalInfo.textContent,
+                     extraCall.number);
+      });
+
+      test('should show the number of a unknown contact', function() {
+        // 111 is a special case for unknown contacts in MockContacts
+        extraCall.number = '111';
+        MockMozTelephony.mTriggerCallsChanged();
+        assert.equal(CallScreen.incomingNumber.textContent, extraCall.number);
+        assert.isTrue(MockUtils.mCalledGetPhoneNumberAdditionalInfo);
+        assert.equal(CallScreen.incomingNumberAdditionalInfo.textContent, '');
       });
     });
 
@@ -282,20 +291,10 @@ suite('calls handler', function() {
         MockMozTelephony.calls = [firstCall];
       });
 
-      test('should hide the call', function() {
-        MockMozTelephony.mTriggerCallsChanged();
-        assert.isTrue(hideSpy.calledOnce);
-      });
-
       test('should hide the call waiting UI', function() {
         var hideSpy = this.sinon.spy(MockCallScreen, 'hideIncoming');
         MockMozTelephony.mTriggerCallsChanged();
         assert.isTrue(hideSpy.calledOnce);
-      });
-
-      test('should update the CallScreen\'s duration style', function() {
-        MockMozTelephony.mTriggerCallsChanged();
-        assert.equal(MockCallScreen.mSingleLine, true);
       });
     });
 
@@ -324,11 +323,6 @@ suite('calls handler', function() {
 
         assert.isTrue(firstHideSpy.notCalled);
         assert.isTrue(secondHideSpy.notCalled);
-      });
-
-      test('should update the CallScreen\'s duration style', function() {
-        MockMozTelephony.mTriggerCallsChanged();
-        assert.equal(MockCallScreen.mSingleLine, true);
       });
     });
 
@@ -873,6 +867,29 @@ suite('calls handler', function() {
         });
       });
 
+      suite('> toggling a conference call', function() {
+        setup(function() {
+          var firstConfCall = new MockCall('432423', 'incoming');
+          telephonyAddCall.call(this, firstConfCall, {trigger: true});
+          var secondConfCall = new MockCall('432423555', 'incoming');
+          telephonyAddCall.call(this, secondConfCall, {trigger: true});
+
+          MockMozTelephony.calls = [];
+          MockMozTelephony.conferenceGroup.calls = [firstConfCall,
+                                                    secondConfCall];
+
+          MockMozTelephony.active = MockMozTelephony.conferenceGroup;
+          MockMozTelephony.mTriggerCallsChanged();
+        });
+
+        test('should _not_ hold the active conference call', function() {
+          var holdSpy = this.sinon.spy(MockMozTelephony.conferenceGroup,
+                                       'hold');
+          CallsHandler.toggleCalls();
+          assert.isFalse(holdSpy.called);
+        });
+      });
+
       suite('> toggling between 2 calls', function() {
         var extraCall;
 
@@ -953,13 +970,6 @@ suite('calls handler', function() {
         telephonyAddCall.call(this, firstConfCall, {trigger: true});
         secondConfCall = new MockCall('432423555', 'incoming');
         telephonyAddCall.call(this, secondConfCall, {trigger: true});
-      });
-
-      test('should check and set singleLine when exiting conference call mode',
-      function() {
-        MockMozTelephony.calls = [firstConfCall];
-        CallsHandler.checkCalls();
-        assert.isTrue(MockCallScreen.mSingleLine);
       });
     });
 

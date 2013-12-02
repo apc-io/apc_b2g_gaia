@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
     <meta charset="utf-8">
     <title>Dialer</title>
     <link rel="stylesheet" type="text/css" href="/dialer/style/oncall.css">
@@ -38,8 +39,9 @@
     <script defer type="application/javascript" src="/dialer/js/handled_call.js"></script>
 
     <!-- Lazy load these:
-    <script defer type="application/javascript" src="/contacts/js/fb/fb_data.js"></script>
-    <script defer type="application/javascript" src="/contacts/js/fb/fb_contact_utils.js"></script>
+    <script defer type="application/javascript" src="/shared/js/fb/fb_request.js"></script>
+    <script defer type="application/javascript" src="/shared/js/fb/fb_data_reader.js"></script>
+    <script defer type="application/javascript" src="/shared/js/fb/fb_reader_utils.js"></script>
     -->
 
     <!-- incoming call / swiper on locked screen-->
@@ -48,7 +50,6 @@
   </head>
   <body>
     <article id="call-screen" data-layout>
-      <div id="locked-contact-photo"></div>
       <div id="lockscreen-header">
         <div class="lockscreen-clock">
           <span id="lockscreen-clock-numbers"></span>
@@ -100,7 +101,7 @@
         </menu>
       </form>
       <article id="main-container">
-
+        <div id="contact-background"></div>
         <div id="actions-container">
           <div id="swiper-wrapper">
             <div id="swiper-area"></div>
@@ -201,23 +202,19 @@
     </article>
     <article id="incoming-container">
       <header>
-        <div id="incoming-end">
-          <span role="button">
-          </span>
-        </div>
-        <div id="incoming-answer">
-          <span role="button" data-l10n-id="hold">
-            Hold
-          </span>
-        </div>
+        <button id="incoming-end">
+        </button>
+        <button id="incoming-answer">
+        </button>
       </header>
       <section id="incoming-info">
-        <span id="incoming-number"></span>
-        <div id="incoming-ignore">
-          <span role="button" data-l10n-id="ignore">
-            Ignore
-          </span>
+        <div class="incoming-number-info">
+          <span id="incoming-number"></span>
+          <span id="incoming-number-additional-info"></span>
         </div>
+        <button id="incoming-ignore" data-l10n-id="ignore">
+            Ignore
+        </button>
       </section>
     </article>
     <article id="views">

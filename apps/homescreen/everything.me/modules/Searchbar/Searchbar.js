@@ -2,7 +2,7 @@
 
 Evme.Searchbar = new function Evme_Searchbar() {
   var NAME = 'Searchbar', self = this,
-      el = null, elForm = null, elDefaultText = null,
+      el = null, elForm = null,
       value = '', isFocused = false,
       timeoutSearchOnBackspace = null, timeoutPause = null, timeoutIdle = null,
       intervalPolling = null,
@@ -22,7 +22,6 @@ Evme.Searchbar = new function Evme_Searchbar() {
     !options && (options = {});
 
     el = options.el;
-    elDefaultText = options.elDefaultText;
     elForm = options.elForm;
 
     if (typeof options.setFocusOnClear === 'boolean') {
@@ -32,6 +31,7 @@ Evme.Searchbar = new function Evme_Searchbar() {
     elForm.addEventListener('submit', function oSubmit(e) {
       e.preventDefault();
       e.stopPropagation();
+      clearTimeouts();
       cbReturnPressed(e, el.value);
     });
 
@@ -40,8 +40,7 @@ Evme.Searchbar = new function Evme_Searchbar() {
 
     el.addEventListener('focus', cbFocus);
     el.addEventListener('blur', cbBlur);
-    el.addEventListener('keydown', inputKeyDown);
-    el.addEventListener('keyup', inputKeyUp);
+    el.addEventListener('input', inputChanged);
     el.addEventListener('contextmenu', onContextMenu);
 
     var elButtonClear = Evme.$('#button-clear');
@@ -155,12 +154,14 @@ Evme.Searchbar = new function Evme_Searchbar() {
     Evme.EventHandler.trigger(NAME, 'clearButtonClick');
   }
 
-  function inputKeyDown(e) {
+  function clearTimeouts() {
     window.clearTimeout(timeoutPause);
     window.clearTimeout(timeoutIdle);
   }
 
-  function inputKeyUp(e) {
+  function inputChanged(e) {
+    clearTimeouts();
+
     var currentValue = el.value;
 
     if (currentValue !== value) {
@@ -195,7 +196,7 @@ Evme.Searchbar = new function Evme_Searchbar() {
      // before the paste.
      //
     window.setTimeout(function onTimeout() {
-      inputKeyUp({
+      inputChanged({
         'keyCode': ''
       });
     }, 0);

@@ -16,10 +16,12 @@ var Selector = {
   manualSetupNameInput: '.sup-manual-form .sup-info-name',
   manualSetupEmailInput: '.sup-manual-form .sup-info-email',
   manualSetupPasswordInput: '.sup-manual-form .sup-info-password',
-  manualSetupImapUsernameInput: '.sup-manual-form .sup-manual-imap-username',
-  manualSetupImapHostnameInput: '.sup-manual-form .sup-manual-imap-hostname',
-  manualSetupImapPortInput: '.sup-manual-form .sup-manual-imap-port',
-  manualSetupImapSocket: '.sup-manual-form .sup-manual-imap-socket',
+  manualSetupImapUsernameInput:
+    '.sup-manual-form .sup-manual-composite-username',
+  manualSetupImapHostnameInput:
+    '.sup-manual-form .sup-manual-composite-hostname',
+  manualSetupImapPortInput: '.sup-manual-form .sup-manual-composite-port',
+  manualSetupImapSocket: '.sup-manual-form .sup-manual-composite-socket',
   manualSetupSmtpUsernameInput: '.sup-manual-form .sup-manual-smtp-username',
   manualSetupSmtpHostnameInput: '.sup-manual-form .sup-manual-smtp-hostname',
   manualSetupSmtpPortInput: '.sup-manual-form .sup-manual-smtp-port',
@@ -51,9 +53,9 @@ var Selector = {
   accountListButton: '.fld-folders-header .fld-accounts-btn',
   settingsMainAccountItems: '.tng-accounts-container .tng-account-item',
   syncIntervalSelect: '.tng-account-check-interval ',
-  // Checkboxes are weird: hidden to marionette, but the associated span
+  // Checkboxes are weird: hidden to marionette, but the associated label
   // is clickable and does the job.
-  notifyEmailCheckbox: '.tng-notify-mail-label > span',
+  notifyEmailCheckbox: '.tng-notify-mail-label',
   accountSettingsBackButton: '.card-settings-account .tng-back-btn',
   localDraftsItem: '.fld-folders-container a[data-type=localdrafts]'
 };
@@ -145,7 +147,11 @@ Email.prototype = {
   },
 
   tapLocalDraftsItem: function() {
+    // we should already be looking at the folder list, no need to wait.
     this._waitForElementNoTransition(Selector.localDraftsItem).tap();
+    // clicking that transitions us back to the message list; wait for us
+    // to get there.
+    this._waitForTransitionEnd('message_list');
   },
 
   switchAccount: function(number) {
@@ -298,12 +304,17 @@ Email.prototype = {
   },
 
   tapEmailBySubject: function(subject, cardId) {
-    var element = this.getEmailBySubject(subject);
+    // The emails may not be present in the list yet.  So keep checking until
+    // we see one.  Then tap on it.
+    this.client.waitFor(function() {
+      var element = this.getEmailBySubject(subject);
+      if (!element)
+        return false;
 
-    if (element) {
       element.tap();
       this._waitForTransitionEnd(cardId);
-    }
+      return true;
+    }.bind(this));
   },
 
   getEmailBySubject: function(subject) {
@@ -374,28 +385,77 @@ Email.prototype = {
     });
   },
 
+  _onTransitionEndScriptTimeout: function(cardId) {
+    var result = this.client.executeScript(function(cardId) {
+      var Cards = window.wrappedJSObject.require('mail_common').Cards,
+          card = Cards._cardStack[Cards.activeCardIndex],
+          cardNode = card && card.domNode;
+
+      return {
+        cardNode: !!cardNode,
+        centered: cardNode && cardNode.classList.contains('center'),
+        correctId: cardNode && cardNode.dataset.type === cardId,
+        eventsClear: !Cards._eatingEventsUntilNextCard
+      };
+    }, [cardId]);
+
+    console.log('TRANSITION END TIMEOUT:');
+    console.log(JSON.stringify(result, null, '  '));
+  },
+
   _waitForTransitionEnd: function(cardId) {
     var client = this.client;
+
+    // To find out what is wrong with an intermittent failure in here,
+    // log the script test criteria
+    client.onScriptTimeout = this._onTransitionEndScriptTimeout
+                                 .bind(this, cardId);
+
     client.waitFor(function() {
       return client.executeScript(function(cardId) {
         var Cards = window.wrappedJSObject.require('mail_common').Cards,
             card = Cards._cardStack[Cards.activeCardIndex],
             cardNode = card && card.domNode;
+
         return !!cardNode && cardNode.classList.contains('center') &&
                cardNode.dataset.type === cardId &&
                !Cards._eatingEventsUntilNextCard;
       }, [cardId]);
     });
+
+    client.onScriptTimeout = null;
+  },
+
+  _onNoTransitionScriptTimeout: function() {
+    var result = this.client.executeScript(function() {
+      var Cards = window.wrappedJSObject.require('mail_common').Cards;
+
+      return {
+        cards: !!Cards,
+        eventsClear: !!Cards && !Cards._eatingEventsUntilNextCard
+      };
+    });
+
+    console.log('NO TRANSITION TIMEOUT:');
+    console.log(JSON.stringify(result, null, '  '));
   },
 
   _waitForNoTransition: function() {
     var client = this.client;
+
+    // To find out what is wrong with an intermittent failure in here,
+    // log the script test criteria
+    client.onScriptTimeout = this._onNoTransitionScriptTimeout
+                                 .bind(this);
+
     client.waitFor(function() {
       return client.executeScript(function() {
         var Cards = window.wrappedJSObject.require('mail_common').Cards;
         return !Cards._eatingEventsUntilNextCard;
       });
     });
+
+    client.onScriptTimeout = null;
   },
 
   _setupTypeName: function(name) {

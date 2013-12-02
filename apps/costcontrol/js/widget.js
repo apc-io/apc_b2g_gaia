@@ -14,7 +14,13 @@ var Widget = (function() {
 
   var costcontrol;
   function onReady() {
-    var mobileConnection = window.navigator.mozMobileConnection;
+
+    // XXX: check bug-926169
+    // this is used to keep all tests passing while introducing multi-sim APIs
+    var mobileConnection = window.navigator.mozMobileConnection ||
+      window.navigator.mozMobileConnections &&
+      window.navigator.mozMobileConnections[0];
+
     if (!mobileConnection) {
       console.error('No mozMobileConnection available');
       return;
@@ -74,9 +80,6 @@ var Widget = (function() {
                     'data. Aborting start up.');
       showSimError('no-sim2');
     }
-
-    // loads the message handler
-    document.getElementById('message-handler').src = 'message_handler.html';
 
     Common.checkSIMChange(function _onSIMChecked() {
       CostControl.getInstance(function _onCostControlReady(instance) {
@@ -440,6 +443,7 @@ var Widget = (function() {
   return {
     init: function() {
       Common.waitForDOMAndMessageHandler(window, onReady);
+      document.getElementById('message-handler').src = 'message_handler.html';
     }
   };
 

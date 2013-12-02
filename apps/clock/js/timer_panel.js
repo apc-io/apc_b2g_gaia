@@ -7,6 +7,7 @@ var asyncStorage = require('shared/js/async_storage');
 var View = require('view');
 var Utils = require('utils');
 var Timer = require('timer');
+var FormButton = require('form_button');
 var _ = require('l10n').get;
 
 var priv = new WeakMap();
@@ -57,14 +58,14 @@ Timer.Panel = function(element) {
   // Gather elements
   [
     'create', 'cancel', 'dialog',
-    'pause', 'start', 'sound', 'time', 'vibrate', 'menu'
+    'pause', 'start', 'sound', 'time', 'vibrate'
   ].forEach(function(id) {
     this.nodes[id] = this.element.querySelector('#timer-' + id);
   }, this);
 
   // Bind click events
   [
-    'create', 'cancel', 'pause', 'start', 'menu'
+    'create', 'cancel', 'pause', 'start'
   ].forEach(function(action) {
     var element = this.nodes[action];
 
@@ -81,8 +82,20 @@ Timer.Panel = function(element) {
   }, this);
 
   var sound = this.nodes.sound;
-  sound.addEventListener('blur', this.refreshSoundMenu.bind(this), false);
-  this.refreshSoundMenu();
+
+  sound.addEventListener('blur', this.pauseAlarm.bind(this), false);
+  sound.addEventListener('change', this.previewAlarm.bind(this), false);
+
+  var soundMenuConfig = {
+    id: 'timer-sound-menu',
+    formatLabel: function(sound) {
+      return (sound === null || sound === '0') ?
+        _('noSound') :
+        _(sound.replace('.', '_'));
+    }
+  };
+  this.soundButton = new FormButton(sound, soundMenuConfig);
+  this.soundButton.refresh();
 
   View.instance(element).on(
     'visibilitychange', this.onvisibilitychange.bind(this)
@@ -199,16 +212,29 @@ Timer.Panel.prototype.toggle = function(show, hide) {
 };
 
 /**
- * refreshSoundMenu Updates the text on the alarm chooser selection
- * button.
+ * previewAlarm Plays the currently selected alarm value on a loop.
  */
-Timer.Panel.prototype.refreshSoundMenu = function() {
-  var sound = Utils.getSelectedValue(this.nodes.sound);
-  var soundMenu = this.nodes.menu;
-  // sound could either be string or int, so test for both
-  soundMenu.textContent = (sound === 0 || sound === '0') ?
-    _('noSound') :
-    _(sound.replace('.', '_'));
+Timer.Panel.prototype.previewAlarm = function() {
+  if (!this.ringtonePlayer) {
+    this.ringtonePlayer = new Audio();
+    this.ringtonePlayer.mozAudioChannelType = 'alarm';
+    this.ringtonePlayer.loop = true;
+  }
+  this.ringtonePlayer.pause();
+
+  var ringtoneName = Utils.getSelectedValue(this.nodes.sound);
+  var previewRingtone = 'shared/resources/media/alarms/' + ringtoneName;
+  this.ringtonePlayer.src = previewRingtone;
+  this.ringtonePlayer.play();
+};
+
+/**
+ * pauseAlarm stops the alarm if it is playing
+ */
+Timer.Panel.prototype.pauseAlarm = function() {
+  if (this.ringtonePlayer) {
+    this.ringtonePlayer.pause();
+  }
 };
 
 /**
@@ -253,10 +279,6 @@ Timer.Panel.prototype.onclick = function(event) {
       panel.toggle(nodes.start, nodes.pause);
     }
   } else {
-
-    if (meta.action === 'menu') {
-      nodes.sound.focus();
-    }
 
     if (meta.action === 'create') {
 

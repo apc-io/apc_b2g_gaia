@@ -178,6 +178,9 @@ navigator.mozL10n.ready(function deviceList() {
               if (isSendingFile || pairingAddress) {
                 return;
               }
+
+              stopDiscovery();
+
               // show the description to be Connecting...
               // since we do connection and send file to the device
               var small = aItem.querySelector('small');
@@ -228,7 +231,7 @@ navigator.mozL10n.ready(function deviceList() {
         var progress = aItem.querySelector('progress');
         progress.classList.remove('hidden');
 
-        var req = defaultAdapter.pair(device);
+        var req = defaultAdapter.pair(device.address);
         pairingMode = 'active';
         pairingAddress = device.address;
         var msg = 'pairing with address = ' + pairingAddress;

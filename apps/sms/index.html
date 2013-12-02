@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
     <meta charset="utf-8">
     <title>Messages</title>
     <!-- Stable Building blocks -->
@@ -76,7 +77,7 @@
               <menu type="toolbar">
                 <button id="threads-delete-button" data-l10n-id="delete">delete</button>
               </menu>
-              <h1 id="threads-edit-mode" data-l10n-id="editMode">Edit mode</h1>
+              <h1 id="threads-edit-mode" data-l10n-id="deleteMessages-title">Delete messages</h1>
             </header>
           </section>
           <menu>
@@ -96,8 +97,11 @@
             <span class="icon icon-back"></span>
           </a>
           <menu type="toolbar">
-            <a id="messages-edit-icon">
-              <span class="icon icon-edit"></span>
+            <a id="messages-attach-button">
+              <span class="icon icon-attachment"></span>
+            </a>
+            <a id="messages-options-icon">
+              <span class="icon icon-options"></span>
             </a>
           </menu>
           <h1 id="messages-header-text" aria-hidden="true"></h1>
@@ -167,7 +171,6 @@
           <ul id="messages-participants-list" class="contact-list"></ul>
         </article>
         <form role="search" id="messages-compose-form" class="bottom messages-compose-form" data-message-type="sms">
-          <button id="messages-attach-button" class="icon icon-attachment">Attachment</button>
           <button id="messages-send-button" disabled data-l10n-id="send" type="submit">Send</button>
           <!-- The <br> is needed because of 414223, which is a WONTFIX. It's just because of how contentEditable works. https://bugzilla.mozilla.org/show_bug.cgi?id=414223 -->
           <div id="messages-input" contentEditable="true" name="message"
@@ -182,7 +185,7 @@
               <menu type="toolbar">
                 <button id="messages-delete-button" data-l10n-id="delete">delete</button>
               </menu>
-              <h1 id="messages-edit-mode" data-l10n-id="editMode">Edit mode</h1>
+              <h1 id="messages-edit-mode" data-l10n-id="deleteMessages-title">Delete Messages</h1>
             </header>
           </section>
           <menu>
@@ -226,25 +229,45 @@
       -  Templates
       -->
 
-    <div id="messages-contact-tmpl" class="hide">
+    <div id="contact-suggestion-tmpl" class="hide">
       <!--
-      <a class="suggestion"
-        data-number="${number}" data-source="contacts" data-name="${name}"
-        data-type="${type}" data-separator="${separator}" data-carrier="${carrier}">
-        ${photoHTML}
-        <p class="name">${nameHTML}</p>
-        <p class="number">
-          <span data-l10n-id="${type}">${type}</span>${separator}${carrier}${numberHTML}
-        </p>
-      </a>
+      <li>
+        <a class="suggestion"
+          data-number="${number}" data-source="contacts" data-name="${name}"
+          data-type="${type}" data-separator="${separator}" data-carrier="${carrier}">
+          ${photoHTML}
+          <p class="name">${nameHTML}</p>
+          <p class="number">
+            <span data-l10n-id="${type}">${type}</span>${separator}${carrier}${numberHTML}
+          </p>
+        </a>
+      </li>
       -->
     </div>
 
-    <div id="messages-contact-photo-tmpl" class="hide">
+    <div id="contact-prompt-tmpl" class="hide">
+      <!--
+      <div class="contact-header">
+        ${photoHTML}
+        <p class="name">${name}</p>
+        <p class="details">
+          <span data-l10n-id="${type}">${type}</span>${separator}${carrier}${number}
+        </p>
+      </div>
+      -->
+    </div>
+
+    <div id="contact-photo-tmpl" class="hide">
       <!--
       <aside class="pack-end">
-        <img src="${photoURL}">
+        <img src="${photoURL}" alt="">
       </aside>
+      -->
+    </div>
+
+    <div id="contact-highlight-tmpl" class="hide">
+      <!--
+      <span class="highlight">${str}</span>
       -->
     </div>
 
@@ -267,12 +290,6 @@
       -->
     </div>
 
-    <div id="messages-highlight-tmpl" class="hide">
-      <!--
-      <span class="highlight">${str}</span>
-      -->
-    </div>
-
     <div id="messages-message-tmpl" class="hide">
       <!--
       <label class="pack-checkbox danger">
@@ -280,6 +297,9 @@
         <span></span>
       </label>
       <section class="bubble">
+        <h1 class="subject">
+          ${subject}
+        </h1>
         <aside class="pack-end">
           <progress></progress>
         </aside>
@@ -311,7 +331,7 @@
 
     <div id="messages-recipient-tmpl" class="hide">
       <!--
-      <span class="recipient" x-inputmode="verbatim"
+      <span class="${className}" x-inputmode="verbatim"
         contenteditable="${editable}"
         data-number="${number}" data-source="${source}" data-name="${name}"
         data-carrier="${carrier}" data-separator="${separator}" data-type="${type}">
@@ -345,6 +365,7 @@
     <div id="attachment-draft-tmpl" class="hide">
       <!--
       <head>
+        <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1">
         <meta charset="utf-8">
         <base href="${baseURL}">
         <style type="text/css">

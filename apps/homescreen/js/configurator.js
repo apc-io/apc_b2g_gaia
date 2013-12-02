@@ -28,12 +28,25 @@ var Configurator = (function() {
       var provider = window[searchPage.provider] || dummyProvider;
       if (searchPage.enabled) {
         document.body.classList.add('searchPageEnabled');
-        Homescreen.init(0, provider.init.bind(provider));
       } else {
-        startHomescreenByDefault();
         setTimeout(provider.destroy, 0);
       }
     }
+
+    var homescreenInitialized = function() {
+      if (conf.bookmarks) {
+        conf.bookmarks.forEach(function addBookmark(bookmarkData) {
+          var app = new Bookmark(bookmarkData);
+          GridManager.install(app);
+        });
+      }
+
+      if (searchPage && searchPage.enabled) {
+        provider.init();
+      }
+    };
+
+    Homescreen.init(0, homescreenInitialized);
     loadSingleVariantConf();
   }
 
@@ -74,7 +87,7 @@ var Configurator = (function() {
 
   function loadSingleVariantConf() {
     loadSettingSIMPresent();
-    if (!IccHelper || !IccHelper.enabled) {
+    if (!IccHelper) {
       console.error('IccHelper isn\'t enabled. SingleVariant configuration' +
                     ' can\'t be loaded');
       return;
@@ -121,7 +134,7 @@ var Configurator = (function() {
                  loadSVConfFileError);
         IccHelper.removeEventListener('iccinfochange', iccHandler);
         // No needed anymore
-        IccHelper = iccHandler = null;
+        iccHandler = null;
         return true;
       }
       return false;

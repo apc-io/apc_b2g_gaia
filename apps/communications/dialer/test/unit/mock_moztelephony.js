@@ -1,7 +1,7 @@
 'use strict';
 
 var MockMozTelephony = {
-  dial: function() {},
+  dial: function() { return {}; },
   dialEmergency: function() {},
   active: null,
   calls: [],
@@ -13,6 +13,8 @@ var MockMozTelephony = {
     resume: function() {}
   },
   speakerEnabled: false,
+  startTone: function(dtmfChar) {},
+  stopTone: function() {},
 
   mTriggerCallsChanged: function() {
     if (this.oncallschanged) {
