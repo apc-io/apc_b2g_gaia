@@ -412,7 +412,7 @@
     'landscape-primary', 'landscape-secondary', 'landscape', 'default'];
   var OrientationRotationTable = {
     'portrait-primary': [0, 180, 0, 90, 270, 90, isDefaultPortrait ? 0 : 90],
-    'landscape-primary': [270, 90, 270, 0, 180, 0, isDefaultPortrait ? 270 : 0]
+    'landscape-primary': [270, 90, 270, 0, 180, 0, isDefaultPortrait ? 0 : 270]
   };
 
   AppWindow.prototype.determineRotationDegree =
