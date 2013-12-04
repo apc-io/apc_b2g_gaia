@@ -93,6 +93,7 @@ var KeyboardManager = {
   keyboardHeight: 0,
   hasActiveKeyboard: false,
   isOutOfProcessEnabled: false,
+  hwkeyboardManager: null,
 
   init: function km_init() {
     // generate typeTable
@@ -125,6 +126,23 @@ var KeyboardManager = {
     }.bind(this));
 
     this.keyboardFrameContainer.classList.add('hide');
+
+    this.hwkeyboardManager = window.navigator.hardwareKeyboardManager;
+    this.hwkeyboardManager.addEventListener('hwkeyboardpresentchange', function(e) {
+      var self = this;
+      if (self.hwkeyboardManager.isPresent && self.keyboardHeight) {
+        self.hideKeyboard();
+        self.hideIMESwitcher();
+      } else if (!self.hwkeyboardManager.isPresent && self._onFocus) {
+        // if we already have layouts for the group, no need to check default
+        self.setKeyboardToShow(this.showingLayout.type);
+        self.showKeyboard();
+
+        // We also want to show the permanent notification
+        // in the UtilityTray.
+        self.showIMESwitcher();
+      }
+    }.bind(this));
 
     // get enabled keyboard from mozSettings, parse their manifest
 
@@ -302,6 +320,7 @@ var KeyboardManager = {
     if (type === 'blur') {
       this.focusChangeTimeout = setTimeout(function keyboardFocusChanged() {
         self._debug('get blur event');
+        self._onFocus = false;
         self.hideKeyboard();
         self.hideIMESwitcher();
       }, BLUR_CHANGE_DELAY);
@@ -309,6 +328,7 @@ var KeyboardManager = {
     else {
       var group = TYPE_GROUP_MAPPING[type];
       self._debug('get focus event ' + type);
+      self._onFocus = true;
       // by the order in Settings app, we should display
       // if target group (input type) does not exist, use text for default
       if (!self.keyboardLayouts[group]) {
@@ -535,6 +555,11 @@ var KeyboardManager = {
   },
 
   showKeyboard: function km_showKeyboard(callback) {
+    if (this.hwkeyboardManager.isPresent) {
+      self._debug("not show virtual keyboard since hw keyboard present");
+      return;
+    }
+
     // Are we already shown and not currently in a transition? Continue.
     if (!this.keyboardFrameContainer.classList.contains('hide') &&
         this.keyboardFrameContainer.dataset.transitionIn !== 'true') {
