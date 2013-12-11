@@ -992,31 +992,44 @@ var Camera = {
 
     var viewfinder = this.viewfinder;
     var style = viewfinder.style;
+    var orientation = screen.mozOrientation;
+
     // Switch screen dimensions to landscape. The screen width/height is css
     // pixel size. The following calculation are all based on css pixel.
-    var screenWidth = document.body.clientHeight;
-    var screenHeight = document.body.clientWidth;
+    if ((orientation === "portrait-primary") || (orientation === "portrait-secondary")) {
+      var screenWidth = document.body.clientHeight;
+      var screenHeight = document.body.clientWidth;
+    } else {
+      var screenWidth = document.body.clientWidth;
+      var screenHeight = document.body.clientHeight;
+    }
     // We need real device pixel size to choose the correct preview image size.
     var deviceWidth = screenWidth * window.devicePixelRatio;
     var deviceHeight = screenHeight * window.devicePixelRatio;
     var pictureAspectRatio = this._pictureSize.height / this._pictureSize.width;
     var screenAspectRatio = screenHeight / screenWidth;
 
-    // Previews should match the aspect ratio and not be smaller than the screen
+    // Filter previews that match the aspect ratio.
     var validPreviews = camera.capabilities.previewSizes.filter(function(res) {
-      var isLarger = res.height >= deviceHeight && res.width >= deviceWidth;
       var aspectRatio = res.height / res.width;
       var matchesRatio = Math.abs(aspectRatio - pictureAspectRatio) < 0.05;
-      return matchesRatio && isLarger;
+      return matchesRatio;
     });
 
-    // We should always have a valid preview size, but just in case
+    // We should always have a match ratio preview, but just in case
     // we dont, pick the first provided.
     if (validPreviews.length) {
-      // Pick the smallest valid preview
-      this._previewConfig = validPreviews.sort(function(a, b) {
+      validPreviews.sort(function(a,b ) {
         return a.width * a.height - b.width * b.height;
-      }).shift();
+      }); //Ascending
+      var biggestPreview = validPreviews[validPreviews.length -1];
+      if (biggestPreview.height <= deviceHeight && biggestPreview.width <= deviceWidth) {
+        this._previewConfig = biggestPreview;
+      } else {
+        this._previewConfig = validPreviews.filter(function(res) {
+          return res.height >= deviceHeight && res.width >= deviceWidth;
+        }).shift();
+      }
     } else {
       this._previewConfig = camera.capabilities.previewSizes[0];
     }
@@ -1054,7 +1067,10 @@ var Camera = {
     var dy = -(width - screenWidth) / 2;
     transform = 'translate(' + dx + 'px,' + dy + 'px) ' + transform;
 
-    style.transform = transform;
+    //Only rotate if we are in portrait mode
+    if ((orientation === "portrait-primary") || (orientation === "portrait-secondary")) {
+      style.transform = transform;
+    }
     style.width = width + 'px';
     style.height = height + 'px';
   },
