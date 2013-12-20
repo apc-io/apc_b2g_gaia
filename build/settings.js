@@ -170,31 +170,8 @@ function execute(options) {
    'icc.toneDefaultTimeout': 5000,
    'icc.goBackTimeout': 1000,
    'icc.selectTimeout': 150000,
-   'keyboard.layouts.english': true,
-   'keyboard.layouts.dvorak': false,
-   'keyboard.layouts.czech': false,
-   'keyboard.layouts.french': false,
-   'keyboard.layouts.german': false,
-   'keyboard.layouts.hungarian': false,
-   'keyboard.layouts.norwegian': false,
-   'keyboard.layouts.myanmar': false,
-   'keyboard.layouts.slovak': false,
-   'keyboard.layouts.turkish': false,
-   'keyboard.layouts.romanian': false,
-   'keyboard.layouts.russian': false,
-   'keyboard.layouts.arabic': false,
-   'keyboard.layouts.hebrew': false,
-   'keyboard.layouts.zhuyin': false,
-   'keyboard.layouts.pinyin': false,
-   'keyboard.layouts.greek': false,
-   'keyboard.layouts.japanese': false,
-   'keyboard.layouts.polish': false,
-   'keyboard.layouts.portuguese': false,
-   'keyboard.layouts.serbian': false,
-   'keyboard.layouts.spanish': false,
-   'keyboard.layouts.catalan': false,
-   'keyboard.vibration': false,
-   'keyboard.clicksound': false,
+   'keyboard.vibration': true,
+   'keyboard.clicksound': true,
    'keyboard.autocorrect': true,
    'keyboard.wordsuggestion': true,
    'keyboard.current': undefined,
@@ -221,11 +198,11 @@ function execute(options) {
    'powersave.threshold': -1,
    'privacy.donottrackheader.value': '-1',
    'privacy.donottrackheader.enabled': false,
-   'ril.telephony.defaultServiceId': '0',
-   'ril.voicemail.defaultServiceId': '0',
-   'ril.sms.defaultServiceId': '0',
-   'ril.mms.defaultServiceId': '0',
-   'ril.data.defaultServiceId': '0',
+   'ril.telephony.defaultServiceId': 0,
+   'ril.voicemail.defaultServiceId': 0,
+   'ril.sms.defaultServiceId': 0,
+   'ril.mms.defaultServiceId': 0,
+   'ril.data.defaultServiceId': 0,
    'ril.data.suspended': false,
    'ril.iccInfo.mbdn': '',
    'ril.sms.requestStatusReport.enabled': false,
@@ -270,12 +247,14 @@ function execute(options) {
    'ril.data.apnSettings': '',
    'ril.data.cp.apns': '',
    'ril.callerId': 'CLIR_DEFAULT',
-   'screen.automatic-brightness': true,
+   'rocketbar.enabled': false,
+   'screen.automatic-brightness': false,
    'screen.brightness': 1,
    'screen.timeout': 60,
    'software-button.enabled': false,
    'homegesture.enabled': false,
    'edgesgesture.enabled': false,
+   'continuous-transition.enabled': false,
    'support.onlinesupport.title': '',
    'support.onlinesupport.href': '',
    'support.callsupport1.title': '',
@@ -294,7 +273,7 @@ function execute(options) {
    'tethering.wifi.dhcpserver.startip': '192.168.1.10',
    'tethering.wifi.dhcpserver.endip': '192.168.1.30',
    'tethering.wifi.ssid': 'FirefoxHotspot',
-   'tethering.wifi.security.type': 'open',
+   'tethering.wifi.security.type': 'wpa2-psk',
    'tethering.wifi.security.password': '1234567890',
    'tethering.wifi.connectedClients': 0,
    'tethering.usb.connectedClients': 0,
@@ -335,26 +314,15 @@ function execute(options) {
       config.GAIA_SCHEME, config.GAIA_DOMAIN, config.GAIA_PORT);
   }
 
+  // Set the rocketbar URL
+  settings['rocketbar.searchAppURL'] = utils.gaiaOriginURL('search',
+    config.GAIA_SCHEME, config.GAIA_DOMAIN, config.GAIA_PORT) + '/index.html';
+
   if (config.PRODUCTION === '1') {
     settings['feedback.url'] = 'https://input.mozilla.org/api/v1/feedback/';
   }
 
   settings['language.current'] = config.GAIA_DEFAULT_LOCALE;
-  let file = utils.getGaia(config).sharedFolder.clone();
-  file.append('resources');
-  file.append('keyboard_layouts.json');
-  let keyboard_layouts_res = utils.getJSON(file);
-  let keyboard_layouts = keyboard_layouts_res['layout'];
-  let keyboard_nonLatins = keyboard_layouts_res['nonLatin'];
-  let default_layout;
-  if (config.GAIA_DEFAULT_LOCALE in keyboard_layouts) {
-    default_layout = keyboard_layouts[config.GAIA_DEFAULT_LOCALE];
-    if (!(config.GAIA_DEFAULT_LOCALE in keyboard_nonLatins)) {
-      settings['keyboard.layouts.english'] = false;
-    }
-    settings['keyboard.layouts.' + default_layout] = true;
-  }
-
   settings['devtools.debugger.remote-enabled'] = config.REMOTE_DEBUGGER == true;
 
   if (config.DEVICE_DEBUG) {

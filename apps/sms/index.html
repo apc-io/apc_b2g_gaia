@@ -25,6 +25,7 @@
     <link rel="stylesheet" type="text/css" href="style/common.css">
     <link rel="stylesheet" type="text/css" href="style/sms.css">
     <link rel="stylesheet" type="text/css" href="style/attachment.css">
+    <link rel="stylesheet" type="text/css" href="style/report_view.css">
     <!-- Localization -->
     <link rel="resource" type="application/l10n" href="locales/locales.ini">
     <link rel="resource" type="application/l10n" href="shared/locales/date.ini">
@@ -38,6 +39,9 @@
     <script defer src="shared/js/settings_url.js"></script>
     <script defer src="shared/js/template.js"></script>
     <script defer src="shared/js/mime_mapper.js"></script>
+    <script defer src="shared/js/fb/fb_request.js"></script>
+    <script defer src="shared/js/fb/fb_data_reader.js"></script>
+    <script defer src="shared/js/fb/fb_reader_utils.js"></script>
     -->
     <script defer src="shared/js/lazy_loader.js"></script>
     <script defer src="js/startup.js"></script>
@@ -131,15 +135,15 @@
           <div id="contact-carrier" data-l10n-id="carrier-unknown" class="carrier-wrapper">
             Carrier unknown
           </div>
-          <section id="messages-max-length-notice"
-                  role="notification"
-                  class="hide">
-            <p></p>
-          </section>
           <!-- Notifications in this container will be rendered on top of the
           Compose field. These notifications should be hidden automatically so
           they do not prevent the user from inputting text. -->
           <div class="overlay">
+            <section id="messages-max-length-notice"
+                     role="notification"
+                     class="hide">
+              <p></p>
+            </section>
             <section id="messages-convert-notice"
                     role="notification"
                     class="hide">
@@ -167,11 +171,29 @@
         </div>
         <article id="messages-container" class="view-body article-list" data-type="list">
         </article>
-        <article id="messages-participants" class="view-body article-list hide" data-type="list">
-          <ul id="messages-participants-list" class="contact-list"></ul>
+        <article id="information-participants" class="view-body article-list hide" data-type="list">
+          <ul class="contact-list"></ul>
+        </article>
+        <article id="information-report" class="view-body article-list report-view hide" data-type="list">
+          <div class="description">
+            <p class="type"></p>
+            <p class="subject"></p>
+            <p class="datetime"></p>
+          </div>
+          <div>
+            <span class="status"></span>
+            <aside></aside>
+          </div>
+          <ul class="contact-list"></ul>
+          <div class="size-block">
+            <span data-l10n-id="message-size-was"></span>
+            <span class="size"></span>
+          </div>
         </article>
         <form role="search" id="messages-compose-form" class="bottom messages-compose-form" data-message-type="sms">
           <button id="messages-send-button" disabled data-l10n-id="send" type="submit">Send</button>
+          <textarea id="messages-subject-input" placeholder="Subject" name="subject"
+            data-l10n-id="composeSubject" class="hide" maxlength="40"></textarea>
           <!-- The <br> is needed because of 414223, which is a WONTFIX. It's just because of how contentEditable works. https://bugzilla.mozilla.org/show_bug.cgi?id=414223 -->
           <div id="messages-input" contentEditable="true" name="message"
             data-l10n-id="composeMessage" x-inputmode="-moz-sms"><br></div>
@@ -279,6 +301,19 @@
       -->
     </div>
 
+    <div id="information-report-tmpl" class="hide">
+      <!--
+      <p class="${delivery}">
+        <span data-l10n-id="message-delivered"></span>
+        <span data-l10n-id="${deliveryL10n}">${deliveryDateL10n}</span>
+      </p>
+      <p class="${read}">
+        <span data-l10n-id="message-read"></span>
+        <span data-l10n-id="${readL10n}">${readDateL10n}</span>
+      </p>
+      -->
+    </div>
+
     <div id="messages-not-downloaded-tmpl" class="hide">
       <!--
       <span class="not-downloaded-message"
@@ -311,17 +346,17 @@
     <div id="messages-thread-tmpl" class="hide">
       <!--
       <label class="pack-checkbox danger">
-        <input type="checkbox" value="${id}">
+        <input type="checkbox" value="${id}" data-mode="${mode}">
         <span></span>
       </label>
-      <a href="#thread=${id}">
-        <aside class="icon icon-unread">unread</aside>
+      <a href="${hash}">
+        <aside class="icon icon-unread icon-draft">icon</aside>
         <aside class="pack-end">
           <img src="">
         </aside>
-        <p class="name">${number}</p>
-        <p>
-          <time>${formattedDate}</time>
+        <p class="name" data-l10n-id="no-recipient">${number}</p>
+        <p class="summary">
+          <time data-time-update="true" data-time-only="true" data-time="${timestamp}"></time>
           <span class="mms-icon">MMS</span>
           <span class="body-text">${bodyHTML}</span>
         </p>

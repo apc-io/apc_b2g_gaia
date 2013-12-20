@@ -3,7 +3,6 @@ var MockCallScreen = {
 
   insertCall: function() {},
   moveToGroup: function() {},
-  setCallsEndedInGroup: function() {},
   toggle: function(cb) {
     if (typeof(cb) == 'function') {
       cb();
@@ -18,11 +17,9 @@ var MockCallScreen = {
   syncSpeakerEnabled: function() {
     this.mSyncSpeakerCalled = true;
   },
-  setCallerContactImage: function() {
+  setCallerContactImage: function(arg) {
     this.mSetCallerContactImageCalled = true;
-  },
-  setDefaultContactImage: function() {
-    this.mSetDefaultContactImageCalled = true;
+    this.mSetCallerContactImageArg = arg;
   },
   mute: function() {
     this.mMuteOn = true;
@@ -66,6 +63,9 @@ var MockCallScreen = {
   removeCall: function() {
     this.mRemoveCallCalled = true;
   },
+  setEndConferenceCall: function() {
+    this.mSetEndConferenceCall = true;
+  },
 
   set holdAndAnswerOnly(enabled) {
     this.mHoldAndAnswerOnly = enabled;
@@ -92,13 +92,15 @@ var MockCallScreen = {
   mEnableKeypadCalled: false,
   mSyncSpeakerCalled: false,
   mSetCallerContactImageCalled: false,
-  mSetDefaultContactImageCalled: false,
+  mSetCallerContactImageArg: null,
   mMuteOn: false,
   mSpeakerOn: false,
   mLastRenderMode: null,
   mTeardown: function teardown() {
     this.mEnableKeypadCalled = false;
     this.mSyncSpeakerCalled = false;
+    this.mSetCallerContactImageCalled = false;
+    this.mSetCallerContactImageArg = null;
     this.mMuteOn = false;
     this.mSpeakerOn = false;
     this.mLastRenderMode = null;
@@ -115,6 +117,7 @@ var MockCallScreen = {
     this.incomingNumberAdditionalInfo = document.createElement('span');
     this.mGroupDetailsShown = false;
     this.mRemoveCallCalled = false;
+    this.mSetEndConferenceCall = false;
   }
 };
 

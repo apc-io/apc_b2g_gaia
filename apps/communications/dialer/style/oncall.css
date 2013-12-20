@@ -721,6 +721,10 @@
     transition: background-color 0.2s ease;
   }
 
+  #calls #group-call-label {
+    padding-right: 3rem;
+  }
+
   #group-call .hangup-button,
   #calls:not(.big-duration) #group-call > .duration.isTimer,
   #group-call-details-list .fake-number,
@@ -758,6 +762,13 @@
     background-position: center center;
     background-color: transparent;
     background-size: cover;
+
+    opacity: 0;
+    transition: opacity 0.3s linear;
+  }
+
+  #contact-background.ready {
+    opacity: 1;
   }
 
   #call-screen[data-layout="dialing"] #callbar-answer,

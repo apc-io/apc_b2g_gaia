@@ -14,7 +14,7 @@ class Homescreen(Base):
     name = 'Homescreen'
 
     _homescreen_icon_locator = (By.CSS_SELECTOR, 'li.icon[aria-label="%s"]')
-    _visible_icons_locator = (By.CSS_SELECTOR, 'div.page[style*="transform: translateX(0px);"] > ol > .icon')
+    _visible_icons_locator = (By.CSS_SELECTOR, '.page[style*="translateX(0px);"] .icon')
     _edit_mode_locator = (By.CSS_SELECTOR, 'body[data-mode="edit"]')
     _search_bar_icon_locator = (By.CSS_SELECTOR, '#evme-activation-icon input')
     _landing_page_locator = (By.ID, 'icongrid')
@@ -23,10 +23,6 @@ class Homescreen(Base):
 
     def launch(self):
         Base.launch(self)
-
-    def switch_to_homescreen_frame(self):
-        self.wait_for_condition(lambda m: self.apps.displayed_app.name == self.name)
-        self.marionette.switch_to_frame(self.apps.displayed_app.frame)
 
     def tap_search_bar(self):
         search_bar = self.marionette.find_element(*self._search_bar_icon_locator)
@@ -57,11 +53,6 @@ class Homescreen(Base):
         self.wait_for_condition(lambda m: m.find_element('tag name', 'body')
             .get_attribute('data-transitioning') != 'true')
 
-    def touch_home_button(self):
-        self.marionette.switch_to_frame()
-        self.marionette.execute_script("window.wrappedJSObject.dispatchEvent(new Event('home'));")
-        self.wait_for_condition(lambda m: self.apps.displayed_app.name == self.name)
-
     def activate_edit_mode(self):
         app = self.marionette.find_element(*self._visible_icons_locator)
         Actions(self.marionette).\
@@ -69,7 +60,7 @@ class Homescreen(Base):
             wait(3).\
             release().\
             perform()
-        self.wait_for_element_displayed(By.CSS_SELECTOR, 'div.dockWrapper ol[style*="transition: -moz-transform 0.5ms ease 0s;"]')
+        self.wait_for_condition(lambda m: self.marionette.execute_script("return window.wrappedJSObject.Homescreen.isInEditMode()"))
 
     def open_context_menu(self):
         test = self.marionette.find_element(*self._landing_page_locator)

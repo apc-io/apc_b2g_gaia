@@ -58,6 +58,12 @@ class GCli(object):
                      'nargs': argparse.REMAINDER,
                      'help': 'Name of app to launch'}],
                 'help': 'Launch an application'},
+            'listallapps': {
+                'function': self.list_all_apps,
+                'help': 'List all apps'},
+            'listrunningapps': {
+                'function': self.list_running_apps,
+                'help': 'List the running apps'},
             'lock': {
                 'function': self.lock,
                 'help': 'Lock screen'},
@@ -111,6 +117,7 @@ class GCli(object):
         self.apps = gaiatest.GaiaApps(self.marionette)
         self.data_layer = gaiatest.GaiaData(self.marionette)
         self.lock_screen = gaiatest.LockScreen(self.marionette)
+        self.device = gaiatest.GaiaDevice(self.marionette)
 
         ret = args.func(args)
         if ret is None:
@@ -163,12 +170,10 @@ class GCli(object):
             self.data_layer.get_setting(args.name))
 
     def home(self, args):
-        self.marionette.execute_script(
-            "window.wrappedJSObject.dispatchEvent(new Event('home'));")
+        self.device.touch_home_button()
 
     def hold_home(self, args):
-        self.marionette.execute_script(
-            "window.wrappedJSObject.dispatchEvent(new Event('holdhome'));")
+        self.device.hold_home_button()
 
     def hold_sleep(self, args):
         self.marionette.execute_script(
@@ -188,6 +193,16 @@ class GCli(object):
     def launch_app(self, args):
         for name in args.name:
             self.apps.launch(name)
+
+    def list_all_apps(self, args):
+        for i, app in enumerate(sorted(self.apps.installed_apps,
+                                       key=lambda a: a.name.lower())):
+            print '%d: %s' % (i + 1, app.name)
+
+    def list_running_apps(self, args):
+        for i, app in enumerate(sorted(self.apps.running_apps,
+                                       key=lambda a: a.name.lower())):
+            print '%d: %s' % (i + 1, app.name)
 
     def lock(self, args):
         self.lock_screen.lock()

@@ -11,11 +11,9 @@ class Contacts(Base):
 
     name = "Contacts"
 
-    _loading_overlay_locator = (By.ID, 'loading-overlay')
     _new_contact_button_locator = (By.ID, 'add-contact-button')
     _settings_button_locator = (By.ID, 'settings-button')
     _favorites_list_locator = (By.ID, 'contacts-list-favorites')
-    _app_heading_locator = (By.CSS_SELECTOR, 'h1[data-l10n-id="contacts"]')
     _contacts_frame_locator = (By.CSS_SELECTOR, 'iframe[src*="contacts"][src*="/index.html"]')
     _select_all_button_locator = (By.CSS_SELECTOR, 'button[data-l10n-id="selectAll"]')
     _export_button_locator = (By.ID, 'select-action')
@@ -29,9 +27,9 @@ class Contacts(Base):
 
     def launch(self):
         Base.launch(self)
-        self.wait_for_element_not_displayed(*self._loading_overlay_locator)
         self.wait_for_element_displayed(*self._settings_button_locator)
 
+    # TODO: Replace this by using apps.displayed_app when bug 951815 is fixed
     def switch_to_contacts_frame(self):
         self.marionette.switch_to_frame()
         self.wait_for_element_present(*self._contacts_frame_locator)
@@ -54,13 +52,13 @@ class Contacts(Base):
 
     @property
     def contacts(self):
-        self.wait_for_element_displayed(*self._app_heading_locator)
         return [self.Contact(marionette=self.marionette, element=contact)
                 for contact in self.marionette.find_elements(*self._contact_locator)]
 
     def wait_for_contacts(self, number_to_wait_for=1):
         self.wait_for_condition(lambda m: len(m.find_elements(*self._contact_locator)) == number_to_wait_for)
 
+    # TODO: Replace this by using apps.displayed_app when bug 951815 is fixed
     def wait_for_contacts_frame_to_close(self):
         self.marionette.switch_to_default_content()
         self.wait_for_element_not_present(*self._contacts_frame_locator)

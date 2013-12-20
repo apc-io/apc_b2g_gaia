@@ -86,6 +86,8 @@ var CallsHandler = (function callsHandler() {
       }
     };
 
+    setupSystemIAC();
+
     postToMainWindow('ready');
   }
 
@@ -93,6 +95,25 @@ var CallsHandler = (function callsHandler() {
     if (window.opener) {
       window.opener.postMessage(data, COMMS_APP_ORIGIN);
     }
+  }
+
+  function setupSystemIAC() {
+    navigator.mozApps.getSelf().onsuccess = function(evt) {
+      var app = evt.target.result;
+      app.connect('dialercomms').then(function(ports) {
+        ports.forEach(function(port) {
+          port.onmessage = function(event) {
+            if (event.data !== 'stop_ringtone') {
+              return;
+            }
+
+            ringtonePlayer.pause();
+            ringing = false;
+            activateVibration = false;
+          };
+        });
+      });
+    };
   }
 
   /* === Handled calls === */
@@ -415,6 +436,20 @@ var CallsHandler = (function callsHandler() {
           holdAndAnswer();
         }
         break;
+      case 'CHLD=3':
+        // Join/Establish conference call. Since we can have at most 2 calls
+        // by spec, we can use telephony.calls[n] directly.
+        if (!telephony.conferenceGroup.state && telephony.calls.length == 2) {
+          telephony.conferenceGroup.add(
+            telephony.calls[0], telephony.calls[1]);
+          break;
+        }
+        if (telephony.conferenceGroup.state && telephony.calls.length == 1) {
+          telephony.conferenceGroup.add(telephony.calls[0]);
+          break;
+        }
+        console.warn('Cannot join conference call.');
+        break;
       case 'CHLD=0':
         hangupWaitingCalls();
         break;
@@ -623,7 +658,7 @@ var CallsHandler = (function callsHandler() {
 
   function endConferenceCall() {
     var callsToEnd = telephony.conferenceGroup.calls;
-    CallScreen.setCallsEndedInGroup();
+    CallScreen.setEndConferenceCall();
     for (var i = (callsToEnd.length - 1); i >= 0; i--) {
       var call = callsToEnd[i];
       call.hangUp();
@@ -792,10 +827,3 @@ var CallsHandler = (function callsHandler() {
   };
 })();
 
-window.addEventListener('load', function callSetup(evt) {
-  window.removeEventListener('load', callSetup);
-
-  CallsHandler.setup();
-  CallScreen.init();
-  KeypadManager.init(true);
-});

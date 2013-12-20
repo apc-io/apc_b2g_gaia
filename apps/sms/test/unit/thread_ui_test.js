@@ -4,7 +4,7 @@
          LinkHelper, Attachment, MockContact, MockOptionMenu,
          MockActivityPicker, Threads, Settings, MockMessages, MockUtils,
          MockContacts, ActivityHandler, Recipients, MockMozActivity,
-         ContactRenderer */
+         ThreadListUI, ContactRenderer, UIEvent, Drafts, OptionMenu */
 
 'use strict';
 
@@ -16,10 +16,14 @@ if (!navigator.mozContacts) {
 }
 
 requireApp('sms/js/compose.js');
+requireApp('sms/js/drafts.js');
 requireApp('sms/js/threads.js');
 requireApp('sms/js/thread_ui.js');
+requireApp('sms/js/thread_list_ui.js');
+requireApp('sms/js/fixed_header.js');
 requireApp('sms/js/utils.js');
 requireApp('sms/js/message_manager.js');
+require('/shared/js/async_storage.js');
 
 requireApp('sms/test/unit/mock_time_headers.js');
 requireApp('sms/test/unit/mock_alert.js');
@@ -46,6 +50,7 @@ requireApp('sms/test/unit/mock_custom_dialog.js');
 requireApp('sms/test/unit/mock_url.js');
 requireApp('sms/test/unit/mock_compose.js');
 requireApp('sms/test/unit/mock_activity_handler.js');
+requireApp('sms/test/unit/mock_information.js');
 require('/test/unit/mock_contact_renderer.js');
 
 var mocksHelperForThreadUI = new MocksHelper([
@@ -66,13 +71,15 @@ var mocksHelperForThreadUI = new MocksHelper([
   'SMIL',
   'ActivityHandler',
   'TimeHeaders',
-  'ContactRenderer'
+  'ContactRenderer',
+  'Information'
 ]);
 
 mocksHelperForThreadUI.init();
 
 suite('thread_ui.js >', function() {
   var input;
+  var subject;
   var container;
   var sendButton;
   var composeForm;
@@ -99,6 +106,14 @@ suite('thread_ui.js >', function() {
       new MockAttachment(oversizedImageBlob, 'testOversized.jpg') :
       new MockAttachment(testImageBlob, 'test.jpg');
     return attachment;
+  }
+
+  function dispatchScrollEvent(elt) {
+    var event = new UIEvent('scroll', {
+      view: window,
+      detail: 0
+    });
+    elt.dispatchEvent(event);
   }
 
   suiteSetup(function(done) {
@@ -147,6 +162,7 @@ suite('thread_ui.js >', function() {
     loadBodyHTML('/index.html');
 
     input = document.getElementById('messages-input');
+    subject = document.getElementById('messages-subject-input');
     container = document.getElementById('messages-container');
     sendButton = document.getElementById('messages-send-button');
     composeForm = document.getElementById('messages-compose-form');
@@ -156,6 +172,7 @@ suite('thread_ui.js >', function() {
 
     ThreadUI.recipients = null;
     ThreadUI.init();
+    ThreadListUI.init();
     realMozMobileMessage = ThreadUI._mozMobileMessage;
     ThreadUI._mozMobileMessage = MockNavigatormozMobileMessage;
   });
@@ -189,26 +206,53 @@ suite('thread_ui.js >', function() {
       container.lastElementChild.style.paddingBottom = '16px';
     });
 
-    test('scroll 100px, should be detected as a manual scroll', function(done) {
-      container.addEventListener('scroll', function onscroll() {
-        container.removeEventListener('scroll', onscroll);
-        assert.ok(ThreadUI.isScrolledManually);
-        done();
-      });
+    test('scroll 100px, should be detected as a manual scroll', function() {
       container.scrollTop = 100;
+
+      dispatchScrollEvent(container);
+
+      assert.ok(ThreadUI.isScrolledManually);
+    });
+
+    suite('when adding a line in the composer >', function() {
+      setup(function() {
+        this.sinon.spy(HTMLElement.prototype, 'scrollIntoView');
+      });
+
+      test('when scrolled up, should not scroll', function() {
+        container.scrollTop = 100;
+        dispatchScrollEvent(container);
+
+        // scrolledManually is true (see above)
+        Compose.append('\n');
+
+        sinon.assert.notCalled(HTMLElement.prototype.scrollIntoView);
+      });
+
+      test('when scrolled to the bottom, should scroll', function() {
+        container.scrollTop = container.scrollTopMax;
+        dispatchScrollEvent(container);
+
+        // scrolledManually is false (see above)
+        Compose.append('\n');
+
+        sinon.assert.calledOn(
+          HTMLElement.prototype.scrollIntoView,
+          container.lastElementChild
+        );
+      });
     });
 
     test('scroll to bottom, should be detected as an automatic scroll',
-    function(done) {
-      container.addEventListener('scroll', function onscroll() {
-        container.removeEventListener('scroll', onscroll);
-        assert.isFalse(ThreadUI.isScrolledManually);
-        assert.ok((container.scrollTop + container.clientHeight) ==
-                  container.scrollHeight);
-        done();
-      });
+    function() {
       ThreadUI.isScrolledManually = false;
       ThreadUI.scrollViewToBottom();
+
+      dispatchScrollEvent(container);
+
+      assert.isFalse(ThreadUI.isScrolledManually);
+      assert.ok((container.scrollTop + container.clientHeight) ==
+                container.scrollHeight);
     });
   });
 
@@ -229,8 +273,10 @@ suite('thread_ui.js >', function() {
 
     test('composer cleared', function() {
       Compose.append('foo');
+      subject.value = 'foo';
       ThreadUI.cleanFields(true);
       assert.equal(Compose.getContent(), '');
+      assert.equal(Compose.getSubject(), '');
     });
 
     suite('rendering suggestions list', function() {
@@ -281,6 +327,7 @@ suite('thread_ui.js >', function() {
     suite('In #thread view, button should be...', function() {
       setup(function() {
         window.location.hash = '#thread-1';
+        Compose.clear();
       });
 
       teardown(function() {
@@ -288,13 +335,25 @@ suite('thread_ui.js >', function() {
       });
 
       test('disabled at the beginning', function() {
-        Compose.clear();
         assert.isTrue(sendButton.disabled);
       });
 
       test('enabled when there is message input', function() {
         Compose.append('Hola');
         assert.isFalse(sendButton.disabled);
+      });
+
+      test('enabled when there is subject input and is visible', function() {
+        subject.value = 'Title';
+        Compose.toggleSubject(); // show the subject
+        subject.dispatchEvent(new CustomEvent('input'));
+        assert.isFalse(sendButton.disabled);
+      });
+
+      test('disabled when there is subject input, but is hidden', function() {
+        subject.value = 'Title';
+        subject.dispatchEvent(new CustomEvent('input'));
+        assert.isTrue(sendButton.disabled);
       });
 
       test('enabled when there is message input, but too many segments',
@@ -311,7 +370,6 @@ suite('thread_ui.js >', function() {
 
         assert.isFalse(sendButton.disabled);
       });
-
     });
 
 
@@ -333,9 +391,14 @@ suite('thread_ui.js >', function() {
       suite('enabled', function() {
 
         suite('when there is message input...', function() {
+          setup(function() {
+            Compose.append('Hola');
+          });
+          teardown(function() {
+            Compose.clear();
+          });
 
           test('and recipient field value is valid ', function() {
-            Compose.append('Hola');
             ThreadUI.recipients.inputValue = '999';
 
             // Call directly since no input event will be triggered
@@ -343,10 +406,7 @@ suite('thread_ui.js >', function() {
             assert.isFalse(sendButton.disabled);
           });
 
-          test('after adding a valid recipient ',
-            function() {
-            Compose.append('Hola');
-
+          test('after adding a valid recipient ', function() {
             ThreadUI.recipients.add({
               number: '999'
             });
@@ -355,8 +415,46 @@ suite('thread_ui.js >', function() {
           });
 
           test('after adding valid & questionable recipients ', function() {
-            Compose.append('Hola');
+            ThreadUI.recipients.add({
+              number: 'foo',
+              isQuestionable: true
+            });
 
+            ThreadUI.recipients.add({
+              number: '999'
+            });
+
+            assert.isFalse(sendButton.disabled);
+          });
+        });
+
+        suite('when there is visible subject with input...', function() {
+          setup(function() {
+            subject.value = 'Title';
+            Compose.toggleSubject();
+          });
+
+          teardown(function() {
+            Compose.clear();
+          });
+
+          test('and recipient field value is valid ', function() {
+            ThreadUI.recipients.inputValue = '999';
+
+            // Call directly since no input event will be triggered
+            ThreadUI.enableSend();
+            assert.isFalse(sendButton.disabled);
+          });
+
+          test('after adding a valid recipient ', function() {
+            ThreadUI.recipients.add({
+              number: '999'
+            });
+
+            assert.isFalse(sendButton.disabled);
+          });
+
+          test('after adding valid & questionable recipients ', function() {
             ThreadUI.recipients.add({
               number: 'foo',
               isQuestionable: true
@@ -371,31 +469,37 @@ suite('thread_ui.js >', function() {
         });
 
         suite('when a valid recipient exists...', function() {
-          test('after adding message input ', function() {
-
+          setup(function() {
             ThreadUI.recipients.add({
               number: '999'
             });
+          });
+          teardown(function() {
+            Compose.clear();
+          });
+          test('after adding message input ', function() {
             Compose.append('Hola');
-
             assert.isFalse(sendButton.disabled);
           });
-        });
 
-
-        test('after appending image within size limits ', function() {
-          ThreadUI.recipients.add({
-            number: '999'
+          test('after adding subject input', function() {
+            Compose.toggleSubject();
+            subject.value = 'Title';
+            subject.dispatchEvent(new CustomEvent('input'));
+            assert.isFalse(sendButton.disabled);
           });
 
-          Compose.append(mockImgAttachment());
-          assert.isFalse(sendButton.disabled);
+          test('after appending image within size limits ', function() {
+            Compose.append(mockImgAttachment());
+            assert.isFalse(sendButton.disabled);
+          });
         });
       });
 
       suite('disabled', function() {
 
-        test('when there is no message input or recipient ', function() {
+        test('when there is no message input, subject or recipient',
+          function() {
           assert.isTrue(sendButton.disabled);
         });
 
@@ -412,15 +516,20 @@ suite('thread_ui.js >', function() {
           assert.isTrue(sendButton.disabled);
         });
 
-
         suite('when there is message input...', function() {
-          test('there is no recipient ', function() {
+          setup(function() {
             Compose.append('Hola');
+          });
+
+          teardown(function() {
+            Compose.clear();
+          });
+
+          test('there is no recipient ', function() {
             assert.isTrue(sendButton.disabled);
           });
 
           test('recipient field value is questionable ', function() {
-            Compose.append('Hola');
             ThreadUI.recipients.inputValue = 'a';
 
             // Call directly since no input event will be triggered
@@ -429,14 +538,53 @@ suite('thread_ui.js >', function() {
           });
 
           test('after adding a questionable recipient ', function() {
-            Compose.append('Hola');
-
             ThreadUI.recipients.add({
               number: 'foo',
               isQuestionable: true
             });
 
             assert.isFalse(sendButton.disabled);
+          });
+        });
+
+        suite('when there is subject input...', function() {
+          setup(function() {
+            sendButton.disabled = false;
+            subject.value = 'Title';
+            subject.dispatchEvent(new CustomEvent('input'));
+          });
+
+          teardown(function() {
+            Compose.clear();
+          });
+
+          test('there is no recipient ', function() {
+            assert.isTrue(sendButton.disabled);
+          });
+
+          test('recipient field value is questionable ', function() {
+            ThreadUI.recipients.inputValue = 'a';
+
+            // Call directly since no input event will be triggered
+            ThreadUI.enableSend();
+            assert.isTrue(sendButton.disabled);
+          });
+
+          test('after adding a questionable recipient ', function() {
+            ThreadUI.recipients.add({
+              number: 'foo',
+              isQuestionable: true
+            });
+
+            assert.isTrue(sendButton.disabled);
+          });
+
+          test('there is recipient, but subject field is hidden', function() {
+            ThreadUI.recipients.add({
+              number: '999'
+            });
+
+            assert.isTrue(sendButton.disabled);
           });
         });
 
@@ -740,7 +888,6 @@ suite('thread_ui.js >', function() {
       test('lock is unset', function() {
         assert.isFalse(Compose.lock);
       });
-
     });
 
     suite('in last segment >', function() {
@@ -916,6 +1063,54 @@ suite('thread_ui.js >', function() {
 
       test('lock is enabled', function() {
         assert.isTrue(Compose.lock);
+      });
+    });
+  });
+
+  suite('subject max length banner', function() {
+    var banner,
+        localize;
+
+    setup(function() {
+      banner = document.getElementById('messages-max-length-notice');
+      localize = this.sinon.spy(navigator.mozL10n, 'localize');
+      Compose.toggleSubject();
+    });
+
+    teardown(function() {
+      banner.classList.add('hide');
+      Compose.clear();
+    });
+
+    test('should be hidden if limit not reached', function() {
+      assert.isTrue(banner.classList.contains('hide'));
+    });
+
+    suite('when trying to pass the limit...', function() {
+      setup(function() {
+        subject.value = '1234567890123456789012345678901234567890'; // 40 char
+        // Event is launched on keypress
+        subject.dispatchEvent(new CustomEvent('keypress'));
+      });
+
+      test('should be visible', function() {
+        assert.isFalse(banner.classList.contains('hide'));
+      });
+
+      test('should be localized', function() {
+        assert.ok(localize.calledWith(banner.querySelector('p'),
+                  'messages-max-subject-length-text'));
+      });
+
+      test('should be hidden if focus is away', function() {
+        subject.dispatchEvent(new CustomEvent('blur'));
+        assert.isTrue(banner.classList.contains('hide'));
+      });
+
+      test('should be visible if focus comes back', function() {
+        subject.dispatchEvent(new CustomEvent('blur'));
+        subject.dispatchEvent(new CustomEvent('focus'));
+        assert.isFalse(banner.classList.contains('hide'));
       });
     });
   });
@@ -1586,17 +1781,20 @@ suite('thread_ui.js >', function() {
     suite('onDeliverySuccess >', function() {
       teardown(function() {
         this.fakeMessage.type = null;
+        this.fakeMessage.delivery = '';
         this.fakeMessage.deliveryStatus = null;
         this.fakeMessage.deliveryInfo = null;
       });
       test('sms delivery success', function() {
         this.fakeMessage.type = 'sms';
+        this.fakeMessage.delivery = 'sent';
         this.fakeMessage.deliveryStatus = 'success';
         ThreadUI.onDeliverySuccess(this.fakeMessage);
         assert.isTrue(this.container.classList.contains('delivered'));
       });
       test('mms delivery success', function() {
         this.fakeMessage.type = 'mms';
+        this.fakeMessage.delivery = 'sent';
         this.fakeMessage.deliveryInfo = [{
           receiver: null, deliveryStatus: 'success'}];
         ThreadUI.onDeliverySuccess(this.fakeMessage);
@@ -1604,6 +1802,7 @@ suite('thread_ui.js >', function() {
       });
       test('multiple recipients mms delivery success', function() {
         this.fakeMessage.type = 'mms';
+        this.fakeMessage.delivery = 'sent';
         this.fakeMessage.deliveryInfo = [
           {receiver: null, deliveryStatus: 'success'},
           {receiver: null, deliveryStatus: 'success'}];
@@ -1612,6 +1811,7 @@ suite('thread_ui.js >', function() {
       });
       test('not all recipients return mms delivery success', function() {
         this.fakeMessage.type = 'mms';
+        this.fakeMessage.delivery = 'sent';
         this.fakeMessage.deliveryInfo = [
           {receiver: null, deliveryStatus: 'success'},
           {receiver: null, deliveryStatus: 'pending'}];
@@ -1752,7 +1952,6 @@ suite('thread_ui.js >', function() {
           assert.equal(container, containers[index]);
         });
       });
-
     });
 
     suite('insert one non-last-message block at the end of a 2-item list >',
@@ -1784,7 +1983,6 @@ suite('thread_ui.js >', function() {
           assert.equal(container, containers[index]);
         });
       });
-
     });
 
     suite('4 blocks suite >', function() {
@@ -1869,7 +2067,6 @@ suite('thread_ui.js >', function() {
         });
       });
     });
-
   });
 
   suite('appendMessage removes old message', function() {
@@ -1880,7 +2077,7 @@ suite('thread_ui.js >', function() {
         receivers: this.receivers,
         body: 'This is a test',
         delivery: 'error',
-        timestamp: new Date()
+        timestamp: Date.now()
       };
       ThreadUI.appendMessage(this.targetMsg);
       this.original = ThreadUI.container.querySelector(
@@ -1938,7 +2135,6 @@ suite('thread_ui.js >', function() {
         subject: 'subject'
       }));
     });
-
   });
 
   suite('renderMessages()', function() {
@@ -1969,8 +2165,8 @@ suite('thread_ui.js >', function() {
         delivery: 'not-downloaded',
         deliveryInfo: [{receiver: null, deliveryStatus: 'pending'}],
         subject: 'Pending download',
-        timestamp: new Date(Date.now() - 150000),
-        expiryDate: new Date(Date.now() + ONE_DAY_TIME)
+        timestamp: +new Date(Date.now() - 150000),
+        expiryDate: +new Date(Date.now() + ONE_DAY_TIME)
       },
       {
         id: 2,
@@ -1980,8 +2176,8 @@ suite('thread_ui.js >', function() {
         delivery: 'not-downloaded',
         deliveryInfo: [{receiver: null, deliveryStatus: 'manual'}],
         subject: 'manual download',
-        timestamp: new Date(Date.now() - 150000),
-        expiryDate: new Date(Date.now() + ONE_DAY_TIME * 2)
+        timestamp: +new Date(Date.now() - 150000),
+        expiryDate: +new Date(Date.now() + ONE_DAY_TIME * 2)
       },
       {
         id: 3,
@@ -1991,8 +2187,8 @@ suite('thread_ui.js >', function() {
         delivery: 'not-downloaded',
         deliveryInfo: [{receiver: null, deliveryStatus: 'error'}],
         subject: 'error download',
-        timestamp: new Date(Date.now() - 150000),
-        expiryDate: new Date(Date.now() + ONE_DAY_TIME * 2)
+        timestamp: +new Date(Date.now() - 150000),
+        expiryDate: +new Date(Date.now() + ONE_DAY_TIME * 2)
       },
       {
         id: 4,
@@ -2002,8 +2198,8 @@ suite('thread_ui.js >', function() {
         delivery: 'not-downloaded',
         deliveryInfo: [{receiver: null, deliveryStatus: 'error'}],
         subject: 'Error download',
-        timestamp: new Date(Date.now() - 150000),
-        expiryDate: new Date(Date.now() - ONE_DAY_TIME)
+        timestamp: +new Date(Date.now() - 150000),
+        expiryDate: +new Date(Date.now() - ONE_DAY_TIME)
       }];
 
       return testMessages[index];
@@ -2056,7 +2252,7 @@ suite('thread_ui.js >', function() {
           'localization arguments set correctly');
       });
       test('date is correctly determined', function() {
-        assert.equal(Utils.date.format.localeFormat.args[0][0],
+        assert.equal(+Utils.date.format.localeFormat.args[0][0],
           message.expiryDate);
         assert.equal(Utils.date.format.localeFormat.args[0][1],
           'dateTimeFormat_%x');
@@ -2111,7 +2307,7 @@ suite('thread_ui.js >', function() {
           'localization arguments set correctly');
       });
       test('date is correctly determined', function() {
-        assert.equal(Utils.date.format.localeFormat.args[0][0],
+        assert.equal(+Utils.date.format.localeFormat.args[0][0],
           message.expiryDate);
         assert.equal(Utils.date.format.localeFormat.args[0][1],
           'dateTimeFormat_%x');
@@ -2121,8 +2317,6 @@ suite('thread_ui.js >', function() {
       });
       suite('clicking', function() {
         var showMessageErrorSpy;
-        var errorCode;
-        var option;
 
         setup(function() {
           localize.reset();
@@ -2262,7 +2456,7 @@ suite('thread_ui.js >', function() {
           'localization arguments set correctly');
       });
       test('date is correctly determined', function() {
-        assert.equal(Utils.date.format.localeFormat.args[0][0],
+        assert.equal(+Utils.date.format.localeFormat.args[0][0],
           message.expiryDate);
         assert.equal(Utils.date.format.localeFormat.args[0][1],
           'dateTimeFormat_%x');
@@ -2352,7 +2546,7 @@ suite('thread_ui.js >', function() {
           'localization arguments set correctly');
       });
       test('date is correctly determined', function() {
-        assert.equal(Utils.date.format.localeFormat.args[0][0],
+        assert.equal(+Utils.date.format.localeFormat.args[0][0],
           message.expiryDate);
         assert.equal(Utils.date.format.localeFormat.args[0][1],
           'dateTimeFormat_%x');
@@ -2383,8 +2577,8 @@ suite('thread_ui.js >', function() {
         smil: '<smil><body><par><text src="cid:1"/>' +
               '</par></body></smil>',
         attachments: null,
-        timestamp: new Date(Date.now() - 150000),
-        expiryDate: new Date(Date.now())
+        timestamp: +new Date(Date.now() - 150000),
+        expiryDate: +new Date(Date.now())
       },
       {
         id: 2,
@@ -2397,8 +2591,8 @@ suite('thread_ui.js >', function() {
         smil: '<smil><body><par><text src="cid:1"/>' +
               '</par></body></smil>',
         attachments: [],
-        timestamp: new Date(Date.now() - 100000),
-        expiryDate: new Date(Date.now())
+        timestamp: +new Date(Date.now() - 100000),
+        expiryDate: +new Date(Date.now())
       }];
 
       return testMessages[index];
@@ -2503,7 +2697,7 @@ suite('thread_ui.js >', function() {
         receivers: this.receivers,
         body: 'This is a test',
         delivery: 'error',
-        timestamp: new Date()
+        timestamp: Date.now()
       };
       this.otherMsg = {
         id: 45,
@@ -2511,7 +2705,7 @@ suite('thread_ui.js >', function() {
         receivers: this.receivers,
         body: 'this test',
         delivery: 'error',
-        timestamp: new Date()
+        timestamp: Date.now()
       };
       ThreadUI.appendMessage(this.targetMsg);
       ThreadUI.appendMessage(this.otherMsg);
@@ -2570,7 +2764,7 @@ suite('thread_ui.js >', function() {
         type: 'sms',
         body: 'This is a error sms',
         delivery: 'error',
-        timestamp: new Date()
+        timestamp: Date.now()
       };
       ThreadUI.appendMessage(message);
 
@@ -2613,7 +2807,7 @@ suite('thread_ui.js >', function() {
         type: 'sms',
         body: 'This is a test with 123123123',
         delivery: 'error',
-        timestamp: new Date()
+        timestamp: Date.now()
       });
       // Retrieve DOM element for executing the event
       var messageDOM = document.getElementById('message-' + messageId);
@@ -2644,9 +2838,7 @@ suite('thread_ui.js >', function() {
       // This 'context-menu' was handled properly?
       assert.isFalse(LinkActionHandler.onClick.called);
     });
-
   });
-
 
   suite('updateCarrier', function() {
     var contacts = [], details, number;
@@ -2662,7 +2854,7 @@ suite('thread_ui.js >', function() {
       loadBodyHTML('/index.html');
       threadMessages = document.getElementById('thread-messages');
       carrierTag = document.getElementById('contact-carrier');
-      this.sinon.spy(ThreadUI, 'updateInputHeight');
+      this.sinon.spy(ThreadUI, 'updateElementsHeight');
     });
 
     teardown(function() {
@@ -2702,13 +2894,13 @@ suite('thread_ui.js >', function() {
       };
 
       ThreadUI.updateCarrier(thread, contacts, details);
-      assert.ok(ThreadUI.updateInputHeight.calledOnce);
+      assert.ok(ThreadUI.updateElementsHeight.calledOnce);
 
       // Change number of recipients,so now there should be no carrier
       thread.participants.push('123123');
 
       ThreadUI.updateCarrier(thread, contacts, details);
-      assert.ok(ThreadUI.updateInputHeight.calledTwice);
+      assert.ok(ThreadUI.updateElementsHeight.calledTwice);
     });
 
     test(' input height are not updated if its not needed', function() {
@@ -2718,9 +2910,8 @@ suite('thread_ui.js >', function() {
 
       ThreadUI.updateCarrier(thread, contacts, details);
       ThreadUI.updateCarrier(thread, contacts, details);
-      assert.isFalse(ThreadUI.updateInputHeight.calledTwice);
+      assert.isFalse(ThreadUI.updateElementsHeight.calledTwice);
     });
-
   });
 
   suite('Long press on the bubble >', function() {
@@ -2746,7 +2937,7 @@ suite('thread_ui.js >', function() {
         type: 'sms',
         body: 'This is a test with 123123123',
         delivery: 'error',
-        timestamp: new Date()
+        timestamp: Date.now()
       });
       // Retrieve DOM element for executing the event
       messageDOM = document.getElementById('message-' + messageId);
@@ -2794,14 +2985,14 @@ suite('thread_ui.js >', function() {
         type: 'sms',
         body: 'This is a test',
         delivery: 'error',
-        timestamp: new Date()
+        timestamp: Date.now()
       });
       ThreadUI.appendMessage({
         id: 45,
         type: 'sms',
         body: 'This is another test',
         delivery: 'sent',
-        timestamp: new Date()
+        timestamp: Date.now()
       });
       this.sinon.stub(window, 'confirm');
       this.sinon.stub(ThreadUI, 'resendMessage');
@@ -3318,7 +3509,7 @@ suite('thread_ui.js >', function() {
           assert.equal(MockOptionMenu.calls.length, 0);
         });
 
-        test('Moves to Group View', function(done) {
+        test('Moves to Group information View', function(done) {
           Threads.set(1, {
             participants: ['999', '888']
           });
@@ -3327,37 +3518,19 @@ suite('thread_ui.js >', function() {
           window.onhashchange = function() {
             // Change to #group-view (per ThreadUI.onHeaderActivation())
             window.onhashchange = function() {
+              window.onhashchange = null;
               assert.equal(window.location.hash, '#group-view');
-              assert.deepEqual(localize.args[0], [
-                ThreadUI.headerText, 'participant', {n: 2}
-              ]);
               // View should not go back to thread view when header is
               // activated in group-view
               ThreadUI.onHeaderActivation();
               assert.equal(window.location.hash, '#group-view');
-              window.onhashchange = null;
               done();
             };
 
             ThreadUI.onHeaderActivation();
-            ThreadUI.groupView();
           };
 
           window.location.hash = '#thread=1';
-        });
-
-        test('Reset Group View', function() {
-          var list = ThreadUI.participants.firstElementChild;
-
-          assert.equal(list.children.length, 0);
-
-          list.innerHTML = '<li></li><li></li><li></li>';
-
-          assert.equal(list.children.length, 3);
-
-          ThreadUI.groupView.reset();
-
-          assert.equal(list.children.length, 0);
         });
       });
 
@@ -3384,6 +3557,7 @@ suite('thread_ui.js >', function() {
     var realComposeisEmpty;
     var realMessageManager;
     var realEnableSend;
+    var spy;
 
     suiteSetup(function() {
       realEnableSend = ThreadUI.enableSend;
@@ -3468,7 +3642,8 @@ suite('thread_ui.js >', function() {
       ThreadUI.onSendClick();
 
       assert.ok(MessageManager.sendMMS.called);
-      assert.deepEqual(MessageManager.sendMMS.calledWith[0], ['999']);
+      assert.deepEqual(MessageManager.sendMMS.calledWith[0].recipients,
+                       ['999']);
       assert.equal(window.location.hash, '#new');
     });
 
@@ -3510,9 +3685,40 @@ suite('thread_ui.js >', function() {
       ThreadUI.onSendClick();
 
       assert.ok(MessageManager.sendMMS.called);
-      assert.deepEqual(MessageManager.sendMMS.calledWith[0], ['999', '888']);
+      assert.deepEqual(MessageManager.sendMMS.calledWith[0].recipients,
+                       ['999', '888']);
       assert.equal(window.location.hash, '#new');
     });
+
+    test('Deletes draft if there was a draft', function() {
+      spy = this.sinon.spy(Drafts, 'delete');
+
+      MessageManager.draft = {id: 3};
+      ThreadUI.recipients.add({
+        number: '888'
+      });
+      Compose.append('foo');
+
+      ThreadUI.onSendClick();
+
+      assert.isTrue(spy.calledOnce);
+      assert.isNull(MessageManager.draft);
+    });
+
+    test('Removes draft thread if there was a draft thread', function() {
+      spy = this.sinon.spy(ThreadListUI, 'removeThread');
+
+      MessageManager.draft = {id: 3};
+      ThreadUI.recipients.add({
+        number: '888'
+      });
+      Compose.append('foo');
+
+      ThreadUI.onSendClick();
+
+      assert.isTrue(spy.calledOnce);
+    });
+
   });
 
   suite('Contact Picker Behavior(contactPickButton)', function() {
@@ -3683,37 +3889,333 @@ suite('thread_ui.js >', function() {
     });
   });
 
-  suite('back action', function() {
+  suite('saveDraft() > ', function() {
+    var addSpy, updateSpy, arg;
+
     setup(function() {
-      this.sinon.stub(ThreadUI, 'isKeyboardDisplayed').returns(false);
-      this.sinon.stub(ThreadUI, 'stopRendering');
+      window.location.hash = '#new';
+      addSpy = this.sinon.spy(Drafts, 'add');
+      updateSpy = this.sinon.spy(ThreadListUI, 'updateThread');
+
+      ThreadUI.recipients.add({
+        number: '999'
+      });
+
+      Compose.append('foo');
     });
 
-    test('call postResult when there is an activity', function() {
-      var mockActivity = {
-        postResult: sinon.stub()
-      };
+    test('do not preserve draft for replacement', function() {
+      ThreadUI.saveDraft();
 
-      ActivityHandler.currentActivity.new = mockActivity;
+      assert.isNull(MessageManager.draft);
+    });
 
-      ThreadUI.back();
-      assert.isTrue(mockActivity.postResult.called);
+    test('preserve draft for replacement', function() {
+      var draft = {id: 55};
+      MessageManager.draft = draft;
+      ThreadUI.saveDraft({preserve: true});
+
+      assert.isNotNull(MessageManager.draft);
+      assert.equal(MessageManager.draft, draft);
+    });
+
+    test('has entered content and recipients', function() {
+      ThreadUI.saveDraft();
+      arg = addSpy.firstCall.args[0];
+
+      assert.deepEqual(arg.recipients, ['999']);
+      assert.deepEqual(arg.content, ['foo']);
+    });
+
+    test('has entered recipients but not content', function() {
+      Compose.clear();
+      ThreadUI.saveDraft();
+      arg = addSpy.firstCall.args[0];
+
+      assert.deepEqual(arg.recipients, ['999']);
+      assert.deepEqual(arg.content, []);
+    });
+
+    test('has entered content but not recipients', function() {
+      ThreadUI.recipients.remove('999');
+      ThreadUI.saveDraft();
+      arg = addSpy.firstCall.args[0];
+
+      assert.deepEqual(arg.recipients, []);
+      assert.deepEqual(arg.content, ['foo']);
+    });
+
+    test('thread is updated in thread list, threadbound', function() {
+      Threads.set(1, {
+        participants: ['999']
+      });
+      window.location.hash = '#thread=1';
+
+      ThreadUI.saveDraft();
+
+      sinon.assert.calledOnce(updateSpy);
+    });
+
+    test('thread is updated in thread list, threadless', function() {
+      ThreadUI.saveDraft();
+
+      sinon.assert.calledOnce(updateSpy);
+    });
+
+    test('saves brand new threadless draft if not within thread', function() {
+      Drafts.clear();
+
+      MessageManager.draft = {id: 1};
+      ThreadUI.saveDraft();
+      assert.equal(Drafts.byThreadId(null).length, 1);
+
+      MessageManager.draft = {id: 2};
+      ThreadUI.saveDraft();
+      assert.equal(Drafts.byThreadId(null).length, 2);
+
+      MessageManager.draft = {id: 3};
+      ThreadUI.saveDraft();
+      assert.equal(Drafts.byThreadId(null).length, 3);
+    });
+
+    test('saves draft to existing thread if within thread', function() {
+      Threads.set(1, {
+        participants: ['999']
+      });
+      window.location.hash = '#thread=1';
+
+      ThreadUI.saveDraft();
+      assert.equal(Drafts.byThreadId(1).length, 1);
+
+      Compose.append('baz');
+      ThreadUI.saveDraft();
+      assert.equal(Drafts.byThreadId(1).length, 1);
+
+      Compose.append('foo');
+      ThreadUI.saveDraft();
+      assert.equal(Drafts.byThreadId(1).length, 1);
+    });
+
+    test('Update thread timestamp if within thread', function() {
+
+      this.sinon.stub(window, 'Draft').returns({
+        timestamp: 2
+      });
+
+      Threads.set(1, {
+        participants: ['999'],
+        timestamp: 1
+      });
+
+      window.location.hash = '#thread=1';
+
+      ThreadUI.saveDraft();
+
+      assert.equal(Threads.get(1).timestamp, 2);
+    });
+
+    test('Update thread unreadCount if within thread', function() {
+
+      this.sinon.stub(window, 'Draft').returns({
+        unreadCount: 2
+      });
+
+      Threads.set(1, {
+        participants: ['999'],
+        unreadCount: 0
+      });
+
+      window.location.hash = '#thread=1';
+
+      ThreadUI.saveDraft();
+
+      assert.equal(Threads.get(1).unreadCount, 0);
+    });
+  });
+
+  suite('Back button behaviour', function() {
+
+    suite('During activity', function() {
+      setup(function() {
+        this.sinon.stub(ThreadUI, 'isKeyboardDisplayed').returns(false);
+        this.sinon.stub(ThreadUI, 'stopRendering');
+      });
+
+      test('Call postResult when there is an activity', function() {
+        var mockActivity = {
+          postResult: sinon.stub()
+        };
+
+        ActivityHandler.currentActivity.new = mockActivity;
+
+        ThreadUI.back();
+        assert.isTrue(mockActivity.postResult.called);
+      });
+    });
+
+    suite('From new message', function() {
+      var showCalled = false;
+      var spy;
+
+      suiteSetup(function() {
+        spy = sinon.spy(ThreadUI, 'saveDraft');
+      });
+
+      setup(function() {
+        showCalled = false;
+        this.sinon.stub(window, 'OptionMenu').returns({
+          show: function() {
+            showCalled = true;
+          },
+          hide: function() {}
+        });
+
+        this.sinon.stub(ThreadUI, 'isKeyboardDisplayed').returns(false);
+        this.sinon.stub(ThreadUI, 'stopRendering');
+
+        window.location.hash = '#new';
+
+        ThreadUI.recipients.add({
+          number: '999'
+        });
+
+      });
+
+      test('Displays OptionMenu prompt if recipients', function() {
+        ThreadUI.back();
+
+        assert.isTrue(OptionMenu.calledOnce);
+        assert.isTrue(showCalled);
+
+        var items = OptionMenu.args[0][0].items;
+
+        // Assert the correct menu items were displayed
+        assert.equal(items[0].l10nId, 'save-as-draft');
+        assert.equal(items[1].l10nId, 'discard-message');
+        assert.equal(items[2].l10nId, 'cancel');
+      });
+
+      test('Displays OptionMenu prompt if recipients & content', function() {
+        Compose.append('foo');
+        ThreadUI.back();
+
+        assert.isTrue(OptionMenu.calledOnce);
+        assert.isTrue(showCalled);
+
+        var items = OptionMenu.args[0][0].items;
+
+        // Assert the correct menu items were displayed
+        assert.equal(items[0].l10nId, 'save-as-draft');
+        assert.equal(items[1].l10nId, 'discard-message');
+        assert.equal(items[2].l10nId, 'cancel');
+      });
+
+      test('Displays OptionMenu prompt if content', function() {
+        ThreadUI.recipients.remove('999');
+        Compose.append('foo');
+        ThreadUI.back();
+
+        assert.isTrue(OptionMenu.calledOnce);
+        assert.isTrue(showCalled);
+
+        var items = OptionMenu.args[0][0].items;
+
+        // Assert the correct menu items were displayed
+        assert.equal(items[0].l10nId, 'save-as-draft');
+        assert.equal(items[1].l10nId, 'discard-message');
+        assert.equal(items[2].l10nId, 'cancel');
+      });
+
+      suite('OptionMenu operations', function() {
+        test('Save as Draft', function() {
+          ThreadUI.back();
+
+          OptionMenu.args[0][0].items[0].method();
+
+          // These things will be true
+          assert.isTrue(spy.calledOnce);
+          assert.equal(window.location.hash, '#thread-list');
+          assert.equal(ThreadUI.recipients.length, 0);
+          assert.equal(Compose.getContent(), '');
+        });
+
+        test('Discard', function() {
+          MessageManager.draft = {id: 3};
+          var spy = this.sinon.spy(ThreadListUI, 'removeThread');
+          ThreadUI.back();
+
+          OptionMenu.args[0][0].items[1].method();
+
+          assert.equal(window.location.hash, '#thread-list');
+          assert.equal(ThreadUI.recipients.length, 0);
+          assert.equal(Compose.getContent(), '');
+          assert.isTrue(spy.calledOnce);
+          assert.isNull(MessageManager.draft);
+        });
+      });
+
+      suite('If existing draft', function() {
+
+        suiteSetup(function() {
+          MessageManager.draft = {id: 55};
+        });
+
+        test('Displays replacement prompt if recipients', function() {
+          ThreadUI.back();
+
+          assert.isTrue(OptionMenu.calledOnce);
+          assert.isTrue(showCalled);
+
+          var items = OptionMenu.args[0][0].items;
+
+          // Assert the correct menu items were displayed
+          assert.equal(items[0].l10nId, 'replace-draft');
+          assert.equal(items[1].l10nId, 'discard-message');
+          assert.equal(items[2].l10nId, 'cancel');
+        });
+
+        test('Displays replacement prompt if recipients & content', function() {
+          Compose.append('foo');
+          ThreadUI.back();
+
+          assert.isTrue(OptionMenu.calledOnce);
+          assert.isTrue(showCalled);
+
+          var items = OptionMenu.args[0][0].items;
+
+          // Assert the correct menu items were displayed
+          assert.equal(items[0].l10nId, 'replace-draft');
+          assert.equal(items[1].l10nId, 'discard-message');
+          assert.equal(items[2].l10nId, 'cancel');
+        });
+
+        test('Displays replacement prompt if content', function() {
+          ThreadUI.recipients.remove('999');
+          Compose.append('foo');
+          ThreadUI.back();
+
+          assert.isTrue(OptionMenu.calledOnce);
+          assert.isTrue(showCalled);
+
+          var items = OptionMenu.args[0][0].items;
+
+          // Assert the correct menu items were displayed
+          assert.equal(items[0].l10nId, 'replace-draft');
+          assert.equal(items[1].l10nId, 'discard-message');
+          assert.equal(items[2].l10nId, 'cancel');
+        });
+      });
     });
   });
 
   suite('New Message banner', function() {
     var notice;
-    var testMessage;
 
     function addMessages() {
       for (var i = 0; i < 15; i++) {
-        var message = {
-          id: i,
-          type: 'sms',
-          body: 'This is a test message',
-          delivery: 'received',
-          timestamp: new Date()
-        };
+        var message = MockMessages.sms({
+          id: i
+        });
         ThreadUI.appendMessage(message);
       }
     }
@@ -3722,58 +4224,48 @@ suite('thread_ui.js >', function() {
       container.style.overflow = 'scroll';
       container.style.height = '50px';
       notice = document.getElementById('messages-new-message-notice');
-      testMessage = {
-        id: 20,
-        type: 'sms',
-        body: 'New test message',
-        delivery: 'received',
-        timestamp: new Date()
-      };
+      var testMessage = MockMessages.sms({
+        id: 20
+      });
 
       addMessages();
 
+      //Put the scroll on top
+      container.scrollTop = 0;
+      dispatchScrollEvent(container);
+
+      ThreadUI.onMessageReceived(testMessage);
     });
 
-    suite('should be shown', function(done) {
+    suite('should be shown', function() {
       test('when new message is recieved', function() {
-        container.addEventListener('scroll', function onscroll() {
-          ThreadUI.onMessageReceived(testMessage);
-          assert.isFalse(notice.classList.contains('hide'));
-          done();
-        });
-        //Put the scroll on top
-        container.scrollTop = 0;
+        assert.isFalse(notice.classList.contains('hide'));
       });
     });
 
-    suite('should be closed', function(done) {
+    suite('should be closed', function() {
       test('when the notice is clicked', function() {
-        container.addEventListener('scroll', function onscroll() {
-          ThreadUI.onMessageReceived(testMessage);
-          notice.click();
-          assert.isFalse(ThreadUI.isScrolledManually);
-          assert.isTrue(notice.classList.contains('hide'));
-          done();
-        });
-        //Put the scroll on top
-        container.scrollTop = 0;
-
+        notice.click();
+        assert.isFalse(ThreadUI.isScrolledManually);
+        assert.isTrue(notice.classList.contains('hide'));
       });
 
-      test('when the scroll reach the bottom', function(done) {
-        container.scrollTop = 0;
-        ThreadUI.onMessageReceived(testMessage);
-        container.addEventListener('scroll', function onscroll() {
-          container.removeEventListener('scroll', onscroll);
-          assert.isTrue(notice.classList.contains('hide'));
-          done();
-        });
+      test('when the scroll reach the bottom', function() {
         container.scrollTop = container.scrollHeight;
+
+        dispatchScrollEvent(container);
+
+        assert.isTrue(notice.classList.contains('hide'));
       });
     });
   });
 
-  suite('Open options menu', function() {
+  /* The options menu depends on the situation:
+   * - 'Add Subject' if there's none, 'Delete subject' if previously added
+   * - 'Delete messages' for existing conversations
+   * - 'Settings' for all cases
+   */
+  suite('Options menu', function() {
     setup(function() {
       window.location.hash = '';
       MockOptionMenu.mSetup();
@@ -3796,8 +4288,9 @@ suite('thread_ui.js >', function() {
         ThreadUI.showOptions();
         options = MockOptionMenu.calls[0].items;
         assert.equal(MockOptionMenu.calls.length, 1);
-        assert.equal(options.length, 2);
-        assert.equal(options[0].l10nId, 'settings');
+        assert.equal(options.length, 3);
+        assert.equal(options[0].l10nId, 'add-subject');
+        assert.equal(options[1].l10nId, 'settings');
       });
     });
 
@@ -3814,13 +4307,15 @@ suite('thread_ui.js >', function() {
       test('should show options overlay', function() {
         assert.equal(MockOptionMenu.calls.length, 1);
       });
+      test('should show option for adding subject', function() {
+        assert.equal(options[0].l10nId, 'add-subject');
+      });
       test('should show option for deleting messages', function() {
-        assert.equal(options[0].l10nId, 'deleteMessages-label');
+        assert.equal(options[1].l10nId, 'deleteMessages-label');
       });
       test('should show settings options last', function() {
         assert.equal(options[options.length - 2].l10nId, 'settings');
       });
     });
-
   });
 });

@@ -18,7 +18,7 @@
     "bluetooth":{},
     "telephony":{},
     "voicemail":{},
-    "device-storage:sdcard":{ "access": "readonly" },
+    "device-storage:sdcard":{ "access": "readwrite" },
     "device-storage:pictures":{ "access": "readwrite" },
     "device-storage:videos":{ "access": "readwrite" },
     "device-storage:music":{ "access": "readcreate" },
@@ -42,7 +42,8 @@
     "input":{},
     "input-manage":{},
     "nfc":{ "access": "readonly" },
-    "nfc-manager":{}
+    "nfc-manager":{},
+    "downloads":{}
   },
   "locales": {
     "ar": {
@@ -82,6 +83,10 @@
       "description": "Communication with media apps for now playing info",
       "rules": {}
     },
+    "search-results": {
+      "description": "Communicate between search results and search app",
+      "rules": {}
+    },
     "ftucomms": {
       "description": "Communicate between communications/ftu and System",
       "rules": {}
@@ -89,6 +94,16 @@
     "bluetoothTransfercomms": {
       "description": "Communication with bluetooth apps for sending files info",
       "rules": {}
+    },
+    "dialercomms": {
+      "description": "Communication with dialer app for sleep message",
+      "rules": {}
+    }
+  },
+  "datastores-owned": {
+    "download_store": {
+      "access": "readwrite",
+      "description": "Stores successful downloads"
     }
   }
 }

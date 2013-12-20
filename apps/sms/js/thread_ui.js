@@ -5,7 +5,8 @@
          SMIL, ErrorDialog, MessageManager, MozSmsFilter, LinkHelper,
          ActivityPicker, ThreadListUI, OptionMenu, Threads, Contacts,
          Attachment, WaitingScreen, MozActivity, LinkActionHandler,
-         ActivityHandler, TimeHeaders, ContactRenderer */
+         ActivityHandler, TimeHeaders, ContactRenderer, Draft, Drafts,
+         Thread */
 /*exported ThreadUI */
 
 (function(global) {
@@ -66,7 +67,6 @@ var ThreadUI = global.ThreadUI = {
     var templateIds = [
       'message',
       'not-downloaded',
-      'number',
       'recipient'
     ];
 
@@ -75,14 +75,12 @@ var ThreadUI = global.ThreadUI = {
 
     // Fields with 'messages' label
     [
-      'container', 'subheader', 'to-field', 'recipients-list',
-      'participants', 'participants-list', 'header-text', 'recipient',
+      'container', 'subheader', 'to-field', 'recipients-list', 'recipient',
       'input', 'compose-form', 'check-all-button', 'uncheck-all-button',
       'contact-pick-button', 'back-button', 'send-button', 'attach-button',
-      'delete-button', 'cancel-button',
-      'options-icon', 'edit-mode', 'edit-form', 'tel-form',
-      'max-length-notice', 'convert-notice', 'resize-notice',
-      'new-message-notice'
+      'delete-button', 'cancel-button', 'subject-input', 'new-message-notice',
+      'options-icon', 'edit-mode', 'edit-form', 'tel-form', 'header-text',
+      'max-length-notice', 'convert-notice', 'resize-notice'
     ].forEach(function(id) {
       this[Utils.camelCase(id)] = document.getElementById('messages-' + id);
     }, this);
@@ -100,6 +98,18 @@ var ThreadUI = global.ThreadUI = {
     Compose.on('input', this.messageComposerInputHandler.bind(this));
 
     Compose.on('type', this.onMessageTypeChange.bind(this));
+
+    // Changes on subject input can change the type of the message
+    // and size of fields
+    this.subjectInput.addEventListener(
+      'keypress', this.onSubjectKeypress.bind(this)
+    );
+    this.subjectInput.addEventListener(
+      'focus', this.onSubjectFocus.bind(this)
+    );
+    this.subjectInput.addEventListener(
+      'blur', this.onSubjectBlur.bind(this)
+    );
 
     this.toField.addEventListener(
       'keypress', this.toFieldKeypress.bind(this), true
@@ -167,10 +177,6 @@ var ThreadUI = global.ThreadUI = {
 
     this.headerText.addEventListener(
       'click', this.onHeaderActivation.bind(this)
-    );
-
-    this.participantsList.addEventListener(
-      'click', this.onParticipantClick.bind(this)
     );
 
     this.newMessageNotice.addEventListener(
@@ -254,11 +260,19 @@ var ThreadUI = global.ThreadUI = {
     this._updateTimeout = null;
 
     // Cache fixed measurement while init
-    var style = window.getComputedStyle(this.input, null);
-    this.INPUT_MARGIN = parseInt(style.getPropertyValue('margin-top'), 10) +
-      parseInt(style.getPropertyValue('margin-bottom'), 10);
+    var inputStyle = window.getComputedStyle(this.input);
+    this.INPUT_MARGIN_TOP =
+      parseInt(inputStyle.getPropertyValue('margin-top'), 10);
+    var INPUT_MARGIN_BOTTOM =
+      parseInt(inputStyle.getPropertyValue('margin-bottom'), 10);
+    this.INPUT_MARGIN = this.INPUT_MARGIN_TOP + INPUT_MARGIN_BOTTOM;
+    var subjectStyle = window.getComputedStyle(this.subjectInput);
+    this.SUBJECT_MAX_HEIGHT =
+      parseInt(subjectStyle.getPropertyValue('max-height'), 10);
 
-    ThreadUI.setInputMaxHeight();
+    this.HEADER_HEIGHT = document.querySelector('.view-header').offsetHeight;
+
+    ThreadUI.updateInputMaxHeight();
   },
 
   // Initialize Recipients list and Recipients.View (DOM)
@@ -286,7 +300,7 @@ var ThreadUI = global.ThreadUI = {
       //
       //  Ideally, the contact will be found by the
       //  searchContact + validateContact operation and the
-      //  recipientsChanged handler will be re-called with a known
+      //  handler will be re-called with a known
       //  and valid recipient from the user's contacts.
       if (isOk) {
         // update composer header whenever recipients change
@@ -387,7 +401,8 @@ var ThreadUI = global.ThreadUI = {
   },
 
   messageComposerInputHandler: function thui_messageInputHandler(event) {
-    this.updateInputHeight();
+    this.updateSubjectHeight();
+    this.updateElementsHeight();
     this.enableSend();
 
     if (Compose.type === 'sms') {
@@ -414,6 +429,33 @@ var ThreadUI = global.ThreadUI = {
         this._resizeNoticeTimeout = null;
       }.bind(this), this.IMAGE_RESIZE_DURATION);
     }
+  },
+
+  onSubjectKeypress: function thui_onSubjectKeypress(event) {
+    Compose.updateType();
+    // Handling user warning for max character reached
+    // Only show the warning when the subject field has the focus
+    if (this.subjectInput.value.length === Compose.SUBJECT_MAX_LENGTH) {
+      this.showMaxLengthNotice('messages-max-subject-length-text');
+    } else {
+      this.hideMaxLengthNotice();
+    }
+  },
+  onSubjectFocus: function thui_onSubjectFocus() {
+    if (this.subjectInput.value.length === Compose.SUBJECT_MAX_LENGTH) {
+      this.showMaxLengthNotice('messages-max-subject-length-text');
+    }
+  },
+  onSubjectBlur: function thui_onSubjectBlur() {
+    this.hideMaxLengthNotice();
+  },
+  showMaxLengthNotice: function thui_showMaxLengthNotice(l10nKey) {
+    navigator.mozL10n.localize(
+      this.maxLengthNotice.querySelector('p'), l10nKey);
+    this.maxLengthNotice.classList.remove('hide');
+  },
+  hideMaxLengthNotice: function thui_hideMaxLengthNotice() {
+    this.maxLengthNotice.classList.add('hide');
   },
 
   assimilateRecipients: function thui_assimilateRecipients() {
@@ -482,8 +524,11 @@ var ThreadUI = global.ThreadUI = {
   // Function for handling when a new message (sent/received)
   // is detected
   onMessage: function onMessage(message) {
+    // Update the stored thread data
+    Threads.set(message.threadId, Thread.create(message));
+
     this.appendMessage(message);
-    TimeHeaders.updateAll();
+    TimeHeaders.updateAll('header[data-time-update]');
   },
 
   onMessageReceived: function thui_onMessageReceived(message) {
@@ -532,8 +577,8 @@ var ThreadUI = global.ThreadUI = {
   // Triggered when the onscreen keyboard appears/disappears.
   resizeHandler: function thui_resizeHandler() {
     if (!this.inEditMode) {
-      this.setInputMaxHeight();
-      this.updateInputHeight();
+      this.updateInputMaxHeight();
+      this.updateElementsHeight();
     }
 
     // Scroll to bottom
@@ -676,15 +721,17 @@ var ThreadUI = global.ThreadUI = {
   },
   // Limit the maximum height of the Compose input field such that it never
   // grows larger than the space available.
-  setInputMaxHeight: function thui_setInputMaxHeight() {
-    var viewHeight;
+  updateInputMaxHeight: function thui_updateInputMaxHeight() {
+    // the minimum height of the visible part of the thread
     var threadSliverHeight = 30;
     // The max height should be constrained by the following factors:
     var adjustment =
       // The height of the absolutely-position sub-header element
       this.subheader.offsetHeight +
       // the vertical margin of the input field
-      this.INPUT_MARGIN;
+      this.INPUT_MARGIN +
+      // the height of the subject input (0 if hidden)
+      this.subjectInput.offsetHeight;
 
     // Further constrain the max height by an artificial spacing to prevent the
     // input field from completely occluding the message thread (not necessary
@@ -693,22 +740,16 @@ var ThreadUI = global.ThreadUI = {
       adjustment += threadSliverHeight;
     }
 
-    // when the border bottom is bigger than the available space, then
-    // offsetHeight is also too big, and as a result we can't calculate the max
-    // height. So we nullify the border bottom width before getting the offset
-    // height.
-    // TODO: we should find something better than that because this probably
-    // triggers a synchronous workflow (bug 891029).
-    this.container.style.borderBottomWidth = null;
-    viewHeight = this.container.offsetHeight;
-    var maxHeight = viewHeight - adjustment;
+    var availableHeight = window.innerHeight - this.HEADER_HEIGHT;
+    var maxHeight = availableHeight - adjustment;
     this.input.style.maxHeight = maxHeight + 'px';
     generateHeightRule(maxHeight);
   },
 
   back: function thui_back() {
 
-    if (window.location.hash === '#group-view') {
+    if (window.location.hash === '#group-view' ||
+        window.location.hash.startsWith('#report-view')) {
       window.location.hash = '#thread=' + Threads.lastId;
       this.updateHeaderData();
       return;
@@ -718,19 +759,68 @@ var ThreadUI = global.ThreadUI = {
       this.stopRendering();
 
       var currentActivity = ActivityHandler.currentActivity.new;
+      var leave = (function() {
+        this.cleanFields(true);
+        window.location.hash = '#thread-list';
+      }).bind(this);
+
       if (currentActivity) {
         currentActivity.postResult({ success: true });
         ActivityHandler.resetActivity();
         return;
       }
-      if (Compose.isEmpty()) {
-        window.location.hash = '#thread-list';
+
+      // TODO Add comment about assimilation above on line #183?
+      // Need to assimilate recipients in order to check if any entered
+      this.assimilateRecipients();
+
+      // If we're leaving a thread's message view,
+      // ensure that the thread object's unreadCount
+      // value is current (set = 0)
+      if (Threads.active) {
+        Threads.active.unreadCount = 0;
+      }
+
+      // If the composer is empty and we are either
+      // in an active thread or there are no recipients
+      // do not prompt to save a draft and remove saved drafts
+      // as the user deleted them manually
+      if (Compose.isEmpty() &&
+        (Threads.active || this.recipients.length === 0)) {
+        this.discardDraft();
+        leave();
         return;
       }
-      if (window.confirm(navigator.mozL10n.get('discard-sms'))) {
-        this.cleanFields(true);
-        window.location.hash = '#thread-list';
+
+      var prompt = 'save-as-draft';
+      if (MessageManager.draft) {
+        prompt = 'replace-draft';
       }
+
+      var options = {
+        items: [
+          {
+            l10nId: prompt,
+            method: function onsave() {
+              this.saveDraft();
+              leave();
+            }.bind(this)
+          },
+          {
+            l10nId: 'discard-message',
+            method: function ondiscard() {
+              this.discardDraft();
+              leave();
+            }.bind(this)
+          },
+          {
+            l10nId: 'cancel'
+          }
+        ]
+      };
+
+      new OptionMenu(options).show();
+
     }).bind(this);
 
     // We're waiting for the keyboard to disappear before animating back
@@ -851,7 +941,7 @@ var ThreadUI = global.ThreadUI = {
     // information, is very tiny, so we should be good without adding another
     // lock.
     this._updateTimeout = null;
-    this.maxLengthNotice.classList.add('hide');
+    this.hideMaxLengthNotice();
     this.updateSmsSegmentLimit((function segmentLimitCallback(overLimit) {
       if (overLimit) {
         Compose.type = 'mms';
@@ -871,31 +961,39 @@ var ThreadUI = global.ThreadUI = {
     if (Settings.mmsSizeLimitation) {
       if (Compose.size > Settings.mmsSizeLimitation) {
         Compose.lock = true;
-        navigator.mozL10n.localize(this.maxLengthNotice.querySelector('p'),
-          'messages-exceeded-length-text');
-        this.maxLengthNotice.classList.remove('hide');
+        this.showMaxLengthNotice('messages-exceeded-length-text');
         return false;
       } else if (Compose.size === Settings.mmsSizeLimitation) {
         Compose.lock = true;
-        navigator.mozL10n.localize(this.maxLengthNotice.querySelector('p'),
-          'messages-max-length-text');
-        this.maxLengthNotice.classList.remove('hide');
+        this.showMaxLengthNotice('messages-max-length-text');
         return true;
       }
     }
 
     Compose.lock = false;
-    this.maxLengthNotice.classList.add('hide');
+    this.hideMaxLengthNotice();
     return true;
+  },
+
+  updateSubjectHeight: function thui_updateSubjectHeight() {
+    // Reset the height
+    this.subjectInput.style.height = '';
+    // Apply the new value
+    this.subjectInput.style.height = Math.min(this.subjectInput.scrollHeight,
+                                              this.SUBJECT_MAX_HEIGHT) + 'px';
+    this.updateInputMaxHeight();
+    this.updateElementsHeight();
   },
 
   // TODO this function probably triggers synchronous workflows, we should
   // remove them (Bug 891029)
-  updateInputHeight: function thui_updateInputHeight() {
+  updateElementsHeight: function thui_updateElementsHeight() {
     // First of all we retrieve all CSS info which we need
     var verticalMargin = this.INPUT_MARGIN;
     var inputMaxHeight = parseInt(this.input.style.maxHeight, 10);
     var buttonHeight = this.sendButton.offsetHeight;
+    var subjectHeight = this.subjectInput.offsetHeight;
+    var availableHeight = window.innerHeight - this.HEADER_HEIGHT;
 
     // we need to set it back to auto so that we know its "natural size"
     // this will trigger a sync reflow when we get its scrollHeight at the next
@@ -905,22 +1003,22 @@ var ThreadUI = global.ThreadUI = {
 
     // the new height is different whether the current height is bigger than the
     // max height
-    var newHeight = Math.min(this.input.scrollHeight, inputMaxHeight);
+    var minHeight = Math.min(this.input.scrollHeight, inputMaxHeight);
+    this.input.style.height = minHeight + 'px';
 
-    // We calculate the height of the Compose form which contains the input
-    // and we set the bottom border of the container so the Compose field does
-    // not occlude the messages. `padding-bottom` is not used because it is
-    // applied at the content edge, not after any overflow (see "Bug 748518 -
-    // padding-bottom is ignored with overflow:auto;")
-    this.input.style.height = newHeight + 'px';
-    this.composeForm.style.height =
-      this.container.style.borderBottomWidth =
-      newHeight + verticalMargin + 'px';
+    // We also need to push the input field lower when subject field is shown
+    this.input.style.marginTop = (subjectHeight + this.INPUT_MARGIN_TOP) + 'px';
+
+    var composeHeight = minHeight + verticalMargin + subjectHeight;
+    this.composeForm.style.height = composeHeight + 'px';
+    this.container.style.height = (availableHeight - composeHeight) + 'px';
 
     // We set the buttons' top margin to ensure they render at the bottom of
     // the container
-    var buttonOffset = newHeight + verticalMargin - buttonHeight;
+    var buttonOffset = composeHeight - buttonHeight;
     this.sendButton.style.marginTop = buttonOffset + 'px';
+
+    this.scrollViewToBottom();
   },
 
   findNextContainer: function thui_findNextContainer(container) {
@@ -989,7 +1087,7 @@ var ThreadUI = global.ThreadUI = {
     messageContainer = document.createElement('ul');
 
     // Append 'time-update' state
-    header.dataset.timeUpdate = true;
+    header.dataset.timeUpdate = 'repeat';
     header.dataset.time = messageTimestamp;
 
     // Add text
@@ -1090,8 +1188,8 @@ var ThreadUI = global.ThreadUI = {
     }
 
     if (wasCarrierTagShown !== isCarrierTagShown) {
-      this.setInputMaxHeight();
-      this.updateInputHeight();
+      this.updateInputMaxHeight();
+      this.updateElementsHeight();
     }
   },
 
@@ -1182,7 +1280,7 @@ var ThreadUI = global.ThreadUI = {
     // Show chunk of messages
     ThreadUI.showChunkOfMessages(this.CHUNK_SIZE);
     // Boot update of headers
-    TimeHeaders.updateAll();
+    TimeHeaders.updateAll('header[data-time-update]');
     // Go to Bottom
     ThreadUI.scrollViewToBottom();
   },
@@ -1263,6 +1361,7 @@ var ThreadUI = global.ThreadUI = {
     };
 
     MessageManager.getMessages(renderingOptions);
+
     // force the next scroll to bottom
     this.isScrolledManually = false;
   },
@@ -1279,7 +1378,7 @@ var ThreadUI = global.ThreadUI = {
     var status = message.deliveryInfo[0].deliveryStatus;
 
     var expireFormatted = Utils.date.format.localeFormat(
-      message.expiryDate, navigator.mozL10n.get('dateTimeFormat_%x')
+      new Date(+message.expiryDate), navigator.mozL10n.get('dateTimeFormat_%x')
     );
 
     var expired = +message.expiryDate < Date.now();
@@ -1301,7 +1400,7 @@ var ThreadUI = global.ThreadUI = {
     return this.tmpl.notDownloaded.interpolate({
       messageL10nId: messageL10nId,
       messageL10nArgs: JSON.stringify({ date: expireFormatted }),
-      messageL10nDate: message.expiryDate.toString(),
+      messageL10nDate: +message.expiryDate,
       messageL10nDateFormat: 'dateTimeFormat_%x',
       downloadL10nId: downloadL10nId
     });
@@ -1311,6 +1410,10 @@ var ThreadUI = global.ThreadUI = {
   // In multiple recipient case, we return true only when all the recipients
   // deliveryStatus set to success.
   isDeliveryStatusSuccess: function thui_isDeliveryStatusSuccess(message) {
+    if (message.delivery !== 'sent') {
+      return false;
+    }
+
     if (message.type === 'mms') {
       return message.deliveryInfo.every(function(info) {
         return info.deliveryStatus === 'success';
@@ -1341,7 +1444,7 @@ var ThreadUI = global.ThreadUI = {
       classNames.push('outgoing');
     }
 
-    if (delivery === 'sent' && isDelivered) {
+    if (isDelivered) {
       classNames.push('delivered');
     }
 
@@ -1395,7 +1498,7 @@ var ThreadUI = global.ThreadUI = {
   },
 
   appendMessage: function thui_appendMessage(message, hidden) {
-    var timestamp = message.timestamp.getTime();
+    var timestamp = +message.timestamp;
 
     // look for an old message and remove it first - prevent anything from ever
     // double rendering for now
@@ -1478,16 +1581,25 @@ var ThreadUI = global.ThreadUI = {
   showOptions: function thui_showOptions() {
     /**
       * Different situations depending on the state
-      * - Add / Delete subject to be trated on bug 885680
-      * - Delete messages (for existing conversations)
-      * - Settings (should open Message Settings from the Settings app)
+      * - 'Add Subject' if there's none, 'Delete subject' if already added
+      * - 'Delete messages' for existing conversations
+      * - 'Settings' for all cases
       */
     var params = {
       header: navigator.mozL10n.get('message'),
       items: []
     };
 
-    // If we are on a thread, we can call to DeleteMessages
+    // Subject management
+    params.items.push({
+      l10nId: Compose.isSubjectShowing ? 'remove-subject' : 'add-subject',
+      method: function tSubject() {
+        Compose.toggleSubject();
+        ThreadUI.updateSubjectHeight();
+      }
+    });
+
+    // If we are on a thread, we can call to EditMessage
     if (window.location.hash !== '#new') {
       params.items.push({
         l10nId: 'deleteMessages-label',
@@ -1520,8 +1632,9 @@ var ThreadUI = global.ThreadUI = {
 
     // Ensure the Edit Mode menu does not occlude the final messages in the
     // thread.
-    this.container.style.borderBottomWidth =
-      this.editForm.querySelector('menu').offsetHeight + 'px';
+    this.container.style.height = 'calc(100% - ' +
+        this.HEADER_HEIGHT + 'px - ' +
+        this.editForm.querySelector('menu').offsetHeight + 'px)';
   },
 
   deleteUIMessages: function thui_deleteUIMessages(list, callback) {
@@ -1592,7 +1705,7 @@ var ThreadUI = global.ThreadUI = {
 
   cancelEdit: function thlui_cancelEdit() {
     this.inEditMode = false;
-    this.updateInputHeight();
+    this.updateElementsHeight();
     this.mainWrapper.classList.remove('edit');
   },
 
@@ -1753,6 +1866,14 @@ var ThreadUI = global.ThreadUI = {
                 params: [messageId]
               },
               {
+                l10nId: 'view-message-report',
+                method: function showMessageReport(messageId) {
+                  // Fetch the message by id and display report
+                  window.location.href = '#report-view=' + messageId;
+                },
+                params: [messageId]
+              },
+              {
                 l10nId: 'cancel'
               }
             ],
@@ -1819,6 +1940,7 @@ var ThreadUI = global.ThreadUI = {
     this.container.classList.remove('hide');
 
     var content = Compose.getContent();
+    var subject = Compose.getSubject();
     var messageType = Compose.type;
     var recipients;
 
@@ -1834,6 +1956,14 @@ var ThreadUI = global.ThreadUI = {
 
     // Clean composer fields (this lock any repeated click in 'send' button)
     this.cleanFields(true);
+
+    // If there was a draft, it just got sent
+    // so delete it
+    if (MessageManager.draft) {
+      ThreadListUI.removeThread(MessageManager.draft.id);
+      Drafts.delete(MessageManager.draft);
+      MessageManager.draft = null;
+    }
 
     this.updateHeaderData();
 
@@ -1867,7 +1997,13 @@ var ThreadUI = global.ThreadUI = {
       }
     } else {
       var smilSlides = content.reduce(thui_generateSmilSlides, []);
-      MessageManager.sendMMS(recipients, smilSlides, null,
+      var mmsMessage = {
+        recipients: recipients,
+        subject: subject,
+        content: smilSlides
+      };
+
+      MessageManager.sendMMS(mmsMessage, null,
         function onError(error) {
           var errorName = error.name;
           this.showMessageError(errorName);
@@ -2222,17 +2358,6 @@ var ThreadUI = global.ThreadUI = {
     }
   },
 
-  onParticipantClick: function onParticipantClick(event) {
-    event.stopPropagation();
-    event.preventDefault();
-
-    var target = event.target;
-
-    this.promptContact({
-      number: target.dataset.number
-    });
-  },
-
   promptContact: function thui_promptContact(opts) {
     opts = opts || {};
 
@@ -2266,52 +2391,6 @@ var ThreadUI = global.ThreadUI = {
         inMessage: inMessage
       });
     }.bind(this));
-  },
-
-  groupView: function thui_groupView() {
-    var lastId = Threads.lastId;
-    var participants = lastId && Threads.get(lastId).participants;
-    var ul = this.participantsList;
-
-    this.groupView.reset();
-
-    // Render the Group Participants list
-    var renderer = ContactRenderer.flavor('group-view');
-
-    participants.forEach(function(participant) {
-
-      Contacts.findByPhoneNumber(participant, function(results) {
-        var isContact = results !== null && !!results.length;
-
-        if (isContact) {
-          renderer.render({
-            contact: results[0],
-            input: participant,
-            target: ul
-          });
-        } else {
-          var li = document.createElement('li');
-          li.innerHTML = this.tmpl.number.interpolate({
-            number: participant
-          });
-          ul.appendChild(li);
-        }
-      }.bind(this));
-    }.bind(this));
-
-    // Hide the Messages edit icon, view container and composer form
-    this.optionsIcon.classList.add('hide');
-    this.subheader.classList.add('hide');
-    this.container.classList.add('hide');
-    this.composeForm.classList.add('hide');
-
-    // Append and Show the participants list
-    this.participants.appendChild(ul);
-    this.participants.classList.remove('hide');
-
-    navigator.mozL10n.localize(this.headerText, 'participant', {
-      n: participants.length
-    });
   },
 
   prompt: function thui_prompt(opt) {
@@ -2438,6 +2517,81 @@ var ThreadUI = global.ThreadUI = {
     if (window.location.hash.substr(0, 8) === '#thread=') {
       ThreadUI.updateHeaderData();
     }
+  },
+
+  discardDraft: function thui_discardDraft() {
+    // If we were tracking a draft
+    // properly update the Drafts object
+    // and ThreadList entries
+    if (MessageManager.draft) {
+      Drafts.delete(MessageManager.draft);
+      if (Threads.active) {
+        Threads.active.timestamp = Date.now();
+        ThreadListUI.updateThread(Threads.active);
+      } else {
+        ThreadListUI.removeThread(MessageManager.draft.id);
+      }
+      MessageManager.draft = null;
+    }
+  },
+
+   /**
+   * saveDraft
+   *
+   * Saves the currently unsent message content or recipients
+   * into a Draft object.  Preserves the currently marked
+   * draft if specified.
+   *
+   * @param {Object} opts Optional parameters for saving a draft.
+   *                  - preserve, boolean whether or not to preserve draft.
+   */
+  saveDraft: function thui_saveDraft(opts) {
+    var draft, recipients, content, thread, threadId, type;
+
+    content = Compose.getContent();
+    type = Compose.type;
+
+    // TODO Also store subject
+
+    if (Threads.active) {
+      recipients = Threads.active.participants;
+      threadId = Threads.currentId;
+    } else {
+      recipients = this.recipients.numbers;
+    }
+
+    var draftId = MessageManager.draft ? MessageManager.draft.id : null;
+
+    draft = new Draft({
+      recipients: recipients,
+      content: content,
+      threadId: threadId,
+      type: type,
+      id: draftId
+    });
+
+    Drafts.add(draft);
+
+    // If an existing thread list item is associated with
+    // the presently saved draft, update the displayed Thread
+    if (threadId) {
+      thread = Threads.active || Threads.get(threadId);
+
+      // Overwrite the thread's own timestamp with
+      // the drafts timestamp.
+      thread.timestamp = draft.timestamp;
+
+      ThreadListUI.updateThread(thread);
+    } else {
+      ThreadListUI.updateThread(draft);
+    }
+
+    // Clear the MessageManager draft if
+    // not explicitly preserved for the
+    // draft replacement case
+    if (!opts || (opts && !opts.preserve)) {
+      MessageManager.draft = null;
+    }
   }
 };
 
@@ -2452,18 +2606,6 @@ Object.defineProperty(ThreadUI, 'selectedInputs', {
     return this.getSelectedInputs();
   }
 });
-
-ThreadUI.groupView.reset = function groupViewReset() {
-  // Hide the group view
-  ThreadUI.participants.classList.add('hide');
-  // Remove all LIs
-  ThreadUI.participantsList.textContent = '';
-  // Restore message list view UI elements
-  ThreadUI.optionsIcon.classList.remove('hide');
-  ThreadUI.subheader.classList.remove('hide');
-  ThreadUI.container.classList.remove('hide');
-  ThreadUI.composeForm.classList.remove('hide');
-};
 
 window.confirm = window.confirm; // allow override in unit tests
 

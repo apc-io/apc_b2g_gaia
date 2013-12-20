@@ -81,6 +81,8 @@ function execute(options) {
     prefs.push(['device.storage.enabled', true]);
     prefs.push(['device.storage.prompt.testing', true]);
     prefs.push(['notification.feature.enabled', true]);
+    prefs.push(['dom.datastore.enabled', true]);
+    prefs.push(['dom.testing.datastore_enabled_for_hosted_apps', true]);
 
     // WebSettings
     prefs.push(['dom.mozSettings.enabled', true]);
@@ -112,6 +114,7 @@ function execute(options) {
   }
 
   if (config.DEBUG) {
+    prefs.push(['docshell.device_size_is_page_size', true]);
     prefs.push(['marionette.defaultPrefs.enabled', true]);
 
     prefs.push(['nglayout.debug.disable_xul_cache', true]);

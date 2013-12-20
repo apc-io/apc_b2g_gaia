@@ -53,7 +53,6 @@
   position: absolute;
   height: 6rem;
   top: 0;
-  z-index: 10;
 }
 
 .day-events .hour-allday .event {
@@ -133,6 +132,7 @@
   height: 100%;
   overflow-x: hidden;
   overflow-y: auto;
+  will-change: scroll-position;
 }
 
 /* day view */
@@ -158,6 +158,7 @@
   overflow-y: scroll;
   overflow-x: hidden;
   height: calc(100% - 7.9rem);
+  will-change: scroll-position;
 }
 
 #day-view .day-events.allday {

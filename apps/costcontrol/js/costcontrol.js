@@ -58,7 +58,7 @@ var CostControl = (function() {
     }
 
     if ('mozNetworkStats' in window.navigator) {
-      statistics = NetworkstatsProxy;
+      statistics = window.navigator.mozNetworkStats;
     }
 
     debug('APIs loaded!');
@@ -364,7 +364,7 @@ var CostControl = (function() {
   function requestDataStatistics(configuration, settings, callback, result) {
     debug('Statistics out of date. Requesting fresh data...');
 
-    var maxAge = statistics.sampleRate * 1000 * statistics.maxStorageSamples;
+    var maxAge = 1000 * statistics.maxStorageAge;
     var minimumStart = new Date(Date.now() - maxAge);
     debug('The max age for samples is ' + minimumStart);
 
@@ -396,7 +396,7 @@ var CostControl = (function() {
     }
 
     var wifiInterface = Common.getWifiInterface();
-    var currentSimcardNetwork = Common.getCurrentSIMInterface();
+    var currentSimcardNetwork = Common.getDataSIMInterface();
 
     var simRequest, wifiRequest;
     var pendingRequests = 0;
@@ -492,6 +492,12 @@ var CostControl = (function() {
     }
     return [output, accum];
   }
+  // XXX: See bug 944342 - [Cost control] move all the process related to the
+  // network and data interfaces loading to the start-up process of CostControl
+  function getInterfacesInformation() {
+    Common.loadNetworkInterfaces();
+    Common.loadDataSIMIccId();
+  }
 
   var airplaneMode = false;
   function init() {
@@ -500,7 +506,7 @@ var CostControl = (function() {
         airplaneMode = value;
       }
     );
-    Common.loadNetworkInterfaces();
+    getInterfacesInformation();
   }
 
   return {

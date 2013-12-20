@@ -2,13 +2,15 @@
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 
 /*global ThreadListUI, ThreadUI, Threads, SMIL, MozSmsFilter, Compose,
-         Utils, LinkActionHandler, Contacts, Attachment */
+         Utils, LinkActionHandler, Contacts, Attachment, GroupView,
+         ReportView, Utils, LinkActionHandler, Contacts, Attachment, Drafts */
+
 /*exported MessageManager */
 
 'use strict';
 
 var MessageManager = {
-
+  draft: null,
   activity: null,
   forward: null,
   init: function mm_init(callback) {
@@ -42,6 +44,8 @@ var MessageManager = {
     if (typeof callback === 'function') {
       callback();
     }
+
+    Drafts.request();
   },
 
   onMessageSending: function mm_onMessageSending(e) {
@@ -105,6 +109,16 @@ var MessageManager = {
     if (!ThreadListUI.fullHeight || ThreadListUI.fullHeight === 0) {
       ThreadListUI.fullHeight = ThreadListUI.container.offsetHeight;
     }
+    // If we leave the app and are in a thread or compose window
+    // save a message draft if necessary
+    if (document.hidden) {
+      var hash = window.location.hash;
+      if (hash === '#new' || hash.startsWith('#thread=')) {
+        ThreadUI.saveDraft({preserve: true});
+      }
+    }
+
+    Drafts.store();
   },
 
   slide: function mm_slide(direction, callback) {
@@ -139,6 +153,32 @@ var MessageManager = {
 
   launchComposer: function mm_launchComposer(callback) {
     ThreadUI.cleanFields(true);
+    var draft = MessageManager.draft || Drafts.get(Threads.currentId);
+    // Draft recipients are added as the composer launches
+    if (draft) {
+      // Recipients will exist for draft messages in threads
+      // Otherwise find them from draft recipient numbers
+      draft.recipients.forEach(function(number) {
+        Contacts.findByPhoneNumber(number, function(records) {
+          if (records.length) {
+            ThreadUI.recipients.add(
+              Utils.basicContact(number, records[0])
+            );
+          } else {
+            ThreadUI.recipients.add({
+              number: number
+            });
+          }
+        });
+      });
+
+      // Render draft contents into the composer input area.
+      Compose.fromDraft(draft);
+
+      // Discard this draft object and update the backing store
+      Drafts.delete(draft).store();
+    }
+
     this.threadMessages.classList.add('new');
     this.slide('left', function() {
       callback && callback();
@@ -234,8 +274,9 @@ var MessageManager = {
     // when changing UI panels
     document.activeElement.blur();
 
-    // Group Participants should never persist any hash changes
-    ThreadUI.groupView.reset();
+    // Information view pages should never persist any hash changes
+    GroupView.reset();
+    ReportView.reset();
 
     // Leave the edit mode before transitioning to another panel. This is safe
     // to do even if we're not in edit mode as it's essentially a no-op then.
@@ -243,7 +284,8 @@ var MessageManager = {
     ThreadListUI.cancelEdit();
 
     var self = this;
-    switch (window.location.hash) {
+    // TODO: We might need to refactor the view hash controlling in bug 881469.
+    switch (window.location.hash.split('=')[0]) {
       case '#new':
         ThreadUI.inThread = false;
         MessageManager.launchComposer(function() {
@@ -257,6 +299,8 @@ var MessageManager = {
         //Keep the visible button the :last-child
         var optionsButton = document.getElementById('messages-options-icon');
         optionsButton.parentNode.appendChild(optionsButton);
+
+        ThreadListUI.renderDrafts();
 
         if (this.threadMessages.classList.contains('new')) {
           MessageManager.slide('right', function() {
@@ -277,7 +321,10 @@ var MessageManager = {
         }
         break;
       case '#group-view':
-        ThreadUI.groupView();
+        GroupView.show();
+        break;
+      case '#report-view':
+        ReportView.show();
         break;
       default:
         var threadId = Threads.currentId;
@@ -292,27 +339,30 @@ var MessageManager = {
             ThreadUI.inThread = true;
             ThreadUI.renderMessages(threadId);
           }
+          // Ensures fromDraft is always called after
+          // ThreadUI.cleanFields as MessageManager.slide is async
+          Compose.fromDraft(MessageManager.draft);
         };
 
-        if (threadId) {
-          // if we were previously composing a message - remove the class
-          // and skip the "slide" animation
-          if (this.threadMessages.classList.contains('new')) {
-            this.threadMessages.classList.remove('new');
-            willSlide = false;
-          }
-
-          ThreadListUI.mark(threadId, 'read');
-
-          // Update Header
-          ThreadUI.updateHeaderData(function headerUpdated() {
-            if (willSlide) {
-              MessageManager.slide('left', finishTransition);
-            } else {
-              finishTransition();
-            }
-          });
+        // if we were previously composing a message - remove the class
+        // and skip the "slide" animation
+        if (this.threadMessages.classList.contains('new')) {
+          this.threadMessages.classList.remove('new');
+          willSlide = false;
         }
+
+        ThreadListUI.mark(threadId, 'read');
+
+        // Update Header
+        ThreadUI.updateHeaderData(function headerUpdated() {
+          if (willSlide) {
+            MessageManager.slide('left', function() {
+              finishTransition();
+            });
+          } else {
+            finishTransition();
+          }
+        });
       break;
     }
 
@@ -456,8 +506,12 @@ var MessageManager = {
     });
   },
 
-  sendMMS: function mm_sendMMS(recipients, content, onsuccess, onerror) {
+  sendMMS:
+    function mm_sendMMS(mmsMessage, onsuccess, onerror) {
     var request;
+    var recipients = mmsMessage.recipients,
+        subject = mmsMessage.subject,
+        content = mmsMessage.content;
 
     if (!Array.isArray(recipients)) {
       recipients = [recipients];
@@ -466,8 +520,8 @@ var MessageManager = {
     var message = SMIL.generate(content);
 
     request = this._mozMobileMessage.sendMMS({
-      subject: '',
       receivers: recipients,
+      subject: subject,
       smil: message.smil,
       attachments: message.attachments
     });

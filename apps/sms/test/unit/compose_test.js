@@ -4,12 +4,15 @@
 
 /*global MocksHelper, MockAttachment, MockL10n, loadBodyHTML,
          Compose, Attachment, MockMozActivity, Settings, Utils,
-         AttachmentMenu */
+         AttachmentMenu, Draft */
 
 'use strict';
 
 requireApp('sms/js/compose.js');
 requireApp('sms/js/utils.js');
+requireApp('sms/js/drafts.js');
+// Storage automatically called on Drafts.add()
+require('/shared/js/async_storage.js');
 
 requireApp('sms/test/unit/mock_l10n.js');
 requireApp('sms/test/unit/mock_attachment.js');
@@ -38,14 +41,14 @@ suite('compose_test.js', function() {
     var attachment = new MockAttachment({
       type: 'audio/ogg',
       size: size || 12345
-    }, 'audio.oga');
+    }, { name: 'audio.oga' });
     return attachment;
   }
 
   function mockImgAttachment(isOversized) {
     var attachment = isOversized ?
-      new MockAttachment(oversizedImageBlob, 'oversized.jpg') :
-      new MockAttachment(smallImageBlob, 'small.jpg');
+      new MockAttachment(oversizedImageBlob, { name: 'oversized.jpg' }) :
+      new MockAttachment(smallImageBlob, { name: 'small.jpg' });
     return attachment;
   }
 
@@ -81,18 +84,41 @@ suite('compose_test.js', function() {
   });
 
   suite('Message Composition', function() {
-    var message;
+    var message,
+        subject;
 
     setup(function() {
       loadBodyHTML('/index.html');
       Compose.init('messages-compose-form');
       message = document.querySelector('[contenteditable]');
+      subject = document.getElementById('messages-subject-input');
+    });
+
+    suite('Subject', function() {
+      setup(function() {
+        Compose.clear();
+      });
+
+      test('Toggle change the visibility', function() {
+        assert.isTrue(subject.classList.contains('hide'));
+        Compose.toggleSubject();
+        assert.isFalse(subject.classList.contains('hide'));
+        Compose.toggleSubject();
+        assert.isTrue(subject.classList.contains('hide'));
+      });
+
+      test('Sent subject doesnt have line breaks (spaces instead)', function() {
+        subject.value = 'Line 1\nLine 2\n\n\n\nLine 3';
+        Compose.toggleSubject(); // we need to show the subject to get content
+        var text = Compose.getSubject();
+        assert.equal(text, 'Line 1 Line 2 Line 3');
+      });
+
     });
 
     suite('Placeholder', function() {
-      setup(function(done) {
+      setup(function() {
         Compose.clear();
-        done();
       });
       test('Placeholder present by default', function() {
         assert.isTrue(Compose.isEmpty(), 'added');
@@ -139,6 +165,15 @@ suite('compose_test.js', function() {
         Compose.clear();
         txt = Compose.getContent();
         assert.equal(txt.length, 0, 'No lines in the txt');
+      });
+      test('Clear removes subject', function() {
+        subject.value = 'Title';
+        Compose.toggleSubject();
+        var txt = Compose.getSubject();
+        assert.equal(txt, 'Title', 'Something in the txt');
+        Compose.clear();
+        txt = Compose.getSubject();
+        assert.equal(txt, '', 'Nothing in the txt');
       });
     });
 
@@ -313,6 +348,36 @@ suite('compose_test.js', function() {
 
       teardown(function() {
         Compose.clear();
+      });
+    });
+
+    suite('Preload composer fromDraft', function() {
+      var d1, d2, attachment;
+
+      setup(function() {
+        Compose.clear();
+        d1 = new Draft({
+          content: ['I am a draft'],
+          threadId: 1
+        });
+        attachment = mockAttachment();
+        d2 = new Draft({
+          content: ['I have an attachment!', attachment],
+          threadId: 1
+        });
+      });
+      teardown(function() {
+        Compose.clear();
+      });
+      test('Draft with text', function() {
+        Compose.fromDraft(d1);
+        assert.equal(Compose.getContent(), d1.content.join(''));
+      });
+      test('Draft with attachment', function() {
+        Compose.fromDraft(d2);
+        var txt = Compose.getContent();
+        assert.ok(txt, d2.content.join(''));
+        assert.ok(txt[1] instanceof Attachment);
       });
     });
 
@@ -547,6 +612,19 @@ suite('compose_test.js', function() {
         Compose.clear();
         assert.equal(typeChange.called, 2);
       });
+
+      test('Message switches type when adding/removing subject',
+        function() {
+        expectType = 'mms';
+        Compose.toggleSubject();
+        subject.value = 'foo';
+        subject.dispatchEvent(new CustomEvent('input'));
+        assert.equal(typeChange.called, 1);
+
+        expectType = 'sms';
+        Compose.clear();
+        assert.equal(typeChange.called, 2);
+        });
     });
 
     suite('changing inputmode', function() {

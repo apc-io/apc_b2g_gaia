@@ -411,9 +411,9 @@ function initKeyboard() {
 
   // Initialize the current layout according to
   // the hash this page is loaded with.
+  var inputMethodName = '';
   if (window.location.hash !== '') {
-    var inputMethodName = window.location.hash.substring(1);
-    setKeyboardName(inputMethodName);
+    inputMethodName = window.location.hash.substring(1);
   } else {
     console.error('This page should never be loaded without an URL hash.');
   }
@@ -422,7 +422,10 @@ function initKeyboard() {
   // have already focused, the keyboard should show right away.
   inputContext = navigator.mozInputMethod.inputcontext;
   if (!document.mozHidden && inputContext) {
-    showKeyboard();
+    // show Keyboard after the input method has been initialized
+    setKeyboardName(inputMethodName, showKeyboard);
+  } else {
+    setKeyboardName(inputMethodName);
   }
 }
 
@@ -1357,6 +1360,12 @@ function endPress(target, coords, touchId, hasCandidateScrolled) {
   var wasShowingKeyboardLayoutMenu = isShowingKeyboardLayoutMenu;
   hideAlternatives();
   hideKeyboardLayoutMenu();
+
+  if (target.id === 'dismiss-suggestions-button') {
+    if (inputMethod.dismissSuggestions)
+      inputMethod.dismissSuggestions();
+    return;
+  }
 
   if (!target || !isNormalKey(target))
     return;

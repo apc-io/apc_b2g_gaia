@@ -29,10 +29,13 @@ var UtilityTray = {
     window.addEventListener('home', this);
     window.addEventListener('attentionscreenshow', this);
     window.addEventListener('displayapp', this);
+    window.addEventListener('appopening', this);
 
-    // Listen to the IME switcher shows/hide
+    // Firing when the keyboard and the IME switcher shows/hides.
     window.addEventListener('keyboardimeswitchershow', this);
     window.addEventListener('keyboardimeswitcherhide', this);
+
+    window.addEventListener('simpinshow', this);
 
     // Firing when user selected a new keyboard or canceled it.
     window.addEventListener('keyboardchanged', this);
@@ -48,6 +51,7 @@ var UtilityTray = {
   startY: undefined,
   lastDelta: undefined,
   screenHeight: undefined,
+  screenWidth: undefined,
 
   handleEvent: function ut_handleEvent(evt) {
     switch (evt.type) {
@@ -57,6 +61,11 @@ var UtilityTray = {
       case 'displayapp':
       case 'keyboardchanged':
       case 'keyboardchangecanceled':
+      case 'simpinshow':
+      case 'appopening':
+        if (Rocketbar.shown) {
+          Rocketbar.hide();
+        }
         if (this.shown) {
           this.hide();
         }
@@ -83,8 +92,6 @@ var UtilityTray = {
             evt.target !== this.statusbar &&
             evt.target !== this.grippy)
           return;
-
-        this.active = true;
 
         this.onTouchStart(evt.touches[0]);
         break;
@@ -113,7 +120,21 @@ var UtilityTray = {
   },
 
   onTouchStart: function ut_onTouchStart(touch) {
-    this.screenHeight = this.overlay.getBoundingClientRect().height;
+    var screenRect = this.overlay.getBoundingClientRect();
+    this.screenHeight = screenRect.height;
+    this.screenWidth = screenRect.width;
+
+    // Show the rocketbar if it's enabled,
+    // and the swipe is in the left half of the screen.
+    if (Rocketbar.enabled && touch.pageX < this.screenWidth / 2) {
+      UtilityTray.hide();
+      Rocketbar.render();
+      return;
+    }
+
+    Rocketbar.hide();
+    this.active = true;
+
     this.startY = touch.pageY;
 
     this.screen.classList.add('utility-tray');

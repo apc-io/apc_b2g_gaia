@@ -192,6 +192,17 @@ var Contacts = (function() {
     initContainers();
     initEventListeners();
     window.addEventListener('hashchange', checkUrl);
+
+    // If the migration is not complete
+    var config = utils.cookie.load();
+    if (!config || !config.fbMigrated) {
+      LazyLoader.load('js/fb/datastore_migrator.js', function() {
+        new DatastoreMigration().start();
+      });
+    }
+    else {
+      window.console.info('FB Already migrated!!!');
+    }
   };
 
   var initContactsList = function initContactsList() {
@@ -275,14 +286,14 @@ var Contacts = (function() {
         data['tel'] = [{
           'value': phoneNumber,
           'carrier': null,
-          'type': TAG_OPTIONS['phone-type'][0].type
+          'type': [TAG_OPTIONS['phone-type'][0].type]
         }];
       }
       if (params.hasOwnProperty('email')) {
         var email = params['email'];
         data['email'] = [{
           'value': email,
-          'type': TAG_OPTIONS['email-type'][0].type
+          'type': [TAG_OPTIONS['email-type'][0].type]
         }];
       }
       var hash = '#view-contact-form?extras=' +
@@ -401,7 +412,7 @@ var Contacts = (function() {
             number: number
           }
         });
-      } else {
+      } else if (navigator.mozTelephony) {
         TelephonyHelper.call(number);
       }
     });
@@ -436,7 +447,10 @@ var Contacts = (function() {
     });
   };
 
-  var handleCustomTag = function handleCustomTag() {
+  var handleCustomTag = function handleCustomTag(ev) {
+    if (ev.keyCode === 13) {
+      ev.preventDefault();
+    }
     ContactsTag.touchCustomTag();
   };
 

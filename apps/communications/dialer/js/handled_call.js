@@ -9,13 +9,13 @@ function HandledCall(aCall) {
 
   aCall.ongroupchange = (function onGroupChange() {
     if (this.call.group) {
-      this._leftGroup = false;
       CallScreen.moveToGroup(this.node);
-    } else if (this.call.state != 'disconnecting' &&
-               this.call.state != 'disconnected') {
+      this._leftGroup = false;
+    } else if (this._wasUnmerged()) {
       CallScreen.insertCall(this.node);
+      this._leftGroup = false;
     } else {
-      this._leftGroup = true;
+      this._leftGroup = !this.node.dataset.groupHangup;
     }
   }).bind(this);
 
@@ -69,6 +69,12 @@ function HandledCall(aCall) {
   }
 }
 
+HandledCall.prototype._wasUnmerged = function hc_wasUnmerged() {
+  return !this.node.dataset.groupHangup &&
+         this.call.state != 'disconnecting' &&
+         this.call.state != 'disconnected';
+};
+
 HandledCall.prototype.handleEvent = function hc_handle(evt) {
   switch (evt.call.state) {
     case 'dialing':
@@ -95,6 +101,8 @@ HandledCall.prototype.updateCallNumber = function hc_updateCallNumber() {
   var node = this.numberNode;
   var additionalInfoNode = this.additionalInfoNode;
   var self = this;
+
+  CallScreen.setCallerContactImage(null);
 
   /* If we have a second call waiting in CDMA mode then we don't know which
    * number is currently active */
@@ -301,7 +309,9 @@ HandledCall.prototype.connected = function hc_connected() {
   CallScreen.enableKeypad();
   CallScreen.syncSpeakerEnabled();
 
-  CallScreen.setCallerContactImage(this.photo);
+  if (!this.call.group) {
+    CallScreen.setCallerContactImage(this.photo);
+  }
 };
 
 HandledCall.prototype.disconnected = function hc_disconnected() {
