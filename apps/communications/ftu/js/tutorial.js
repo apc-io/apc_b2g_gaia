@@ -6,6 +6,7 @@ var Tutorial = {
   currentStep: 1,
   imagesLoaded: [],
   layout: 'tiny',
+  device: 'APC', // a hack to support APC device
   init: function n_init() {
     this.layout = (ScreenLayout && ScreenLayout.getCurrentLayout) ?
         ScreenLayout.getCurrentLayout() : 'tiny';
@@ -84,7 +85,7 @@ var Tutorial = {
      * But for large devices, because the flow totally got changed with
      * latest UX design, we leave that part in manageStep
      */
-    if (this.layout === 'tiny') {
+    if (this.layout === 'tiny' || this.device === 'APC') {
       this.tutorialFinish.addEventListener('click', function ftuEnd() {
         self.tutorialFinish.removeEventListener('click', ftuEnd);
         self.exit();
