@@ -91,6 +91,7 @@
     <link rel="import" href="/elements/wifi_select_certificate_file.html">
     <link rel="import" href="/elements/wifi_enter_certificate_nickname.html">
     <link rel="import" href="/elements/wifi.html">
+    <link rel="import" href="/elements/ethernet.html">
     <link rel="import" href="/elements/call_cf_not_reachable_settings.html">
     <link rel="import" href="/elements/call_cf_no_reply_settings.html">
     <link rel="import" href="/elements/call_cf_mobile_busy_settings.html">
@@ -199,6 +200,8 @@
     <section is="wifi-enterCertificateNickname" role="region" id="wifi-enterCertificateNickname"></section>
     <!-- Connectivity :: Wi-Fi -->
     <section is="wifi" role="region" id="wifi" data-require-sub-panels="true"></section>
+    <!-- Connectivity :: Ethernet -->
+    <section is="ethernet" role="region" id="ethernet" data-require-sub-panels="true"></section>
     <!-- Connectivity :: Call :: Call Forwarding Not Reachable -->
     <section is="call-cf-notReachableSettings" role="region" id="call-cf-notReachableSettings"></section>
     <!-- Connectivity :: Call :: Call Forwarding No Reply -->
@@ -358,6 +361,10 @@
           <li>
             <small id="wifi-desc" class="menu-item-desc"></small>
             <a id="menuItem-wifi" class="menu-item" href="#wifi" data-l10n-id="wifi">Wi-Fi</a>
+          </li>
+          <li>
+            <small id="ethernet-desc" class="menu-item-desc"></small>
+            <a id="menuItem-ethernet" class="menu-item" href="#ethernet" data-l10n-id="ethernet">Ethernet</a>
           </li>
           <li id="simCardManager-settings" aria-disabled="true">
             <small id="simmanager-desc" class="menu-item-desc"></small>
