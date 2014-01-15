@@ -1,0 +1,87 @@
+<element name="ethernet" extends="section">
+  <template>
+
+    <header>
+      <a href="#root"><span class="icon icon-back">back</span></a>
+      <h1 data-l10n-id="ethernet-header"> Ethernet </h1>
+    </header>
+
+    <div>
+      <ul>
+        <li id="ethernet-enabled">
+          <label class="pack-switch">
+            <input type="checkbox" data-ignore>
+            <span data-l10n-id="ethernet">Ethernet</span>
+          </label>
+        </li>
+        <li id="ethernet-dynamic" hidden>
+          <label class="pack-switch">
+            <input type="checkbox" data-ignore>
+            <small id="ethernet-dynamic-small-label">Get the dynamic IP address</small>
+            <span data-l10n-id="dynamic">DHCP</span>
+          </label>
+        </li>
+        
+        <li id="ethernet-manual" hidden>
+          <label class="pack-switch">
+            <input type="checkbox" data-ignore>
+            <small id="ethernet-manual-small-label">Configure IP address</small>
+            <span data-l10n-id="manual">Use static IP</span>
+          </label>
+        </li>
+        
+        <li id="ethernet-ip-address" hidden>
+          <label class="pack-switch">
+            <small id="ethernet-ip-address-small-label"></small>
+            <span data-l10n-id="ethernet-ip-address">IP address</span>
+          </label>
+        </li>
+        
+        <li id="ethernet-gateway" hidden>
+          <label class="pack-switch">
+            <small id="ethernet-gateway-small-label"></small>
+            <span data-l10n-id="ethernet-gateway">Gateway</span>
+          </label>
+        </li>
+        
+        <li id="ethernet-netmark" hidden>
+          <label class="pack-switch">
+            <small id="ethernet-netmark-small-label"></small>
+            <span data-l10n-id="ethernet-netmark">Netmark</span>
+          </label>
+        </li>
+        
+        <li id="ethernet-dns1" hidden>
+          <label class="pack-switch">
+            <small id="ethernet-dns1-small-label"></small>
+            <span data-l10n-id="ethernet-dns1">DNS1</span>
+          </label>
+        </li>
+        
+        <li id="ethernet-dns2" hidden>
+          <label class="pack-switch">
+            <small id="ethernet-dns2-small-label"></small>
+            <span data-l10n-id="ethernet-dns2">DNS2</span>
+          </label>
+        </li>
+        
+      </ul>
+    </div>
+    
+    <form role="dialog" data-type="action" id="update-manual-dialog" hidden>
+      <header>
+        <button id="update-manual-cancel"><span class="icon icon-close" data-l10n-id="cancel">close</span></button>
+        <menu type="toolbar">
+          <button data-l10n-id="ok" id="update-manual-confirm">done</button>
+        </menu>
+        <h1 data-l10n-id="update-manual-title" id="update-manual-dialog-title"></h1>
+      </header>
+      <section>
+        <input type="text" id="update-manual-input" value=""/>
+      </section>
+    </form>
+
+    <script src="js/ethernet.js"></script>
+
+  </template>
+</element>
