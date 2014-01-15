@@ -508,6 +508,7 @@ var KeyboardManager = {
   },
 
   showKeyboard: function km_showKeyboard(callback) {
+    var self = this;
     if (this.hwkeyboardManager.isPresent) {
       self._debug("not show virtual keyboard since hw keyboard present");
       return;
@@ -532,7 +533,6 @@ var KeyboardManager = {
     // and thus the keyboard looks like jump into screen.
     // It may because window.open blocks main thread?
     // Monitor transitionend time here.
-    var self = this;
     var onTransitionEnd = function(evt) {
       if (evt.propertyName !== 'transform') {
         return;
