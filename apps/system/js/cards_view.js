@@ -924,7 +924,7 @@ var CardsView = (function() {
     showCardSwitcher: showCardSwitcher,
     hideCardSwitcher: hideCardSwitcher,
     cardSwitcherIsShown: cardSwitcherIsShown,
-    handleEvent: cv_handleEvent,
+    handleEvent: this.cv_handleEvent,
     _escapeHTML: escapeHTML
   };
 })();
