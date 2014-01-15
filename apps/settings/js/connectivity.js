@@ -19,11 +19,13 @@ var Connectivity = (function(window, document, undefined) {
 
   // in desktop helper we fake these device interfaces if they don't exist.
   var wifiManager = WifiHelper.getWifiManager();
+  var ethernetManager = navigator.mozEthernetManager;
   var bluetooth = getBluetooth();
   var mobileConnection = getMobileConnection();
 
   var initOrder = [
     updateWifi,
+    updateEthernet,
     updateBluetooth,
     // register blutooth system message handler
     initSystemMessageHandler
@@ -34,6 +36,8 @@ var Connectivity = (function(window, document, undefined) {
   var wifiEnabledListeners = [updateWifi];
   var wifiDisabledListeners = [updateWifi];
   var wifiStatusChangeListeners = [updateWifi];
+  var ethernetEnabledChangedListeners = new Array();
+  var ethernetConnectedChangedListeners = new Array();
   var settings = Settings.mozSettings;
 
   // Set wifi.enabled so that it mirrors the state of the hardware.
@@ -56,6 +60,15 @@ var Connectivity = (function(window, document, undefined) {
     };
     wifiManager.onstatuschange = wifiStatusChange;
   }
+
+  ethernetManager.onenabledchanged = function() {
+    dispatchEvent(new CustomEvent('ethernet-enabled-changed'));
+    ethernetEnabledChanged();
+  };
+  ethernetManager.onconnectedchanged = function() {
+    dispatchEvent(new CustomEvent('ethernet-connected-changed'));
+    ethernetConnectedChanged();
+  };
 
   // Register callbacks to track the state of the bluetooth hardware
   if (bluetooth) {
@@ -95,6 +108,7 @@ var Connectivity = (function(window, document, undefined) {
    */
 
   var wifiDesc = document.getElementById('wifi-desc');
+  var ethernetDesc = document.querySelector('#ethernet-desc');
 
   function updateWifi() {
     if (!wifiManager) {
@@ -123,6 +137,14 @@ var Connectivity = (function(window, document, undefined) {
                wifiManager.connection.network);
     } else {
       localize(wifiDesc, 'disabled');
+    }
+  }
+  
+  function updateEthernet() {
+    if (ethernetManager.enabled) {
+      ethernetDesc.textContent = _('enabled');
+    } else {
+      ethernetDesc.textContent = _('disabled');
     }
   }
 
@@ -161,6 +183,22 @@ var Connectivity = (function(window, document, undefined) {
 
   function wifiStatusChange(event) {
     wifiStatusChangeListeners.forEach(function(listener) { listener(event); });
+  }
+  
+  function ethernetEnabledChanged() {
+    ethernetEnabledChangedListeners.forEach(function(listener) { listener(); });
+  }
+  
+  function ethernetConnectedChanged() {
+    ethernetConnectedChangedListeners.forEach(function(listener) { listener(); });
+  }
+  
+  function enableEthernet() {
+    ethernetManager.enable();
+  }
+  
+  function disableEthernet() {
+    ethernetManager.disable();
   }
 
   /**
@@ -258,10 +296,15 @@ var Connectivity = (function(window, document, undefined) {
   return {
     init: init,
     updateWifi: updateWifi,
+    updateEthernet: updateEthernet,
     updateBluetooth: updateBluetooth,
     set wifiEnabled(listener) { wifiEnabledListeners.push(listener) },
     set wifiDisabled(listener) { wifiDisabledListeners.push(listener); },
-    set wifiStatusChange(listener) { wifiStatusChangeListeners.push(listener); }
+    set wifiStatusChange(listener) { wifiStatusChangeListeners.push(listener); },
+    set ethernetEnabledChanged(listener) { ethernetEnabledChangedListeners.push(listener); },
+    set ethernetConnectedChanged(listener) { ethernetConnectedChangedListeners.push(listener); },
+    enableEthernet: enableEthernet,
+    disableEthernet: disableEthernet
   };
 })(this, document);
 
