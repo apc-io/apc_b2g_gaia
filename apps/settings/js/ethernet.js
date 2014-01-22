@@ -3,12 +3,11 @@
 // handle Ethernet settings
 navigator.mozL10n.ready(function ethernetSettings() {
   
-  console.log("enter here==============================================");
   var settings = window.navigator.mozSettings;
   if (!settings)
     return;
     
-  var gEthernetManager = navigator.mozEthernetManager;
+  //var gEthernetManager = navigator.mozEthernetManager;
 
   var gEthernet = document.querySelector('#ethernet');
   var gEthernetCheckBox = document.querySelector('#ethernet-enabled input');
@@ -41,8 +40,8 @@ navigator.mozL10n.ready(function ethernetSettings() {
   var gEthernetDNS2Value = "3543";
   
   //Currently, only DHCP is supported
-  gEthernetDynamicCheckBox.disabled = true;
-  gEthernetManualCheckBox.disabled = true;
+  //gEthernetDynamicCheckBox.disabled = true;
+  //gEthernetManualCheckBox.disabled = true;
   
   //manual settings elements
   var gUpdateManualDialog = document.getElementById('update-manual-dialog');
@@ -106,6 +105,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
   
   var self = this;
   document.addEventListener('visibilitychange', updateVisibilityStatus);
+  document.addEventListener('visibilitychange', updateSettingValues);
   gEthernet.addEventListener('transitionend', function(evt) {
     if (evt.target == gEthernet) {
       updateVisibilityStatus();
@@ -118,20 +118,14 @@ navigator.mozL10n.ready(function ethernetSettings() {
     updateVisibilityStatus();
     updateSettingValues();
     
-    console.log("ethernet checkbox changed========================" + gEthernetCheckBox.checked);
-    if (gEthernetCheckBox.checked) {
+    /*if (gEthernetCheckBox.checked) {
       gEthernetManager.enable();
     } else {
       gEthernetManager.disable();
-    }
-    settings.createLock().set({
-      'ethernet.enabled': gEthernetCheckBox.checked
-    }).onerror = function() {
-      console.log("toggle ethernet failed===================");
-    };
+    }*/
   };
   
-  settings.addObserver('ethernet.enabled', function(event) {
+  /*settings.addObserver('ethernet.enabled', function(event) {
     console.log("ethernet enabled setting changed=========" + event.settingValue);
   });
   
@@ -141,7 +135,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
   
   gEthernetManager.onconnectedchanged = function() {
     console.log("onconnectedchanged==============================ethernet");
-  };
+  };*/
   
   gEthernetDynamicCheckBox.onchange = function e_toggleDynamic() {
     gIsEthernetDynamic = this.checked;
@@ -212,4 +206,8 @@ navigator.mozL10n.ready(function ethernetSettings() {
     }
     updateSettingValues();
   };
+  
+  //Update at start-up
+  updateVisibilityStatus();
+  updateSettingValues();
 });
