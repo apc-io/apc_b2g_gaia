@@ -70,7 +70,7 @@ function Clock() {
 var StatusBar = {
   /* all elements that are children nodes of the status bar */
   ELEMENTS: ['notification', 'emergency-cb-notification', 'time', 'connections',
-    'battery', 'wifi', 'data', 'flight-mode', 'network-activity', 'tethering',
+    'battery', 'wifi', 'ethernet', 'data', 'flight-mode', 'network-activity', 'tethering',
     'alarm', 'bluetooth', 'mute', 'headphones', 'bluetooth-headphones',
     'bluetooth-transferring', 'recording', 'sms', 'geolocation', 'usb', 'label',
     'system-downloads', 'call-forwarding', 'playing'],
@@ -118,6 +118,8 @@ var StatusBar = {
   headphonesActive: false,
 
   listeningCallschanged: false,
+  
+  ethernetManager: null,
 
   playingActive: false,
 
@@ -162,6 +164,7 @@ var StatusBar = {
     this._cacheHeight = this.element.getBoundingClientRect().height;
 
     this.listeningCallschanged = false;
+    this.ethernetManager = navigator.mozEthernetManager,
 
     // Refresh the time to reflect locale changes
     this.toggleTimeLabel(true);
@@ -209,6 +212,14 @@ var StatusBar = {
 
     // Listen to 'screenchange' from screen_manager.js
     window.addEventListener('screenchange', this);
+    
+    //Observer connected event of ethernet manager to hide/show the icon on status bar
+    this.ethernetManager.onconnectedchanged = function ethernet_connectedChanged(event) {
+      self.icons.ethernet.hidden = !self.ethernetManager.connected;
+    }
+    
+    //Update ethernet status at start-up
+    this.icons.ethernet.hidden = !this.ethernetManager.connected;
 
     // mozChromeEvent fired from Gecko is earlier been loaded,
     // so we use mozAudioChannelManager to

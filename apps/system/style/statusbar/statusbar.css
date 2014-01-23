@@ -332,6 +332,12 @@ body.rb-enabled #statusbar-label {
   background-position: -8.4rem -6rem;
 }
 
+.sb-icon-ethernet {
+  background: url('images/ethernet-connected.png') no-repeat;
+  background-position: 0 0;
+  background-size: 1.6rem;
+}
+
 .sb-icon-data-circle {
   background-position: -12.6rem -8rem;
 }
