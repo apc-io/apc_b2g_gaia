@@ -2,15 +2,17 @@
 
 // handle Ethernet settings
 navigator.mozL10n.ready(function ethernetSettings() {
+  var _ = navigator.mozL10n.get;
   
   var settings = window.navigator.mozSettings;
   if (!settings)
     return;
     
-  //var gEthernetManager = navigator.mozEthernetManager;
+  var gEthernetManager = navigator.mozEthernetManager;
 
   var gEthernet = document.querySelector('#ethernet');
   var gEthernetCheckBox = document.querySelector('#ethernet-enabled input');
+  var gEthernetInfoBlock = document.querySelector('#ethernet-desc');
   var gEthernetDynamic = document.querySelector('#ethernet-dynamic');
   var gEthernetDynamicCheckBox = document.querySelector('#ethernet-dynamic input');
   var gEthernetManual = document.querySelector('#ethernet-manual');
@@ -31,7 +33,6 @@ navigator.mozL10n.ready(function ethernetSettings() {
   var gEthernetDNS2 = document.querySelector('#ethernet-dns2');
   var gEthernetSmallLabelDNS2 = document.querySelector('#ethernet-dns2-small-label');
   
-  var gIsEthernetEnabled = true;
   var gIsEthernetDynamic = true;
   var gEthernetIpAddressValue = "192.168.0.13";
   var gEthernetGatewayValue = "22.11.2.2";
@@ -40,8 +41,8 @@ navigator.mozL10n.ready(function ethernetSettings() {
   var gEthernetDNS2Value = "3543";
   
   //Currently, only DHCP is supported
-  //gEthernetDynamicCheckBox.disabled = true;
-  //gEthernetManualCheckBox.disabled = true;
+  gEthernetDynamicCheckBox.disabled = true;
+  gEthernetManualCheckBox.disabled = true;
   
   //manual settings elements
   var gUpdateManualDialog = document.getElementById('update-manual-dialog');
@@ -51,7 +52,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
   var gUpdateManualTitle = document.getElementById('update-manual-dialog-title');
   
   function updateVisibilityStatus() {
-    if (gIsEthernetEnabled) {
+    if (gEthernetManager.enabled) {
       gEthernetDynamic.hidden = false;
       gEthernetManual.hidden = false;
       
@@ -71,9 +72,9 @@ navigator.mozL10n.ready(function ethernetSettings() {
     }
   };
   
-  function updateSettingValues() {
-    if (gEthernetCheckBox.checked != gIsEthernetEnabled) {
-      gEthernetCheckBox.checked = gIsEthernetEnabled;
+  function showConnectionInfo() {
+    if (gEthernetCheckBox.checked != gEthernetManager.enabled) {
+      gEthernetCheckBox.checked = gEthernetManager.enabled;
     }
     if (gEthernetDynamicCheckBox.checked != gIsEthernetDynamic) {
       gEthernetDynamicCheckBox.checked = gIsEthernetDynamic;
@@ -83,7 +84,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
       gEthernetManualCheckBox.checked = !gIsEthernetDynamic;
     }
     
-    if (gIsEthernetEnabled) {
+    if (gEthernetManager.enabled) {
       gEthernetSmallLabelIpAddress.textContent = gEthernetIpAddressValue;
       gEthernetSmallLabelGateway.textContent = gEthernetGatewayValue;
       gEthernetSmallLabelNetmark.textContent = gEthernetNetmarkValue;
@@ -91,6 +92,15 @@ navigator.mozL10n.ready(function ethernetSettings() {
       gEthernetSmallLabelDNS2.textContent = gEthernetDNS2Value;
     }
   };
+  
+  function updateConnectionInfo() {
+    console.log("updateConnectionInfo");
+    gEthernetIpAddressValue = gEthernetManager.ipAddress;
+    gEthernetGatewayValue = gEthernetManager.gateway;
+    gEthernetNetmarkValue = gEthernetManager.netmask;
+    gEthernetDNS1Value = gEthernetManager.dns1;
+    gEthernetDNS2Value = gEthernetManager.dns2;
+  }
   
   function showUpdateManualDialog(aDialogTitle, aCurrentValue) {
     gUpdateManualTitle.textContent = aDialogTitle;
@@ -105,44 +115,51 @@ navigator.mozL10n.ready(function ethernetSettings() {
   
   var self = this;
   document.addEventListener('visibilitychange', updateVisibilityStatus);
-  document.addEventListener('visibilitychange', updateSettingValues);
+  document.addEventListener('visibilitychange', showConnectionInfo);
   gEthernet.addEventListener('transitionend', function(evt) {
     if (evt.target == gEthernet) {
       updateVisibilityStatus();
-      updateSettingValues();
+      showConnectionInfo();
     }
   });
   
   gEthernetCheckBox.onchange = function e_toggleEthernet() {
-    gIsEthernetEnabled = gEthernetCheckBox.checked;
-    updateVisibilityStatus();
-    updateSettingValues();
-    
-    /*if (gEthernetCheckBox.checked) {
-      gEthernetManager.enable();
+    if (gEthernetCheckBox.checked) {
+      Connectivity.enableEthernet();
     } else {
-      gEthernetManager.disable();
-    }*/
+      Connectivity.disableEthernet();
+    }
+    gEthernetCheckBox.disabled = true;
   };
   
-  /*settings.addObserver('ethernet.enabled', function(event) {
-    console.log("ethernet enabled setting changed=========" + event.settingValue);
-  });
-  
-  gEthernetManager.onenabledchanged = function() {
-    console.log("onenabledchanged==============================ethernet");
+  Connectivity.ethernetEnabledChanged = function() {
+    updateVisibilityStatus();
+    if (gEthernetManager.enabled) {
+      gEthernetInfoBlock.textContent = _('enabled');
+      updateVisibilityStatus();
+      showConnectionInfo();
+    } else {
+      gEthernetInfoBlock.textContent = _('disabled');
+    }
+    gEthernetCheckBox.disabled = false;
   };
   
-  gEthernetManager.onconnectedchanged = function() {
-    console.log("onconnectedchanged==============================ethernet");
-  };*/
+  Connectivity.ethernetConnectedChanged = function() {
+    if (gEthernetManager.connected) {
+      gEthernetCheckBox.disabled = false;
+      updateVisibilityStatus();
+      showConnectionInfo();
+    } else {
+      gEthernetCheckBox.disabled = true;
+    }
+  };
   
   gEthernetDynamicCheckBox.onchange = function e_toggleDynamic() {
     gIsEthernetDynamic = this.checked;
     gEthernetManualCheckBox.checked = !gIsEthernetDynamic;
     updateVisibilityStatus();
     if (gIsEthernetDynamic) {
-      updateSettingValues();
+      showConnectionInfo();
     }
   };
   
@@ -151,7 +168,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
     gEthernetDynamicCheckBox.checked = gIsEthernetDynamic;
     updateVisibilityStatus();
     if (gIsEthernetDynamic) {
-      updateSettingValues();
+      showConnectionInfo();
     }
   };
   
@@ -204,10 +221,16 @@ navigator.mozL10n.ready(function ethernetSettings() {
         break;
       default:
     }
-    updateSettingValues();
+    showConnectionInfo();
   };
   
   //Update at start-up
   updateVisibilityStatus();
-  updateSettingValues();
+  updateConnectionInfo();
+  showConnectionInfo();
+  if (gEthernetManager.enabled) {
+    gEthernetInfoBlock.textContent = _('enabled');
+  } else {
+    gEthernetInfoBlock.textContent = _('disabled');
+  }
 });
