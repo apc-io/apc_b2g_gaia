@@ -41,7 +41,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
   var gEthernetDNS2Value = "3543";
   
   //Currently, only DHCP is supported
-  gEthernetDynamicCheckBox.disabled = true;
+  gEthernetDynamicCheckBox.disabled = false;
   gEthernetManualCheckBox.disabled = true;
   
   //manual settings elements
@@ -150,7 +150,6 @@ navigator.mozL10n.ready(function ethernetSettings() {
       updateVisibilityStatus();
       showConnectionInfo();
     } else {
-      gEthernetCheckBox.disabled = true;
     }
   };
   
