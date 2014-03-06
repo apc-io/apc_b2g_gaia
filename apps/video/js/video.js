@@ -704,7 +704,8 @@ function thumbnailClickHandler(videodata) {
       // Be certain that metadata parsing has stopped before we show the
       // video player. Otherwise, we'll have contention for the video hardware
       stopParsingMetadata(function() {
-        var fullscreen = pendingPick || isPhone || isPortrait;
+        // ok, no idea why fullscreen is on only if isPhone || isPortrait
+        var fullscreen = true || pendingPick || isPhone || isPortrait;
         showPlayer(videodata, !pendingPick, fullscreen, pendingPick);
       });
     });
