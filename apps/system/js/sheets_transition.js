@@ -4,6 +4,13 @@ var SheetsTransition = {
   _current: null,
   _new: null,
 
+  init: function st_init() {
+    window.addEventListener('stackchanged', this.stackChanged.bind(this));
+
+    SettingsListener.observe('edgesgesture.enabled', false,
+                             this._settingUpdate.bind(this));
+  },
+
   begin: function st_begin(direction) {
     // Ask Homescreen App to fade out when sheets begin moving.
     // Homescreen App would fade in next time it's opened automatically.
@@ -17,11 +24,13 @@ var SheetsTransition = {
     this._new = newSheet ? newSheet.element : null;
 
     if (this._current) {
+      this._setDuration(this._current, 0);
       this._current.classList.add('inside-edges');
-      this._current.style.transition = 'transform';
     }
 
     if (this._new) {
+      this._setDuration(this._new, 0);
+
       this._new.classList.toggle('outside-edges-left', (direction == 'ltr'));
       this._new.classList.toggle('outside-edges-right', (direction == 'rtl'));
       if (direction == 'rtl') {
@@ -29,7 +38,6 @@ var SheetsTransition = {
       } else {
         this._new.dataset.zIndexLevel = 'bottom-app';
       }
-      this._new.style.transition = 'transform';
     }
   },
 
@@ -43,11 +51,11 @@ var SheetsTransition = {
 
     this._lastProgress = progress;
 
-    var currentFactor = (direction == 'ltr') ? 1 : (overflowing ? -1 : -0.2);
-    var newFactor = (direction == 'ltr') ? 0.2 : -1;
+    var factor = (direction == 'ltr') ? 1 : -1;
+    var offset = (direction == 'ltr') ? '- 20px' : '+ 20px';
 
-    this._setTranslate(this._current, progress * currentFactor * 100);
-    this._setTranslate(this._new, (progress - 1) * newFactor * 100);
+    this._setTranslate(this._current, progress * factor * 100);
+    this._setTranslate(this._new, (progress - 1) * factor * 100, offset);
   },
 
   end: function st_end(callback) {
@@ -109,6 +117,18 @@ var SheetsTransition = {
     this._snapAway(speed, 'outside-edges-left');
   },
 
+  stackChanged: function st_stackChanged(e) {
+    var sheets = e.detail.sheets;
+    var position = e.detail.position;
+    for (var i = 0; i < sheets.length; i++) {
+      var sheet = sheets[i].element;
+      var candidate = (this._edgesEnabled) && (position !== null) &&
+                      (i >= (position - 1) && i <= (position + 1));
+
+      sheet.classList.toggle('edge-candidate', candidate);
+    }
+  },
+
   _snapAway: function st_snapAway(speed, outClass) {
     if (!this._new) {
       this.snapInPlace();
@@ -135,12 +155,18 @@ var SheetsTransition = {
     }
   },
 
-  _setTranslate: function st_setTranslate(sheet, percentage) {
+  _setTranslate: function st_setTranslate(sheet, percentage, offset) {
     if (!sheet) {
       return;
     }
 
-    sheet.style.transform = 'translateX(' + percentage + '%)';
+    var transform;
+    if (offset) {
+      transform = 'translateX(calc(' + percentage + '% ' + offset + '))';
+    } else {
+      transform = 'translateX(' + percentage + '%)';
+    }
+    sheet.style.transform = transform;
   },
 
   _setDuration: function st_setDuration(sheet, ms) {
@@ -149,5 +175,12 @@ var SheetsTransition = {
     }
 
     sheet.style.transition = 'transform ' + ms + 'ms linear';
+  },
+
+  _edgesEnabled: false,
+  _settingUpdate: function st_settingUpdate(enabled) {
+    this._edgesEnabled = enabled;
   }
 };
+
+SheetsTransition.init();

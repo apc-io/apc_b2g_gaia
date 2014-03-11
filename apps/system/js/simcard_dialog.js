@@ -1,5 +1,6 @@
 /* -*- Mode: js; js-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
+/* global SIMSlotManager, SystemDialog */
 
 'use strict';
 
@@ -29,6 +30,8 @@ var SimPinDialog = {
   errorMsgHeader: document.getElementById('messageHeader'),
   errorMsgBody: document.getElementById('messageBody'),
 
+  containerDiv: document.querySelector('#simpin-dialog .container'),
+
   lockType: 'pin',
 
   lockTypeMap: {
@@ -44,8 +47,9 @@ var SimPinDialog = {
     var self = this;
 
     inputField.addEventListener('input', function(evt) {
-      if (evt.target !== inputField)
+      if (evt.target !== inputField) {
         return;
+      }
 
       checkDialogDone();
     });
@@ -55,10 +59,11 @@ var SimPinDialog = {
     });
 
     function checkDialogDone() {
-      if (inputField.value.length >= 4)
+      if (inputField.value.length >= 4) {
         self.dialogDone.disabled = false;
-      else
+      } else {
         self.dialogDone.disabled = true;
+      }
     }
 
 
@@ -68,20 +73,27 @@ var SimPinDialog = {
   handleCardState: function spl_handleCardState() {
     var _ = navigator.mozL10n.get;
 
-    if (!this._currentSlot)
+    if (!this._currentSlot) {
       return;
+    }
 
     var card = this._currentSlot.simCard;
 
     var cardState = card.cardState;
     var lockType = this.lockTypeMap[cardState];
-    this._currentSlot.getCardLockRetryCount(lockType, (function(retryCount) {
+
+    var request = this._currentSlot.getCardLockRetryCount(lockType);
+    request.onsuccess = (function() {
+      var retryCount = request.result.retryCount;
       if (retryCount) {
         var l10nArgs = { n: retryCount };
         this.triesLeftMsg.textContent = _('inputCodeRetriesLeft', l10nArgs);
         this.triesLeftMsg.hidden = false;
       }
-    }).bind(this));
+    }).bind(this);
+    request.onerror = function() {
+      console.error('Could not fetch CardLockRetryCount', request.error.name);
+    };
 
     switch (lockType) {
       case 'pin':
@@ -153,8 +165,9 @@ var SimPinDialog = {
 
   unlockPin: function spl_unlockPin() {
     var pin = this.pinInput.value;
-    if (pin === '')
+    if (pin === '') {
       return;
+    }
 
     var options = { lockType: 'pin', pin: pin };
     this.unlockCardLock(options);
@@ -167,8 +180,9 @@ var SimPinDialog = {
     var puk = this.pukInput.value;
     var newPin = this.newPinInput.value;
     var confirmPin = this.confirmPinInput.value;
-    if (puk === '' || newPin === '' || confirmPin === '')
+    if (puk === '' || newPin === '' || confirmPin === '') {
       return;
+    }
 
     if (newPin !== confirmPin) {
       this.errorMsgHeader.textContent = _('newPinErrorMsg');
@@ -183,8 +197,9 @@ var SimPinDialog = {
 
   unlockXck: function spl_unlockXck() {
     var xck = this.xckInput.value;
-    if (xck === '')
+    if (xck === '') {
       return;
+    }
 
     var options = {lockType: this.lockType, pin: xck };
     this.unlockCardLock(options);
@@ -220,8 +235,9 @@ var SimPinDialog = {
 
   onHide: function spl_onHide(reason) {
     this.clear();
-    if (this.onclose)
+    if (this.onclose) {
       this.onclose(reason);
+    }
   },
 
   clear: function spl_clear() {
@@ -255,7 +271,6 @@ var SimPinDialog = {
    * @param {Boolean} [skipped] If the last slot is skipped or not.
    */
   show: function spl_show(slot, onclose, skipped) {
-    var _ = navigator.mozL10n.get;
     if (slot) {
       this._currentSlot = slot;
     }
@@ -267,8 +282,9 @@ var SimPinDialog = {
     this.lockType = 'pin';
     this.handleCardState();
 
-    if (onclose && typeof onclose === 'function')
+    if (onclose && typeof onclose === 'function') {
       this.onclose = onclose;
+    }
 
     if (skipped) {
       delete this.dialogBack.hidden;
@@ -277,9 +293,12 @@ var SimPinDialog = {
     }
   },
 
-  requestClose: function spl_requestClose() {
+  requestClose: function spl_requestClose(reason) {
     window.dispatchEvent(new CustomEvent('simpinrequestclose', {
-      detail: this
+      detail: {
+        dialog: this,
+        reason: reason
+      }
     }));
   },
 
@@ -303,13 +322,27 @@ var SimPinDialog = {
     }));
   },
 
+  // With the keyboard active the inputs, ensure they get scrolled
+  // into view
+  ensureFocusInView: function spl_ensureInView(element, container) {
+    element.addEventListener('focus', function(e) {
+      window.addEventListener('system-resize', function resize() {
+        window.removeEventListener('system-resize', resize);
+        // The layout always has the input at the bottom, so
+        // just always ensure we scroll to the bottom
+        container.scrollTop = container.offsetHeight;
+      });
+    });
+  },
+
   init: function spl_init() {
     this.systemDialog = SystemDialog('simpin-dialog', {
                                        onHide: this.onHide.bind(this)
                                      });
 
-    if (!SIMSlotManager.length)
+    if (!SIMSlotManager.length) {
       return;
+    }
 
     this.dialogDone.onclick = this.verify.bind(this);
     this.dialogSkip.onclick = this.skip.bind(this);
@@ -319,8 +352,10 @@ var SimPinDialog = {
     this.xckInput = this.getNumberPasswordInputField('xckpin');
     this.newPinInput = this.getNumberPasswordInputField('newSimpin');
     this.confirmPinInput = this.getNumberPasswordInputField('confirmNewSimpin');
+
+    this.ensureFocusInView(this.pinInput, this.containerDiv);
+    this.ensureFocusInView(this.pukInput, this.containerDiv);
   }
 };
 
 SimPinDialog.init();
-

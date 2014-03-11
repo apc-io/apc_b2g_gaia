@@ -1,4 +1,6 @@
 'use strict';
+/* global MocksHelper, ActivityWindowFactory, ActivityWindow,
+   AppWindow, MockAppWindowManager */
 
 mocha.globals(['SettingsListener', 'removeEventListener', 'addEventListener',
       'dispatchEvent', 'AppWindowManager', 'Applications', 'ManifestHelper',
@@ -29,7 +31,7 @@ var mocksForActivityWindowFactory = new MocksHelper([
 
 suite('system/ActivityWindowFactory', function() {
   mocksForActivityWindowFactory.attachTestHelpers();
-  var activityWindow;
+  var subject;
   var stubById;
   var fakeActivityConfig1 = {
     'url': 'app://fakeact1.gaiamobile.org/pick.html',
@@ -113,17 +115,17 @@ suite('system/ActivityWindowFactory', function() {
     }
   };
 
-  var fakeLaunchConfig3 = {
-    type: 'launchactivity',
+  var fakeOpenConfig = {
+    type: 'activityopening',
     detail: {
       'isActivity': true,
-      'url': 'app://fakeact3.gaiamobile.org/pick.html',
+      'url': 'app://fakeact4.gaiamobile.org/pick.html',
       'oop': true,
-      'name': 'Fake Activity 3',
-      'manifestURL': 'app://fakeact3.gaiamobile.org/manifest.webapp',
-      'origin': 'app://fakeact3.gaiamobile.org',
+      'name': 'Fake Activity 4',
+      'manifestURL': 'app://fakeact4.gaiamobile.org/manifest.webapp',
+      'origin': 'app://fakeact4.gaiamobile.org',
       'manifest': {
-        'name': 'Fake Activity 3'
+        'name': 'Fake Activity 4'
       },
       'inline': true
     }
@@ -143,6 +145,7 @@ suite('system/ActivityWindowFactory', function() {
 
   suite('handle events', function() {
     setup(function() {
+      subject = new ActivityWindowFactory();
       activity1 = new ActivityWindow(fakeActivityConfig1);
       activity2 = new ActivityWindow(fakeActivityConfig2);
       activity3 = new ActivityWindow(fakeActivityConfig3);
@@ -169,21 +172,32 @@ suite('system/ActivityWindowFactory', function() {
       MockAppWindowManager.mDisplayedApp = 'fake';
     });
     teardown(function() {
+      subject = null;
     });
     test('activity request', function() {
-      ActivityWindowFactory._lastActivity = null;
-      ActivityWindowFactory._activities = [];
-      ActivityWindowFactory.handleEvent(fakeLaunchConfig1);
+      subject._lastActivity = null;
+      subject._activeActivity = null;
+      subject._activities = [];
+      subject.handleEvent(fakeLaunchConfig1);
 
-      assert.isTrue(ActivityWindowFactory._lastActivity != null);
+      assert.isTrue(subject._lastActivity != null);
+    });
+
+    test('activity will open', function() {
+      subject._lastActivity = null;
+      subject._activeActivity = null;
+      subject._activities = [];
+      subject.handleEvent(fakeOpenConfig);
+
+      assert.isTrue(subject._activeActivity != null);
     });
 
     test('back to home: one inline activity', function() {
-      ActivityWindowFactory._activities = [activity1, activity2, activity3];
-      ActivityWindowFactory._lastActivity = activity1;
+      subject._activities = [activity1, activity2, activity3];
+      subject._lastActivity = activity1;
       var stubKill = this.sinon.stub(activity1, 'kill');
 
-      ActivityWindowFactory.handleEvent({
+      subject.handleEvent({
         'type': 'home'
       });
 
@@ -193,72 +207,63 @@ suite('system/ActivityWindowFactory', function() {
 
     test('second activity request on the same caller which is an activity',
       function() {
-        ActivityWindowFactory._activities = [activity1, activity2, activity3];
-        ActivityWindowFactory._lastActivity = activity1;
-        ActivityWindowFactory._activeActivity = activity1;
+        subject._activities = [activity1, activity2, activity3];
+        subject._lastActivity = activity1;
+        subject._activeActivity = activity1;
         var stubActive = this.sinon.stub(activity1, 'isActive');
         stubActive.returns(true);
         activity1.activityCallee = activity3;
         var stubKill = this.sinon.stub(activity3, 'kill');
-        ActivityWindowFactory.handleEvent(fakeLaunchConfig2);
+        subject.handleEvent(fakeLaunchConfig2);
 
         assert.isTrue(stubKill.called);
         delete activity1.activityCallee;
       });
 
-    test('second activity request on the same caller which is an app',
+    test('second activity request is the same as first activity',
       function() {
-        ActivityWindowFactory._activities = [activity1, activity2, activity3];
-        ActivityWindowFactory._lastActivity = activity1;
-        ActivityWindowFactory._activeActivity = activity1;
+        subject._activities = [activity1];
+        subject._lastActivity = activity1;
+        subject._activeActivity = activity1;
         var stubActive = this.sinon.stub(activity1, 'isActive');
-        stubActive.returns(false);
-        var stubGetActiveApp =
-          this.sinon.stub(MockAppWindowManager, 'getActiveApp');
-        stubGetActiveApp.returns(app1);
-        var stubActiveApp = this.sinon.stub(app1, 'isActive');
-        stubActiveApp.returns(true);
-        app1.activityCallee = activity1;
-        var stubKill = this.sinon.stub(activity1, 'kill');
-        ActivityWindowFactory.handleEvent(fakeLaunchConfig2);
-
-        assert.isTrue(stubKill.called);
-        delete activity1.activityCallee;
+        stubActive.returns(true);
+        subject.handleEvent(fakeLaunchConfig1);
+        assert.equal(subject._activities.length, 1);
       });
 
     test('maintain activity: created', function() {
-      ActivityWindowFactory._activities = [activity1, activity2, activity3];
-      ActivityWindowFactory._lastActivity = activity1;
-      var current = ActivityWindowFactory._activities.length;
-      ActivityWindowFactory.handleEvent({
+      subject._activities = [activity1, activity2, activity3];
+      subject._lastActivity = activity1;
+      var current = subject._activities.length;
+      subject.handleEvent({
         type: 'activitycreated',
         detail: {
           instanceID: 99999
         }
       });
 
-      assert.isTrue(ActivityWindowFactory._activities.length === current + 1);
+      assert.isTrue(subject._activities.length === current + 1);
     });
 
     test('maintain activity: terminated', function() {
-      ActivityWindowFactory._activities = [activity1, activity2, activity3];
-      ActivityWindowFactory._lastActivity = activity1;
-      ActivityWindowFactory._activeActivity = activity1;
+      subject._activities = [activity1, activity2, activity3];
+      subject._lastActivity = activity1;
+      subject._activeActivity = activity1;
 
-      ActivityWindowFactory.handleEvent({
+      subject.handleEvent({
         type: 'activityterminated',
         detail: activity1
       });
 
-      assert.isTrue(ActivityWindowFactory._lastActivity == null);
+      assert.isTrue(subject._lastActivity == null);
     });
 
     test('show current activity', function() {
-      ActivityWindowFactory._activities = [activity1, activity2, activity3];
-      ActivityWindowFactory._lastActivity = activity1;
-      ActivityWindowFactory._activeActivity = activity1;
+      subject._activities = [activity1, activity2, activity3];
+      subject._lastActivity = activity1;
+      subject._activeActivity = activity1;
       var stubSetVisible = this.sinon.stub(activity1, 'setVisible');
-      ActivityWindowFactory.handleEvent({
+      subject.handleEvent({
         type: 'showwindow',
         stopImmediatePropagation: function() {}
       });
@@ -267,11 +272,11 @@ suite('system/ActivityWindowFactory', function() {
     });
 
     test('hide current activity', function() {
-      ActivityWindowFactory._activities = [activity1, activity2, activity3];
-      ActivityWindowFactory._lastActivity = activity1;
-      ActivityWindowFactory._activeActivity = activity1;
+      subject._activities = [activity1, activity2, activity3];
+      subject._lastActivity = activity1;
+      subject._activeActivity = activity1;
       var stubSetVisible = this.sinon.stub(activity1, 'setVisible');
-      ActivityWindowFactory.handleEvent({
+      subject.handleEvent({
         type: 'hidewindow',
         stopImmediatePropagation: function() {}
       });
@@ -280,23 +285,23 @@ suite('system/ActivityWindowFactory', function() {
     });
 
     test('update active activity', function() {
-      ActivityWindowFactory._activities = [activity1, activity2, activity3];
-      ActivityWindowFactory._lastActivity = activity1;
-      ActivityWindowFactory.handleEvent({
-        type: 'activitywillclose',
+      subject._activities = [activity1, activity2, activity3];
+      subject._activeActivity = activity1;
+      subject.handleEvent({
+        type: 'activityclosing',
         detail: activity1,
         stopImmediatePropagation: function() {}
       });
 
-      assert.isTrue(ActivityWindowFactory._activeActivity == null);
+      assert.isTrue(subject._activeActivity == null);
 
-      ActivityWindowFactory.handleEvent({
-        type: 'activitywillopen',
+      subject.handleEvent({
+        type: 'activityopening',
         detail: activity1,
         stopImmediatePropagation: function() {}
       });
 
-      assert.deepEqual(ActivityWindowFactory._activeActivity, activity1);
+      assert.deepEqual(subject._activeActivity, activity1);
     });
 
   });

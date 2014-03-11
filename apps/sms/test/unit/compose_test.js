@@ -1,10 +1,10 @@
-/*
-  Compose Tests
-*/
-
-/*global MocksHelper, MockAttachment, MockL10n, loadBodyHTML,
+/* global MocksHelper, MockAttachment, MockL10n, loadBodyHTML,
          Compose, Attachment, MockMozActivity, Settings, Utils,
-         AttachmentMenu, Draft */
+         AttachmentMenu, Draft, document, XMLHttpRequest, Blob, navigator,
+         setTimeout, ThreadUI, SMIL */
+
+/*jshint strict:false */
+/*jslint node: true */
 
 'use strict';
 
@@ -21,6 +21,8 @@ requireApp('sms/test/unit/mock_recipients.js');
 requireApp('sms/test/unit/mock_settings.js');
 requireApp('sms/test/unit/mock_utils.js');
 requireApp('sms/test/unit/mock_moz_activity.js');
+requireApp('sms/test/unit/mock_thread_ui.js');
+require('/test/unit/mock_smil.js');
 
 var mocksHelperForCompose = new MocksHelper([
   'AttachmentMenu',
@@ -28,7 +30,9 @@ var mocksHelperForCompose = new MocksHelper([
   'Recipients',
   'Utils',
   'MozActivity',
-  'Attachment'
+  'Attachment',
+  'ThreadUI',
+  'SMIL'
 ]).init();
 
 suite('compose_test.js', function() {
@@ -85,13 +89,15 @@ suite('compose_test.js', function() {
 
   suite('Message Composition', function() {
     var message,
-        subject;
+        subject,
+        sendButton;
 
     setup(function() {
       loadBodyHTML('/index.html');
       Compose.init('messages-compose-form');
       message = document.querySelector('[contenteditable]');
       subject = document.getElementById('messages-subject-input');
+      sendButton = document.getElementById('messages-send-button');
     });
 
     suite('Subject', function() {
@@ -99,21 +105,46 @@ suite('compose_test.js', function() {
         Compose.clear();
       });
 
-      test('Toggle change the visibility', function() {
+      test('Toggle field', function() {
         assert.isTrue(subject.classList.contains('hide'));
+        // Show
         Compose.toggleSubject();
         assert.isFalse(subject.classList.contains('hide'));
+        // Hide
         Compose.toggleSubject();
         assert.isTrue(subject.classList.contains('hide'));
       });
 
+      test('Get content from subject field', function() {
+        var content = 'Title';
+        subject.value = content;
+        // We need to show the subject to get content
+        Compose.toggleSubject();
+        assert.equal(Compose.getSubject(), content);
+      });
+
+      // Per discussion, this is being deferred to another bug
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=959360
+      //
+      // test('Toggle type display visibility', function() {
+      //   assert.isFalse(sendButton.classList.contains('has-counter'));
+
+      //   subject.value = 'hi';
+      //   Compose.toggleSubject();
+      //   assert.isTrue(sendButton.classList.contains('has-counter'));
+
+      //   Compose.toggleSubject();
+      //   assert.isFalse(sendButton.classList.contains('has-counter'));
+      // });
+
       test('Sent subject doesnt have line breaks (spaces instead)', function() {
+        // Set the value
         subject.value = 'Line 1\nLine 2\n\n\n\nLine 3';
-        Compose.toggleSubject(); // we need to show the subject to get content
+        // We need to show the subject to get content
+        Compose.toggleSubject();
         var text = Compose.getSubject();
         assert.equal(text, 'Line 1 Line 2 Line 3');
       });
-
     });
 
     suite('Placeholder', function() {
@@ -357,6 +388,7 @@ suite('compose_test.js', function() {
       setup(function() {
         Compose.clear();
         d1 = new Draft({
+          subject: '...',
           content: ['I am a draft'],
           threadId: 1
         });
@@ -367,17 +399,56 @@ suite('compose_test.js', function() {
         });
       });
       teardown(function() {
+
         Compose.clear();
       });
+
       test('Draft with text', function() {
         Compose.fromDraft(d1);
         assert.equal(Compose.getContent(), d1.content.join(''));
       });
+
+      test('Draft with subject', function() {
+        assert.isFalse(Compose.isSubjectVisible);
+        Compose.fromDraft(d1);
+        assert.equal(Compose.getSubject(), d1.subject);
+        assert.isTrue(Compose.isSubjectVisible);
+      });
+
+      test('Draft without subject', function() {
+        Compose.fromDraft(d2);
+        assert.isFalse(Compose.isSubjectVisible);
+      });
+
       test('Draft with attachment', function() {
         Compose.fromDraft(d2);
         var txt = Compose.getContent();
         assert.ok(txt, d2.content.join(''));
         assert.ok(txt[1] instanceof Attachment);
+      });
+    });
+
+    suite('Changing content marks draft as edited', function() {
+
+      setup(function() {
+        ThreadUI.draft = new Draft({
+          isEdited: false
+        });
+      });
+
+      test('Changing message', function() {
+        Compose.append('Message');
+        assert.isTrue(ThreadUI.draft.isEdited);
+      });
+
+      test('Changing subject', function() {
+        Compose.toggleSubject();
+        assert.isTrue(ThreadUI.draft.isEdited);
+      });
+
+      test('Changing attachments', function() {
+        Compose.append(mockAttachment(12345));
+        assert.isTrue(ThreadUI.draft.isEdited);
       });
     });
 
@@ -624,7 +695,7 @@ suite('compose_test.js', function() {
         expectType = 'sms';
         Compose.clear();
         assert.equal(typeChange.called, 2);
-        });
+      });
     });
 
     suite('changing inputmode', function() {
@@ -643,6 +714,34 @@ suite('compose_test.js', function() {
         Compose.type = 'sms';
 
         assert.equal(message.getAttribute('x-inputmode'), '-moz-sms');
+      });
+    });
+
+    suite('Compose fromMessage', function() {
+      setup(function() {
+        this.sinon.spy(Compose, 'append');
+        this.sinon.spy(HTMLElement.prototype, 'focus');
+        this.sinon.stub(SMIL, 'parse');
+      });
+      test('from sms', function() {
+        Compose.fromMessage({type: 'sms', body: 'test'});
+        sinon.assert.called(Compose.append);
+        sinon.assert.called(message.focus);
+      });
+
+      test('from mms', function() {
+        var testString = ['test\nstring 1\nin slide 1',
+                          'test\nstring 2\nin slide 2'];
+        Compose.fromMessage({type: 'mms'});
+
+        // Should not be focused before parse complete.
+        sinon.assert.notCalled(message.focus);
+        assert.isTrue(message.classList.contains('ignoreEvents'));
+        SMIL.parse.yield([{text: testString[0]}, {text: testString[1]}]);
+
+        sinon.assert.calledWith(Compose.append);
+        sinon.assert.called(message.focus);
+        assert.isFalse(message.classList.contains('ignoreEvents'));
       });
     });
   });

@@ -4,9 +4,10 @@ mocha.globals(['AppTransitionController', 'AppWindow', 'System']);
 
 requireApp('system/test/unit/mock_app_window.js');
 requireApp('system/test/unit/mock_layout_manager.js');
+requireApp('system/shared/test/unit/mocks/mock_settings_listener.js');
 
 var mocksForAppTransitionController = new MocksHelper([
-  'AppWindow', 'LayoutManager'
+  'AppWindow', 'LayoutManager', 'SettingsListener'
 ]).init();
 
 suite('system/AppTransitionController', function() {
@@ -90,16 +91,23 @@ suite('system/AppTransitionController', function() {
   test('Animation end event', function() {
     var app1 = new MockAppWindow(fakeAppConfig1);
     var acn1 = new AppTransitionController(app1);
+    var spy = this.sinon.spy();
     acn1._transitionState = 'opening';
-    acn1.handleEvent({ type: 'animationend' });
+    acn1.handleEvent({
+      type: 'animationend',
+      stopPropagation: spy
+    });
+    assert.isTrue(spy.called);
   });
 
   test('Handle opening', function() {
     var app1 = new MockAppWindow(fakeAppConfig1);
     var acn1 = new AppTransitionController(app1);
+    var stubReviveBrowser = this.sinon.stub(app1, 'reviveBrowser');
     var stubSetVisible = this.sinon.stub(app1, 'setVisible');
     acn1.handle_opening();
     assert.isTrue(stubSetVisible.calledWith(true));
+    assert.isTrue(stubReviveBrowser.called);
   });
 
   suite('Opened', function() {

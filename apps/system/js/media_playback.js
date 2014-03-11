@@ -16,6 +16,10 @@ function MediaPlaybackWidget(container, options) {
 
   this.container.addEventListener('click', this);
   window.addEventListener('iac-mediacomms', this.handleMessage.bind(this));
+  // When SCO status changes, we need to adjust the ui of the playback controls
+  window.addEventListener(
+    'bluetoothprofileconnectionchange', this.handleSCOChange.bind(this)
+  );
 
   if (options && options.nowPlayingAction === 'openapp')
     this.nowPlaying.addEventListener('click', this.openMediaApp.bind(this));
@@ -27,11 +31,19 @@ function MediaPlaybackWidget(container, options) {
   // about doing something similar, step away from your keyboard immediately.
   window.addEventListener('appterminated', function(event) {
     if (event.detail.origin === this.origin)
-      this.container.hidden = true;
+      this.hidden = true;
   }.bind(this));
 }
 
 MediaPlaybackWidget.prototype = {
+  get hidden() {
+    return this.container.hidden;
+  },
+
+  set hidden(value) {
+    return this.container.hidden = value;
+  },
+
   handleMessage: function mpw_handleMessage(event) {
     var message = event.detail;
     switch (message.type) {
@@ -45,6 +57,14 @@ MediaPlaybackWidget.prototype = {
       this.updatePlaybackStatus(message.data);
       break;
     }
+  },
+
+  handleSCOChange: function mpw_handleSCOChange(event) {
+    var name = event.detail.name;
+    var connected = event.detail.connected;
+
+    if (name === Bluetooth.Profiles.SCO)
+      this.container.classList.toggle('disabled', connected);
   },
 
   updateAppInfo: function mpw_updateAppInfo(info) {
@@ -81,15 +101,21 @@ MediaPlaybackWidget.prototype = {
   updatePlaybackStatus: function mp_updatePlaybackStatus(status) {
     switch (status.playStatus) {
       case 'PLAYING':
-        this.container.hidden = false;
+        this.hidden = false;
         this.playPauseButton.classList.remove('is-paused');
         break;
       case 'PAUSED':
-        this.container.hidden = false;
+        this.hidden = false;
         this.playPauseButton.classList.add('is-paused');
         break;
       case 'STOPPED':
-        this.container.hidden = true;
+        this.hidden = true;
+        break;
+      case 'mozinterruptbegin':
+        this.hidden = true;
+        break;
+      case 'mozinterruptend':
+        this.hidden = false;
         break;
     }
   },

@@ -14,12 +14,13 @@ var MockCommon = function(config) {
 
   config = config || {};
 
-  var fakeAllInterfaces = MockAllNetworkInterfaces;
+  var allInterfacesFake = MockAllNetworkInterfaces;
 
   return {
     COST_CONTROL_APP: 'app://costcontrol.gaiamobile.org',
     allNetworkInterfaces: {},
     dataSimIccId: null,
+    dataSimIcc: null,
     isValidICCID: function(iccid) {
       assert.isDefined(
         config.isValidICCID,
@@ -30,12 +31,18 @@ var MockCommon = function(config) {
     waitForDOMAndMessageHandler: function(window, callback) {
       callback();
     },
-    checkSIMChange: function(callback) {
+    checkSIM: function(callback) {
       callback();
     },
     startFTE: function(mode) {
+      var iframe = document.getElementById('fte_view');
+      iframe.classList.remove('non-ready');
       var event = new CustomEvent('ftestarted', { detail: mode });
       window.dispatchEvent(event);
+    },
+    closeFTE: function() {
+      var iframe = document.getElementById('fte_view');
+      iframe.classList.add('non-ready');
     },
     startApp: function() {
       var event = new CustomEvent('appstarted');
@@ -51,25 +58,25 @@ var MockCommon = function(config) {
       console.log('Alert: ' + msg);
     },
     getDataSIMInterface: function getDataSIMInterface() {
-      var dataSimCard = fakeAllInterfaces[1];
+      var dataSimCard = allInterfacesFake[1];
       return dataSimCard;
     },
     getWifiInterface: function() {
-      var wifiInterface = fakeAllInterfaces[0];
+      var wifiInterface = allInterfacesFake[0];
       return wifiInterface;
     },
+    getIccInfo: function() { return;},
     loadNetworkInterfaces: function() {
-      var self = this;
-
       setTimeout(function() {
-        self.allNetworkInterfaces = fakeAllInterfaces;
+        Common.allNetworkInterfaces = allInterfacesFake;
       }, 0);
     },
-    loadDataSIMIccId: function() {
-      var self = this;
-
+    loadDataSIMIccId: function(onsuccess, onerror) {
       setTimeout(function() {
-        self.dataSimIccId = fakeAllInterfaces[1].id;
+        Common.dataSimIccId = allInterfacesFake[1].id;
+        if (typeof onsuccess === 'function') {
+          onsuccess(Common.dataSimIccId);
+        }
       }, 0);
     }
   };

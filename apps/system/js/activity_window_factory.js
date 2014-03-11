@@ -1,4 +1,9 @@
-(function(window) {
+'use strict';
+/* global System, ActivityWindow, AppWindowManager */
+
+(function(exports) {
+  var DEBUG = false;
+
   /**
    * ActivityWindowFactory creates the inline activity window instance
    * on demand.
@@ -11,14 +16,28 @@
    * upon app window.
    *
    * @todo Implement ActivityWindowManager
-   * @module ActivityWindowFactory
+   * @class ActivityWindowFactory
+   * @requires module:AppWindowManager
    */
-  var ActivityWindowFactory = {
+  function ActivityWindowFactory() {
+    window.addEventListener('mozChromeEvent', this);
+    window.addEventListener('launchactivity', this);
+    window.addEventListener('activitycreated', this);
+    window.addEventListener('activityterminated', this);
+    window.addEventListener('activityopening', this);
+    window.addEventListener('activityclosing', this);
+    window.addEventListener('hidewindow', this);
+    window.addEventListener('showwindow', this);
+    window.addEventListener('home', this);
+    window.addEventListener('holdhome', this);
+  }
+
+  ActivityWindowFactory.prototype = {
     /**
      * The last created activity window instance
      * @access private
      * @type {ActivityWindow}
-     * @memberOf module:ActivityWindowFactory
+     * @memberof ActivityWindowFactory.prototype
      */
     _lastActivity: null,
 
@@ -26,7 +45,7 @@
      * The active activity window instance
      * @access private
      * @type {ActivityWindow}
-     * @memberOf module:ActivityWindowFactory
+     * @memberof ActivityWindowFactory.prototype
      */
     _activeActivity: null,
 
@@ -34,24 +53,26 @@
      * The list of all current running activity window instances
      * @access private
      * @type {Array}
-     * @memberOf module:ActivityWindowFactory
+     * @memberof ActivityWindowFactory.prototype
      */
     _activities: [],
 
-    init: function acwf_init() {
-      window.addEventListener('mozChromeEvent', this);
-      window.addEventListener('launchactivity', this);
-      window.addEventListener('activitycreated', this);
-      window.addEventListener('activityterminated', this);
-      window.addEventListener('activitywillopen', this);
-      window.addEventListener('activitywillclose', this);
-      window.addEventListener('hidewindow', this);
-      window.addEventListener('showwindow', this);
-      window.addEventListener('appopen', this);
-      window.addEventListener('home', this);
-      window.addEventListener('holdhome', this);
-      window.addEventListener('mozChromeEvent', this);
-      window.addEventListener('globalorientationchange', this);
+    debug: function awm_debug() {
+      if (DEBUG) {
+        console.log('[ActivityWindowFactory]' +
+          '[' + System.currentTime() + ']' +
+          Array.slice(arguments).concat());
+      }
+    },
+
+    /**
+     * Get current active activity window.
+     * @memberof ActivityWindowFactory.prototype
+     * @return {Object} ActivityWindow instance, or null if there is currently
+     *                  no active activity window.
+     */
+    getActiveWindow: function acwf_getActiveWindow() {
+      return this._activeActivity;
     },
 
     /**
@@ -66,14 +87,15 @@
 
     /**
      * Instanciate activity window by configuration
-     * @param  {ActivityConfig} configuration The configuration of the activity
-     *
-     * @memberOf module:ActivityWindowFactory
+     * @param  {ActivityConfig} configuration The configuration of the activity.
+     * @memberof ActivityWindowFactory.prototype
      */
     launchActivity: function acwf_launchActivity(configuration) {
-      if (this._lastActivity && this._lastActivity.isActive()) {
+      var callee;
+      if (this._activeActivity) {
         // If we already has a callee, remove it.
-        var callee = this._lastActivity.activityCallee;
+        callee = this._activeActivity.activityCallee;
+        this.debug('caller is an activity ' + this._lastActivity);
         if (callee) {
           // XXX: We don't know the activity is the same request
           // or not here. The data passed may be different.
@@ -98,13 +120,20 @@
             return false;
           }
         });
+        // If the lastActivity is the same as launch request, we don't need to
+        // create another activity.
+        if (this._activeActivity.manifestURL === configuration.manifestURL &&
+            this._activeActivity.url === configuration.url) {
+          return;
+        }
         this._lastActivity = new ActivityWindow(configuration,
-                                                this._lastActivity);
+                                                this._activeActivity);
         return;
       }
       var app = AppWindowManager.getActiveApp();
+      this.debug('caller is an app: ', app && app.name);
       if (app) {
-        var callee = app.activityCallee;
+        callee = app.activityCallee;
         // XXX: We don't know the activity is the same request
         // or not here. The data passed may be different.
         // So we just kill all.
@@ -192,12 +221,20 @@
           this._lastActivity = evt.detail;
           break;
 
-        case 'activitywillopen':
+        case 'activityopening':
           this._activeActivity = evt.detail;
           break;
 
-        case 'activitywillclose':
-          if (this._activeActivity &&
+        /**
+         * We should implement API to find out real active frame
+         * but now we only try to guess.
+         */
+        case 'activityclosing':
+          var activity = evt.detail;
+          if (activity.activityCaller &&
+              activity.activityCaller instanceof ActivityWindow) {
+            this._activeActivity = activity.activityCaller;
+          } else if (this._activeActivity &&
               this._activeActivity.instanceID == evt.detail.instanceID) {
             this._activeActivity = null;
           }
@@ -206,6 +243,5 @@
     }
   };
 
-  ActivityWindowFactory.init();
-  window.ActivityWindowFactory = ActivityWindowFactory;
-}(this));
+  exports.ActivityWindowFactory = ActivityWindowFactory;
+}(window));

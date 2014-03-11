@@ -22,14 +22,18 @@ var GridItem = function GridItem(params) {
   // Grid components are removable by default
   this.removable = true;
 
+  if ('removable' in params && !params.removable) {
+    this.removable = false;
+  }
+
   this.iconable = 'iconable' in params ? params.iconable : true;
 
   this.id = params.id || '';
-  this.url = this.origin = this.bookmarkURL = params.bookmarkURL;
+  this.setURL(params.bookmarkURL);
   this.features = params.features || '';
 
   this.manifest = {
-    name: params.name,
+    name: params.customName || params.name,
     default_locale: 'en-US'
   };
 
@@ -64,6 +68,14 @@ GridItem.prototype = {
       useAsyncPanZoom: this.useAsyncPanZoom,
       features: this.features
     };
+  },
+
+  setURL: function gc_setURL(url) {
+    this.url = this.origin = this.bookmarkURL = url;
+  },
+
+  setName: function gc_setName(name) {
+    this.manifest.name = name;
   }
 };
 

@@ -103,6 +103,9 @@
       var switching = appCurrent && !appCurrent.isHomescreen &&
                       !appNext.isHomescreen;
 
+      this._updateActiveApp(appNext.isHomescreen ?
+          HomescreenLauncher.origin : appNext.origin);
+
       if (appCurrent && LayoutManager.keyboardEnabled) {
         // Ask keyboard to hide before we switch the app.
         var self = this;
@@ -140,13 +143,13 @@
         if (appNext.isDead()) {
           // The app was killed while we were opening it,
           // let's not switch to a dead app!
+          this._updateActiveApp(appCurrent.isHomescreen ?
+            HomescreenLauncher.origin : appCurrent.origin);
           return;
         }
         this.debug('ready to open/close' + switching);
         if (switching)
           HomescreenLauncher.getHomescreen().fadeOut();
-        this._updateActiveApp(appNext.isHomescreen ?
-          HomescreenLauncher.origin : appNext.origin);
 
         var immediateTranstion = false;
         if (appNext.rotatingDegree === 90 || appNext.rotatingDegree === 270) {
@@ -178,9 +181,7 @@
 
     /**
      * The init process from bootstrap to homescreen is opened:
-     * <a href="http://i.imgur.com/8qsOh1W.png" target="_blank">
-     *   <img src="http://i.imgur.com/8qsOh1W.png" title="bootstrap"></img>
-     * </a>
+     * ![bootstrap](http://i.imgur.com/8qsOh1W.png)
      *
      * 1. Applications is ready. (mozApps are parsed.)
      * 2. Bootstrap tells HomescreenLauncher to init.
@@ -192,7 +193,7 @@
      * @memberOf module:AppWindowManager
      */
     init: function awm_init() {
-      if (LockScreen && LockScreen.locked) {
+      if (lockScreen && lockScreen.locked) {
         this.element.setAttribute('aria-hidden', 'true');
       }
       if (System.slowTransition) {
@@ -244,16 +245,25 @@
             return;
           this.continuousTransition = !!value;
         }.bind(this));
+
+      SettingsListener.observe('app-suspending.enabled', false,
+        function(value) {
+          // Kill all instances if they are suspended.
+          if (!value) {
+            this.broadcastMessage('kill_suspended');
+          }
+        }.bind(this));
     },
 
     handleEvent: function awm_handleEvent(evt) {
+      var activeApp = this._activeApp;
       switch (evt.type) {
         case 'system-resize':
           this.debug(' Resizing...');
-          if (this._activeApp) {
-            this.debug(' Resizing ' + this._activeApp.name);
-            if (!this._activeApp.isTransitioning()) {
-              this._activeApp.resize();
+          if (activeApp) {
+            this.debug(' Resizing ' + activeApp.name);
+            if (!activeApp.isTransitioning()) {
+              activeApp.resize();
             }
           }
           break;
@@ -274,16 +284,15 @@
         case 'appterminated':
           var app = evt.detail;
           var instanceID = evt.detail.instanceID;
-          if (this._activeApp &&
-              app.instanceID === this._activeApp.instanceID) {
-            this._activeApp = null;
+          if (activeApp && app.instanceID === activeApp.instanceID) {
+            activeApp = null;
           }
           delete this.runningApps[evt.detail.origin];
           break;
 
         case 'reset-orientation':
-          if (this._activeApp) {
-            this._activeApp.setOrientation();
+          if (activeApp) {
+            activeApp.setOrientation();
           }
           break;
 
@@ -340,8 +349,7 @@
         case 'hidewindow':
           var detail = evt.detail;
 
-          if (this._activeApp &&
-              this.displayedApp !== HomescreenLauncher.origin) {
+          if (activeApp && this.displayedApp !== HomescreenLauncher.origin) {
             // This is coming from attention screen.
             // If attention screen has the same origin as our active app,
             // we cannot turn off its page visibility
@@ -352,7 +360,7 @@
                 detail.origin === this.displayedApp) {
               return;
             }
-            this._activeApp.setVisible(false);
+            activeApp.setVisible(false);
           } else {
             var home = HomescreenLauncher.getHomescreen();
             home && home.setVisible(false);
@@ -360,9 +368,8 @@
           break;
 
         case 'showwindow':
-          if (this._activeApp &&
-              this.displayedApp !== HomescreenLauncher.origin) {
-            this._activeApp.setVisible(true);
+          if (activeApp && this.displayedApp !== HomescreenLauncher.origin) {
+            activeApp.setVisible(true);
           } else {
             var home = HomescreenLauncher.getHomescreen();
             home && home.setVisible(true);
@@ -371,9 +378,8 @@
 
         case 'overlaystart':
           // Instantly blur the frame in order to ensure hiding the keyboard
-          var app = this._activeApp;
-          if (app) {
-            if (!app.isOOP()) {
+          if (activeApp) {
+            if (!activeApp.isOOP()) {
               // Bug 845661 - Attention screen does not appears when
               // the url bar input is focused.
               // Calling app.iframe.blur() on an in-process window
@@ -385,9 +391,9 @@
               // there is an attention screen and delegate the
               // responsibility to blur the possible focused elements
               // itself.
-              app.setVisible(false, true);
+              activeApp.setVisible(false, true);
             } else {
-              app.blur();
+              activeApp.blur();
             }
           }
           break;
@@ -402,7 +408,7 @@
           if (!HomescreenLauncher.ready)
             return;
 
-          if (this._activeApp && !this._activeApp.isHomescreen) {
+          if (activeApp && !activeApp.isHomescreen) {
             // Make sure this happens before activity frame is removed.
             // Because we will be asked by a 'activity-done' event from gecko
             // to relaunch to activity caller, and this is the only way to
@@ -444,7 +450,7 @@
 
     /**
      * Instanciate app window by configuration
-     * @param  {AppConfig} config The configuration of the app window
+     * @param  {AppConfig} config The configuration of the app window.
      * @memberOf module:AppWindowManager
      */
     launch: function awm_launch(config) {
@@ -467,7 +473,9 @@
     },
 
     linkWindowActivity: function awm_linkWindowActivity(config) {
-      var caller = this._activeApp;
+      // Caller should be either the current active inline activity window,
+      // or the active app.
+      var caller = activityWindowFactory.getActiveWindow() || this._activeApp;
       this.runningApps[config.origin].activityCaller = caller;
       caller.activityCallee = this.runningApps[config.origin];
     },
@@ -491,11 +499,9 @@
      * we call kill on the instance and let the instance to request 'close'
      * to AppWindowManager or just destroy itself if it's at background.
      *
-     * <a href="http://i.imgur.com/VrlkUXM.png" target="_blank">
-     *   <img src="http://i.imgur.com/VrlkUXM.png"></img>
-     * </a>
+     * ![AppWindowManager kill process](http://i.imgur.com/VrlkUXM.png)
      *
-     * @param  {String} origin The origin of the running app window to be killed
+     * @param {String} origin The origin of the running app window to be killed.
      * @memberOf module:AppWindowManager
      */
     kill: function awm_kill(origin) {
@@ -541,8 +547,8 @@
      *
      * AppWindow.REGISTERED_EVENTS.push('_earthquake');
      *
-     * @param  {String} message The message name
-     * @param  {Object} [detail]  The detail of the message
+     * @param  {String} message The message name.
+     * @param  {Object} [detail]  The detail of the message.
      * @memberOf module:AppWindowManager
      */
     broadcastMessage: function awm_broadcastMessage(message, detail) {

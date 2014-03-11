@@ -48,7 +48,6 @@ suite('attachment_test.js', function() {
 
   suiteSetup(function(done) {
     // this sometimes takes longer because we fetch 4 assets via XHR
-    this.timeout(5000);
     this.realMozL10n = navigator.mozL10n;
     navigator.mozL10n = MockL10n;
 
@@ -260,6 +259,44 @@ suite('attachment_test.js', function() {
       assert.ok(typeSpy.calledWith('IMG_0554', 'image/jpeg'));
       assert.ok(matchSpy.calledWith('IMG_0554', typeSpy.returnValues[0]));
       assert.equal(MockMozActivity.calls.length, 1);
+    });
+
+    suite('Activity errors >', function() {
+      var activity;
+      setup(function() {
+        this.sinon.spy(window, 'MozActivity');
+        this.sinon.stub(window, 'alert');
+
+        var attachment = new Attachment(testImageBlob, {
+          name: 'IMG_0554.jpg'
+        });
+
+        attachment.view();
+
+        activity = window.MozActivity.firstCall.thisValue;
+      });
+
+      test('No handler for this image', function() {
+        activity.onerror.call({
+          error: { name: 'NO_PROVIDER' }
+        });
+        sinon.assert.calledWith(window.alert, 'attachmentOpenError');
+      });
+
+      test('Activity is canceled', function() {
+        activity.onerror.call({
+          error: { name: 'ActivityCanceled' }
+        });
+        sinon.assert.notCalled(window.alert);
+      });
+
+      test('Activity is canceled (on some other environment)', function() {
+        activity.onerror.call({
+          error: { name: 'USER_ABORT' }
+        });
+        sinon.assert.notCalled(window.alert);
+      });
+
     });
   });
 });

@@ -16,9 +16,7 @@
    * ActivityWindowFactory for it to do instantiation via event
    * <code>launchactivity</code>.
    *
-   * <a href="http://i.imgur.com/ZyMcgft.png" target="_blank">
-   * <img src="http://i.imgur.com/ZyMcgft.png" title="applaunch"></img>
-   * </a>
+   * ![app and activity launch flow](http://i.imgur.com/ZyMcgft.png)
    *
    * @module AppWindowFactory
    */
@@ -96,12 +94,15 @@
         return;
       }
 
-      // Special case for rocketbar search app
+      // The rocketbar currently handles the management of
+      // the search app
       if (config.manifest.role === 'search') {
-        Rocketbar.render();
         return;
-      } else if (!AppWindowManager.isRunning(config) &&
-           config.origin !== HomescreenLauncher.origin) {
+      }
+      var app = AppWindowManager.getApp(config.origin);
+      if (app) {
+        app.reviveBrowser();
+      } else if (config.origin !== HomescreenLauncher.origin) {
         new AppWindow(config);
       } else if (config.origin == HomescreenLauncher.origin) {
         HomescreenLauncher.getHomescreen().ensure();

@@ -3,22 +3,13 @@ define(function(require) {
 
 var Tabs = require('tabs');
 var View = require('view');
-var Panel = require('panel');
-var TimerPanel = require('timer_panel');
-var StopwatchPanel = require('stopwatch_panel');
 var mozL10n = require('l10n');
+var PerformanceTestingHelper = require('shared/js/performance_testing_helper');
 var rAF = mozRequestAnimationFrame || requestAnimationFrame;
 /**
  * Global Application event handling and paging
  */
 var App = {
-  panelClass: {
-    'alarm-panel': Panel,
-    'alarm-edit-panel': Panel,
-    'timer-panel': TimerPanel,
-    'stopwatch-panel': StopwatchPanel
-  },
-
   /**
    * Load the Tabs and Panels, attach events and navigate to the default view.
    */
@@ -35,13 +26,46 @@ var App = {
 
     this.visible = !document.hidden;
     this.panels = Array.prototype.map.call(
-      document.querySelectorAll('.panel'),
+      document.querySelectorAll('[data-panel-id]'),
       function(element) {
-        return View.instance(element, App.panelClass[element.id] || Panel);
-      }
+        var panel = {
+          el: element,
+          fragment: element.dataset.panelId.replace('_', '-') + '-panel',
+          instance: null
+        };
+
+        return panel;
+      }.bind(this)
     );
-    this.navigate({ hash: '#alarm-panel' });
+    this.navigate({ hash: '#alarm-panel' }, function() {
+      // Dispatch an event to mark when we've finished loading.
+      PerformanceTestingHelper.dispatch('startup-path-done');
+    });
     return this;
+  },
+
+  /**
+   * Load and instantiate the specified panel (when necessary).
+   *
+   * @param {Object} panel - An object describing the panel. It must contain
+   *                         either an `el` attribute (defining the panel's
+   *                         containing element) or an `instance` attribute
+   *                         (defining the instantiated Panel itself).
+   * @param {Function} [callback] - A function that will be invoked with the
+   *                                instantiated panel once it is loaded.
+   */
+  loadPanel: function(panel, callback) {
+    if (panel.instance) {
+      callback && setTimeout(callback, 0, panel);
+      return;
+    }
+
+    var moduleId = 'panels/' + panel.el.dataset.panelId + '/main';
+
+    require([moduleId], function(PanelModule) {
+      panel.instance = View.instance(panel.el, PanelModule);
+      callback && callback(panel);
+    });
   },
 
   /**
@@ -59,27 +83,35 @@ var App = {
    *
    * @param {object} data Options for navigation.
    * @param {string} data.hash The hash of the panel id.  I.E. '#alarm-panel'.
+   * @param {function} callback Callback to invoke when done.
    */
-  navigate: function(data) {
+  navigate: function(data, callback) {
     var currentIndex = this.panels.indexOf(this.currentPanel);
 
     this.panels.forEach(function(panel, panelIndex) {
-      if ('#' + panel.id === data.hash) {
-        panel.active = true;
-        panel.visible = true;
-        if (currentIndex !== -1) {
-          var direction = currentIndex < panelIndex;
-          rAF(function startAnimation(oldPanel) {
-            panel.transition =
-              direction ? 'slide-in-right' : 'slide-in-left';
+      if ('#' + panel.fragment === data.hash) {
+        this.loadPanel(panel, function() {
+          var instance = panel.instance;
+          instance.navData = data.data || null;
+          instance.active = true;
+          instance.visible = true;
+          if (currentIndex !== -1 && currentIndex !== panelIndex) {
+            var direction = currentIndex < panelIndex;
+            rAF(function startAnimation(oldPanel) {
+              instance.transition =
+                direction ? 'slide-in-right' : 'slide-in-left';
 
-            oldPanel.transition =
-              direction ? 'slide-out-left' : 'slide-out-right';
-          }.bind(null, this.currentPanel));
-        }
-        this.currentPanel = panel;
+              oldPanel.instance.transition =
+                direction ? 'slide-out-left' : 'slide-out-right';
+            }.bind(null, this.currentPanel));
+          }
+          this.currentPanel = panel;
+          callback && callback();
+        }.bind(this));
       } else {
-        panel.active = false;
+        if (panel.instance) {
+          panel.instance.active = false;
+        }
       }
     }, this);
     this.currentHash = data.hash;

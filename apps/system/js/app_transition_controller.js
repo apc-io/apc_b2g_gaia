@@ -12,19 +12,22 @@
     'closing': ['opened', null, 'closed', 'closed']
   };
 
+  var appTransitionSetting = 'app-transition.enabled';
+  var transitionEnabled =
+    SettingsListener.getSettingsLock().get(appTransitionSetting);
+  SettingsListener.observe(appTransitionSetting, true, function(value) {
+    transitionEnabled = value;
+  });
+
   /**
    * AppTransitionController controlls the opening and closing animation
    * of the given appWindow.
    *
    * ##### Flow chart #####
-   * <a href="http://i.imgur.com/k0hO2AN.png" target="_blank">
-   * <img src="http://i.imgur.com/k0hO2AN.png"></img>
-   * </a>
+   * ![AppTransition Flow chart](http://i.imgur.com/k0hO2AN.png)
    *
    * ##### State machine #####
-   * <a href="http://i.imgur.com/0arU9rl.png" target="_blank">
-   * <img src="http://i.imgur.com/0arU9rl.png"></img>
-   * </a>
+   * ![AppTransition State machine](http://i.imgur.com/0arU9rl.png)
    *
    * @param {AppWindow} app The app window instance which this controller
    *                        belongs to.
@@ -126,14 +129,22 @@
       System.slowTransition ? this.SLOW_TRANSITION_TIMEOUT :
                               this.TRANSITION_TIMEOUT);
       this.app.element.classList.add('transition-closing');
-      this.app.element.classList.add(this.currentAnimation ||
-        this.closeAnimation);
+      this.app.element.classList.add(this.getAnimationName('close'));
     };
 
   AppTransitionController.prototype._do_closed =
     function atc_do_closed() {
       this.resetTransition();
     };
+
+  AppTransitionController.prototype.getAnimationName = function(type) {
+    if (transitionEnabled) {
+      return this.currentAnimation || this[type + 'Animation'];
+    } else {
+      return 'immediate';
+    }
+  };
+
 
   AppTransitionController.prototype._do_opening =
     function atc_do_opening() {
@@ -143,8 +154,7 @@
       System.slowTransition ? this.SLOW_TRANSITION_TIMEOUT :
                               this.TRANSITION_TIMEOUT);
       this.app.element.classList.add('transition-opening');
-      this.app.element.classList.add(this.currentAnimation ||
-        this.openAnimation);
+      this.app.element.classList.add(this.getAnimationName('open'));
     };
 
   AppTransitionController.prototype._do_opened =
@@ -183,6 +193,7 @@
     function atc_handle_opening() {
       if (!this.app || !this.app.element)
         return;
+      this.app.reviveBrowser();
       this.app.launchTime = Date.now();
       this.app.fadeIn();
       this.app.element.removeAttribute('aria-hidden');
@@ -231,7 +242,9 @@
           return;
         // XXX: Remove this after SIMPIN Dialog is refactored.
         // See https://bugzilla.mozilla.org/show_bug.cgi?id=938979
-        if (!SimPinDialog.visible)
+        // XXX: Rocketbar losing input focus
+        // See: https://bugzilla.mozilla.org/show_bug.cgi?id=961557
+        if (!SimPinDialog.visible && !Rocketbar.shown)
           this.app.focus();
       }.bind(this));
     };
@@ -272,8 +285,9 @@
       }
 
       var classes = ['enlarge', 'reduce', 'to-cardview', 'from-cardview',
-        'invoking', 'invoked', 'zoom-in', 'zoom-out',
-        'transition-opening', 'transition-closing'];
+        'invoking', 'invoked', 'zoom-in', 'zoom-out', 'fade-in', 'fade-out',
+        'transition-opening', 'transition-closing', 'immediate',
+        'slideup', 'slidedown'];
 
       classes.forEach(function iterator(cls) {
         this.app.element.classList.remove(cls);
@@ -300,6 +314,7 @@
           this.changeTransitionState('timeout', evt.type);
           break;
         case 'animationend':
+          evt.stopPropagation();
           this.app.debug(evt.animationName + ' has been ENDED!');
           this.changeTransitionState('complete', evt.type);
           break;

@@ -5,11 +5,15 @@
   var _id = 0;
 
   /**
-   * The ModalDialog of the appWindow.
+   * The ModalDialog of the AppWindow.
+   *
+   * Including **alert**, **prompt**, **confirm**, and
+   * **single select** dialogs.
    *
    * @class AppModalDialog
    * @param {AppWindow} app The app window instance
    *                        where this dialog should popup.
+   * @extends BaseUI
    */
   window.AppModalDialog = function AppModalDialog(app) {
     this.app = app;
@@ -244,11 +248,13 @@
         break;
     }
 
+    this.app.browser.element.setAttribute('aria-hidden', true);
     this.element.classList.add('visible');
   };
 
   AppModalDialog.prototype.hide = function amd_hide() {
     this.element.blur();
+    this.app.browser.element.removeAttribute('aria-hidden');
     this.element.classList.remove('visible');
     if (this.app)
       this.app.focus();

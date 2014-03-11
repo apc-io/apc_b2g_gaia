@@ -1,58 +1,50 @@
+/* global MockAllNetworkInterfaces, Common, MockMozNetworkStats, resetData,
+          MockNavigatorMozMobileConnections, WifiInterfaceType,
+          MockNavigatorSettings, MobileInterfaceType, MockConfigManager */
+
 'use strict';
 
 requireApp('costcontrol/test/unit/mock_debug.js');
 requireApp('costcontrol/js/common.js');
-requireApp('costcontrol/test/unit/mock_icc_helper.js');
 requireApp('costcontrol/test/unit/mock_moz_l10n.js');
 requireApp('costcontrol/test/unit/mock_moz_network_stats.js');
 requireApp('costcontrol/test/unit/mock_all_network_interfaces.js');
 requireApp('costcontrol/test/unit/mock_config_manager.js');
 requireApp('costcontrol/js/utils/toolkit.js');
-requireApp('system/shared/test/unit/mocks/mock_navigator_moz_settings.js');
-requireApp('system/shared/test/unit/mocks/mock_navigator_moz_mobile_connections.js');
+requireApp('costcontrol/shared/test/unit/mocks/mock_navigator_moz_settings.js');
+requireApp(
+  'costcontrol/shared/test/unit/mocks/mock_navigator_moz_mobile_connections.js'
+);
 
-var realIccHelper,
-    realMozL10n,
+var realMozL10n,
     realMozNetworkStats,
-    realNetworkstats,
     realConfigManager,
     realMozSettings,
     realMozMobileConnections;
 
-if (!this.IccHelper) {
-  this.IccHelper = null;
+if (!window.navigator.mozL10n) {
+  window.navigator.mozL10n = null;
 }
 
-if (!this.navigator.mozL10n) {
-  this.navigator.mozL10n = null;
+if (!window.ConfigManager) {
+  window.ConfigManager = null;
 }
 
-if (!this.ConfigManager) {
-  this.ConfigManager = null;
+if (!window.navigator.mozNetworkStats) {
+  window.navigator.mozNetworkStats = null;
 }
 
-if (!this.navigator.mozNetworkStats) {
-  this.navigator.mozNetworkStats = null;
+if (!window.navigator.mozMobileConnections) {
+  window.navigator.mozMobileConnections = null;
 }
 
-if (!this.navigator.mozMobileConnections) {
-  this.navigator.mozMobileConnections = null;
-}
-
-if (!this.navigator.mozSettings) {
-  this.navigator.mozSettings = null;
-}
-
-if (!this.Networkstats) {
-  this.Networkstats = null;
+if (!window.navigator.mozSettings) {
+  window.navigator.mozSettings = null;
 }
 
 suite('Cost Control Common >', function() {
 
   suiteSetup(function() {
-
-    realIccHelper = window.IccHelper;
-    window.IccHelper = new MockIccHelper();
 
     realMozL10n = window.navigator.mozL10n;
     window.navigator.mozL10n = window.MockMozL10n;
@@ -63,24 +55,21 @@ suite('Cost Control Common >', function() {
     realMozMobileConnections = navigator.mozMobileConnections;
     navigator.mozMobileConnections = MockNavigatorMozMobileConnections;
 
-    realNetworkstats = window.Networkstats;
-    window.Networkstats = MockMozNetworkStats;
-
     realMozSettings = navigator.mozSettings;
     navigator.mozSettings = MockNavigatorSettings;
 
     realConfigManager = window.ConfigManager;
 
+    sinon.stub(Common, 'getIccInfo').returns = null;
   });
 
   suiteTeardown(function() {
     window.ConfigManager = realConfigManager;
-    window.IccHelper = realIccHelper;
     window.navigator.mozL10n = realMozL10n;
     window.navigator.mozNetworkStats = realMozNetworkStats;
-    window.Networkstats = realNetworkstats;
     window.navigator.mozSettings = realMozSettings;
     window.navigator.mozMobileConnections = realMozMobileConnections;
+    Common.getIccInfo.restore();
   });
 
   function getCustomClearStats(willFail) {
@@ -121,7 +110,7 @@ suite('Cost Control Common >', function() {
         }
       };
     };
-  };
+  }
 
   setup(function() {
     Common.dataSimIccIdLoaded = false;

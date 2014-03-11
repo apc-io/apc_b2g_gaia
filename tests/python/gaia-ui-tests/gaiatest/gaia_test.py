@@ -6,39 +6,17 @@ import json
 import os
 import time
 
-from marionette import MarionetteTestCase, EnduranceTestCaseMixin, B2GTestCaseMixin, \
-                       MemoryEnduranceTestCaseMixin
+from marionette import MarionetteTestCase, EnduranceTestCaseMixin, \
+    B2GTestCaseMixin, MemoryEnduranceTestCaseMixin
+from marionette.by import By
 from marionette.errors import NoSuchElementException
-from marionette.errors import ElementNotVisibleException
-from marionette.errors import TimeoutException
 from marionette.errors import StaleElementException
+from marionette.errors import TimeoutException
 from marionette.errors import InvalidResponseException
+from marionette.wait import Wait
 from yoctopuce.yocto_api import YAPI, YRefParam, YModule
 from yoctopuce.yocto_current import YCurrent
 from yoctopuce.yocto_datalogger import YDataLogger
-
-
-class LockScreen(object):
-
-    def __init__(self, marionette):
-        self.marionette = marionette
-        js = os.path.abspath(os.path.join(__file__, os.path.pardir, 'atoms', "gaia_lock_screen.js"))
-        self.marionette.import_script(js)
-
-    @property
-    def is_locked(self):
-        self.marionette.switch_to_frame()
-        return self.marionette.execute_script('return window.wrappedJSObject.LockScreen.locked')
-
-    def lock(self):
-        self.marionette.switch_to_frame()
-        result = self.marionette.execute_async_script('GaiaLockScreen.lock()')
-        assert result, 'Unable to lock screen'
-
-    def unlock(self):
-        self.marionette.switch_to_frame()
-        result = self.marionette.execute_async_script('GaiaLockScreen.unlock()')
-        assert result, 'Unable to unlock screen'
 
 
 class GaiaApp(object):
@@ -68,7 +46,7 @@ class GaiaApps(object):
         return self.marionette.execute_async_script("return GaiaApps.setPermission('%s', '%s', '%s')" %
                                                     (app_name, permission_name, value))
 
-    def launch(self, name, switch_to_frame=True, url=None, launch_timeout=None):
+    def launch(self, name, switch_to_frame=True, launch_timeout=None):
         self.marionette.switch_to_frame()
         result = self.marionette.execute_async_script("GaiaApps.launchWithName('%s')" % name, script_timeout=launch_timeout)
         assert result, "Failed to launch app with name '%s'" % name
@@ -79,7 +57,7 @@ class GaiaApps(object):
         if app.frame_id is None:
             raise Exception("App failed to launch; there is no app frame")
         if switch_to_frame:
-            self.switch_to_frame(app.frame_id, url)
+            self.marionette.switch_to_frame(app.frame_id)
         return app
 
     @property
@@ -105,15 +83,11 @@ class GaiaApps(object):
 
     def kill(self, app):
         self.marionette.switch_to_frame()
-        js = os.path.abspath(os.path.join(__file__, os.path.pardir, 'atoms', "gaia_apps.js"))
-        self.marionette.import_script(js)
         result = self.marionette.execute_async_script("GaiaApps.kill('%s');" % app.origin)
         assert result, "Failed to kill app with name '%s'" % app.name
 
     def kill_all(self):
         self.marionette.switch_to_frame()
-        js = os.path.abspath(os.path.join(__file__, os.path.pardir, 'atoms', "gaia_apps.js"))
-        self.marionette.import_script(js)
         self.marionette.execute_async_script("GaiaApps.killAll()")
 
     @property
@@ -143,22 +117,6 @@ class GaiaApps(object):
             result.append(GaiaApp(origin=app['origin'], name=app['name']))
         return result
 
-    def switch_to_frame(self, app_frame, url=None, timeout=None):
-        timeout = timeout or (self.marionette.timeout and self.marionette.timeout / 1000) or 30
-        self.marionette.switch_to_frame(app_frame)
-        start = time.time()
-        if not url:
-            def check(now):
-                return "about:blank" not in now
-        else:
-            def check(now):
-                return url in now
-        while (time.time() - start < timeout):
-            if check(self.marionette.get_url()):
-                return
-            time.sleep(2)
-        raise TimeoutException('Could not switch to app frame %s in time' % app_frame)
-
 
 class GaiaData(object):
 
@@ -186,7 +144,8 @@ class GaiaData(object):
 
     def insert_contact(self, contact):
         self.marionette.switch_to_frame()
-        result = self.marionette.execute_async_script('return GaiaDataLayer.insertContact(%s);' % json.dumps(contact), special_powers=True)
+        mozcontact = contact.create_mozcontact()
+        result = self.marionette.execute_async_script('return GaiaDataLayer.insertContact(%s);' % json.dumps(mozcontact), special_powers=True)
         assert result, 'Unable to insert contact %s' % contact
 
     def remove_all_contacts(self):
@@ -256,24 +215,6 @@ class GaiaData(object):
     def bluetooth_disable(self):
         self.marionette.switch_to_frame()
         return self.marionette.execute_async_script("return GaiaDataLayer.disableBluetooth()")
-
-    def bluetooth_pair_device(self, device_name):
-        return self.marionette.execute_async_script('return GaiaDataLayer.pairBluetoothDevice("%s")' % device_name)
-
-    def bluetooth_unpair_all_devices(self):
-        self.marionette.switch_to_frame()
-        self.marionette.execute_async_script('return GaiaDataLayer.unpairAllBluetoothDevices()')
-
-    def bluetooth_set_device_name(self, device_name):
-        result = self.marionette.execute_async_script('return GaiaDataLayer.bluetoothSetDeviceName(%s);' % device_name)
-        assert result, "Unable to set device's bluetooth name to %s" % device_name
-
-    def bluetooth_set_device_discoverable_mode(self, discoverable):
-        if (discoverable):
-            result = self.marionette.execute_async_script('return GaiaDataLayer.bluetoothSetDeviceDiscoverableMode(true);')
-        else:
-            result = self.marionette.execute_async_script('return GaiaDataLayer.bluetoothSetDeviceDiscoverableMode(false);')
-        assert result, 'Able to set the device bluetooth discoverable mode'
 
     @property
     def bluetooth_is_enabled(self):
@@ -376,6 +317,10 @@ class GaiaData(object):
         self.marionette.switch_to_frame()
         return self.marionette.execute_async_script("return GaiaDataLayer.deleteAllSms();", special_powers=True)
 
+    def get_all_sms(self):
+        self.marionette.switch_to_frame()
+        return self.marionette.execute_async_script("return GaiaDataLayer.getAllSms();", special_powers=True)
+
     def delete_all_call_log_entries(self):
         """The call log needs to be open and focused in order for this to work."""
         self.marionette.execute_script('window.wrappedJSObject.RecentsDBManager.deleteAll();')
@@ -420,7 +365,7 @@ class PowerDataRun(object):
         self._samples = []
 
     @classmethod
-    def from_json(self, json_str):
+    def from_json(cls, json_str):
         pds = json.loads(json_str)
         samples = []
         for pd in pds:
@@ -642,12 +587,47 @@ class YoctoAmmeter(YoctoDevice):
             raise Exception('yocto device is not logging data')
         self.events.append([self.data_logger.get_timeUTC(), desc])
 
+class Accessibility(object):
+
+    def __init__(self, marionette):
+        self.marionette = marionette
+        js = os.path.abspath(os.path.join(__file__, os.path.pardir,
+                                          'atoms', "accessibility.js"))
+        self.marionette.import_script(js)
+
+    def is_hidden(self, element):
+        return self.marionette.execute_async_script(
+            'return Accessibility.isHidden.apply(Accessibility, arguments)',
+            [element], special_powers=True)
+
+    def click(self, element):
+        self.marionette.execute_async_script(
+            'Accessibility.click.apply(Accessibility, arguments)',
+            [element], special_powers=True)
+
+
+class FakeUpdateChecker(object):
+
+    def __init__(self, marionette):
+        self.marionette = marionette
+        self.fakeupdatechecker_atom = os.path.abspath(
+            os.path.join(__file__, os.path.pardir, 'atoms', "fake_update-checker.js"))
+
+    def check_updates(self):
+        self.marionette.set_context(self.marionette.CONTEXT_CHROME)
+        self.marionette.import_script(self.fakeupdatechecker_atom)
+        self.marionette.execute_script("GaiaUITests_FakeUpdateChecker();")
+        self.marionette.set_context(self.marionette.CONTEXT_CONTENT)
 
 class GaiaDevice(object):
 
     def __init__(self, marionette, testvars=None):
         self.marionette = marionette
         self.testvars = testvars or {}
+        self.update_checker = FakeUpdateChecker(self.marionette)
+        self.lockscreen_atom = os.path.abspath(
+            os.path.join(__file__, os.path.pardir, 'atoms', "gaia_lock_screen.js"))
+        self.marionette.import_script(self.lockscreen_atom)
 
     def add_device_manager(self, device_manager):
         self._manager = device_manager
@@ -666,7 +646,7 @@ class GaiaDevice(object):
     @property
     def is_android_build(self):
         if self.testvars.get('is_android_build') is None:
-            self.testvars['is_android_build'] = 'Android' in self.marionette.session_capabilities['platform']
+            self.testvars['is_android_build'] = 'android' in self.marionette.session_capabilities['platformName'].lower()
         return self.testvars['is_android_build']
 
     @property
@@ -719,7 +699,7 @@ class GaiaDevice(object):
         time.sleep(2)
         self.start_b2g()
 
-    def start_b2g(self):
+    def start_b2g(self, timeout=60):
         if self.marionette.instance:
             # launch the gecko instance attached to marionette
             self.marionette.instance.start()
@@ -729,16 +709,14 @@ class GaiaDevice(object):
             raise Exception('Unable to start B2G')
         self.marionette.wait_for_port()
         self.marionette.start_session()
-        if self.is_android_build:
-            self.marionette.execute_async_script("""
-window.addEventListener('mozbrowserloadend', function loaded(aEvent) {
-  if (aEvent.target.src.indexOf('ftu') != -1 || aEvent.target.src.indexOf('homescreen') != -1) {
-    window.removeEventListener('mozbrowserloadend', loaded);
-    marionetteScriptFinished();
-  }
-});""", script_timeout=60000)
-            # TODO: Remove this sleep when Bug 924912 is addressed
-            time.sleep(5)
+
+        # Wait for the AppWindowManager to have registered the frame as active (loaded)
+        locator = (By.CSS_SELECTOR, 'div.appWindow.active')
+        Wait(marionette=self.marionette, timeout=timeout, ignored_exceptions=NoSuchElementException)\
+            .until(lambda m: m.find_element(*locator).is_displayed())
+
+        self.marionette.import_script(self.lockscreen_atom)
+        self.update_checker.check_updates()
 
     def stop_b2g(self):
         if self.marionette.instance:
@@ -752,6 +730,30 @@ window.addEventListener('mozbrowserloadend', function loaded(aEvent) {
         self.marionette.session = None
         self.marionette.window = None
 
+    def press_sleep_button(self):
+        self.marionette.execute_script("""
+            window.wrappedJSObject.dispatchEvent(new CustomEvent('mozChromeEvent', {
+              detail: {
+                type: 'sleep-button-press'
+              }
+            }));""")
+
+    def press_release_volume_up_then_down_n_times(self, n_times):
+        self.marionette.execute_script("""
+            function sendEvent(aName, aType) {
+              window.wrappedJSObject.dispatchEvent(new CustomEvent('mozChromeEvent', {
+                detail: {
+                  type: aName + '-button-' + aType
+                }
+              }));
+            }
+            for (var i = 0; i < arguments[0]; ++i) {
+              sendEvent('volume-up', 'press');
+              sendEvent('volume-up', 'release');
+              sendEvent('volume-down', 'press');
+              sendEvent('volume-down', 'release');
+            };""", script_args=[n_times])
+
     def turn_screen_off(self):
         self.marionette.execute_script("window.wrappedJSObject.ScreenManager.turnScreenOff(true)")
 
@@ -760,14 +762,53 @@ window.addEventListener('mozbrowserloadend', function loaded(aEvent) {
         return self.marionette.execute_script('return window.wrappedJSObject.ScreenManager.screenEnabled')
 
     def touch_home_button(self):
+        apps = GaiaApps(self.marionette)
+        if apps.displayed_app.name.lower() != 'homescreen':
+            # touching home button will return to homescreen
+            self._dispatch_home_button_event()
+            Wait(self.marionette).until(
+                lambda m: apps.displayed_app.name.lower() == 'homescreen')
+            apps.switch_to_displayed_app()
+        else:
+            apps.switch_to_displayed_app()
+            mode = self.marionette.find_element(By.TAG_NAME, 'body').get_attribute('data-mode')
+            self._dispatch_home_button_event()
+            apps.switch_to_displayed_app()
+            if mode == 'edit':
+                # touching home button will exit edit mode
+                Wait(self.marionette).until(lambda m: m.find_element(
+                    By.TAG_NAME, 'body').get_attribute('data-mode') == 'normal')
+            else:
+                # touching home button will move to first page
+                Wait(self.marionette).until(lambda m: m.execute_script(
+                    'return window.wrappedJSObject.GridManager.pageHelper.getCurrentPageNumber();') == 0)
+
+    def _dispatch_home_button_event(self):
         self.marionette.switch_to_frame()
         self.marionette.execute_script("window.wrappedJSObject.dispatchEvent(new Event('home'));")
-        apps = GaiaApps(self.marionette)
-        apps.switch_to_displayed_app()
 
     def hold_home_button(self):
         self.marionette.switch_to_frame()
         self.marionette.execute_script("window.wrappedJSObject.dispatchEvent(new Event('holdhome'));")
+
+    def hold_sleep_button(self):
+        self.marionette.switch_to_frame()
+        self.marionette.execute_script("window.wrappedJSObject.dispatchEvent(new Event('holdsleep'));")
+
+    @property
+    def is_locked(self):
+        self.marionette.switch_to_frame()
+        return self.marionette.execute_script('return window.wrappedJSObject.lockScreen.locked')
+
+    def lock(self):
+        self.marionette.switch_to_frame()
+        result = self.marionette.execute_async_script('GaiaLockScreen.lock()')
+        assert result, 'Unable to lock screen'
+
+    def unlock(self):
+        self.marionette.switch_to_frame()
+        result = self.marionette.execute_async_script('GaiaLockScreen.unlock()')
+        assert result, 'Unable to unlock screen'
 
 
 class GaiaTestCase(MarionetteTestCase, B2GTestCaseMixin):
@@ -798,8 +839,7 @@ class GaiaTestCase(MarionetteTestCase, B2GTestCaseMixin):
 
         self.device = GaiaDevice(self.marionette, self.testvars)
         if self.device.is_android_build:
-            self.device.add_device_manager(
-                self.get_device_manager(deviceSerial = self.marionette.device_serial))
+            self.device.add_device_manager(self.get_device_manager())
         if self.restart and (self.device.is_android_build or self.marionette.instance):
             self.device.stop_b2g()
             if self.device.is_android_build:
@@ -815,11 +855,9 @@ class GaiaTestCase(MarionetteTestCase, B2GTestCaseMixin):
             self.marionette.timeouts(self.marionette.TIMEOUT_SEARCH, 10000)
             self.marionette.timeouts(self.marionette.TIMEOUT_PAGE, 30000)
 
-        self.lockscreen = LockScreen(self.marionette)
         self.apps = GaiaApps(self.marionette)
         self.data_layer = GaiaData(self.marionette, self.testvars)
-        from gaiatest.apps.keyboard.app import Keyboard
-        self.keyboard = Keyboard(self.marionette)
+        self.accessibility = Accessibility(self.marionette)
 
         if self.device.is_android_build:
             self.cleanup_sdcard()
@@ -849,8 +887,17 @@ class GaiaTestCase(MarionetteTestCase, B2GTestCaseMixin):
         # restore settings from testvars
         [self.data_layer.set_setting(name, value) for name, value in self.testvars.get('settings', {}).items()]
 
+        # restore prefs from testvars
+        for name, value in self.testvars.get('prefs', {}).items():
+            if type(value) is int:
+                self.data_layer.set_int_pref(name, value)
+            elif type(value) is bool:
+                self.data_layer.set_bool_pref(name, value)
+            else:
+                self.data_layer.set_char_pref(name, value)
+
         # unlock
-        self.lockscreen.unlock()
+        self.device.unlock()
 
         if full_reset:
             # disable passcode
@@ -866,9 +913,9 @@ class GaiaTestCase(MarionetteTestCase, B2GTestCaseMixin):
             # reset do not track
             self.data_layer.set_setting('privacy.donottrackheader.value', '-1')
 
-            if self.data_layer.get_setting('ril.radio.disabled'):
+            if self.data_layer.get_setting('airplaneMode.enabled'):
                 # enable the device radio, disable airplane mode
-                self.data_layer.set_setting('ril.radio.disabled', False)
+                self.data_layer.set_setting('airplaneMode.enabled', False)
 
             # Re-set edge gestures pref to False
             self.data_layer.set_setting('edgesgesture.enabled', False)
@@ -897,6 +944,9 @@ class GaiaTestCase(MarionetteTestCase, B2GTestCaseMixin):
 
         # disable sound completely
         self.data_layer.set_volume(0)
+
+        # disable auto-correction of keyboard
+        self.data_layer.set_setting('keyboard.autocorrect', False)
 
     def connect_to_network(self):
         if not self.device.is_online:
@@ -958,100 +1008,54 @@ class GaiaTestCase(MarionetteTestCase, B2GTestCaseMixin):
         return self.marionette.execute_script('return window.screen.mozOrientation')
 
     def wait_for_element_present(self, by, locator, timeout=None):
-        timeout = timeout or (self.marionette.timeout and self.marionette.timeout / 1000) or 30
-        end_time = float(timeout) + time.time()
-
-        while time.time() < end_time:
-            time.sleep(0.5)
-            try:
-                return self.marionette.find_element(by, locator)
-            except NoSuchElementException:
-                pass
-        else:
-            raise TimeoutException(
-                'Element %s not present before timeout' % locator)
+        return Wait(self.marionette, timeout, ignored_exceptions=NoSuchElementException).until(
+            lambda m: m.find_element(by, locator))
 
     def wait_for_element_not_present(self, by, locator, timeout=None):
-        timeout = timeout or (self.marionette.timeout and self.marionette.timeout / 1000) or 30
-        end_time = float(timeout) + time.time()
-
-        while time.time() < end_time:
-            time.sleep(0.5)
-            try:
-                self.marionette.find_element(by, locator)
-            except NoSuchElementException:
-                break
-        else:
-            raise TimeoutException(
-                'Element %s still present after timeout' % locator)
+        self.marionette.set_search_timeout(0)
+        try:
+            return Wait(self.marionette, timeout).until(
+                lambda m: not m.find_element(by, locator))
+        except NoSuchElementException:
+            pass
+        self.marionette.set_search_timeout(self.marionette.timeout or 10000)
 
     def wait_for_element_displayed(self, by, locator, timeout=None):
-        timeout = timeout or (self.marionette.timeout and self.marionette.timeout / 1000) or 30
-        end_time = float(timeout) + time.time()
-        e = None
-        while time.time() < end_time:
-            time.sleep(0.5)
-            try:
-                if self.marionette.find_element(by, locator).is_displayed():
-                    break
-            except (NoSuchElementException, StaleElementException) as e:
-                pass
-        else:
-            # This is an effortless way to give extra debugging information
-            if isinstance(e, NoSuchElementException):
-                raise TimeoutException('Element %s not present before timeout' % locator)
-            else:
-                raise TimeoutException('Element %s present but not displayed before timeout' % locator)
+        Wait(self.marionette, timeout, ignored_exceptions=[NoSuchElementException, StaleElementException]).until(
+            lambda m: m.find_element(by, locator).is_displayed())
 
     def wait_for_element_not_displayed(self, by, locator, timeout=None):
-        timeout = timeout or (self.marionette.timeout and self.marionette.timeout / 1000) or 30
-        end_time = float(timeout) + time.time()
+        self.marionette.set_search_timeout(0)
+        try:
+            Wait(self.marionette, timeout, ignored_exceptions=StaleElementException).until(
+                lambda m: not m.find_element(by, locator).is_displayed())
+        except NoSuchElementException:
+            pass
+        self.marionette.set_search_timeout(self.marionette.timeout or 10000)
 
-        while time.time() < end_time:
-            time.sleep(0.5)
-            try:
-                if not self.marionette.find_element(by, locator).is_displayed():
-                    break
-            except StaleElementException:
-                pass
-            except NoSuchElementException:
-                break
-        else:
-            raise TimeoutException(
-                'Element %s still visible after timeout' % locator)
-
-    def wait_for_condition(self, method, timeout=None,
-                           message="Condition timed out"):
-        """Calls the method provided with the driver as an argument until the \
-        return value is not False."""
-        timeout = timeout or (self.marionette.timeout and self.marionette.timeout / 1000) or 30
-        end_time = float(timeout) + time.time()
-        while time.time() < end_time:
-            try:
-                value = method(self.marionette)
-                if value:
-                    return value
-            except (NoSuchElementException, StaleElementException):
-                pass
-            time.sleep(0.5)
-        else:
-            raise TimeoutException(message)
+    def wait_for_condition(self, method, timeout=None, message=None):
+        Wait(self.marionette, timeout).until(method, message=message)
 
     def is_element_present(self, by, locator):
+        self.marionette.set_search_timeout(0)
         try:
             self.marionette.find_element(by, locator)
             return True
-        except:
+        except NoSuchElementException:
             return False
+        finally:
+            self.marionette.set_search_timeout(self.marionette.timeout or 10000)
 
     def is_element_displayed(self, by, locator):
+        self.marionette.set_search_timeout(0)
         try:
             return self.marionette.find_element(by, locator).is_displayed()
-        except (NoSuchElementException, ElementNotVisibleException):
+        except NoSuchElementException:
             return False
+        finally:
+            self.marionette.set_search_timeout(self.marionette.timeout or 10000)
 
     def tearDown(self):
-        self.lockscreen = None
         self.apps = None
         self.data_layer = None
         MarionetteTestCase.tearDown(self)

@@ -79,7 +79,8 @@
         location: 'example.jpg',
         content: testImageBlob
       }],
-      timestamp: now
+      timestamp: now,
+      sentTimestamp: now - 100000
     });
     messagesDb.messages.push({
       id: messagesDb.id++,
@@ -90,7 +91,10 @@
       delivery: 'sent',
       deliveryInfo: [{receiver: '052780',
                       deliveryStatus: 'success',
-                      deliveryTimestamp: now}],
+                      deliveryTimestamp: now,
+                      readStatus: 'success',
+                      readTimestamp: now
+                    }],
       subject: 'Test MMS Image message',
       smil: '<smil><body><par><text src="text1"/></par>' +
             '<par><img src="example.jpg"/></par></body></smil>',
@@ -124,7 +128,8 @@
         location: 'example.ogv',
         content: testVideoBlob
       }],
-      timestamp: now
+      timestamp: now,
+      sentTimestamp: now - 100000
     });
     messagesDb.messages.push({
       id: messagesDb.id++,
@@ -135,7 +140,10 @@
       delivery: 'sent',
       deliveryInfo: [{receiver: '052780',
                       deliveryStatus: 'success',
-                      deliveryTimestamp: now}],
+                      deliveryTimestamp: now,
+                      readStatus: 'pending',
+                      readTimestamp: null
+                    }],
       subject: 'Test MMS Video message',
       smil: '<smil><body><par><text src="text1"/></par>' +
             '<par><video src="example.ogv"/></par></body></smil>',
@@ -168,7 +176,8 @@
         location: 'example.ogg',
         content: testAudioBlob
       }],
-      timestamp: now
+      timestamp: now,
+      sentTimestamp: now - 100000
     });
     messagesDb.messages.push({
       id: messagesDb.id++,
@@ -179,7 +188,10 @@
       delivery: 'sent',
       deliveryInfo: [{receiver: '052780',
                       deliveryStatus: 'success',
-                      deliveryTimestamp: now}],
+                      deliveryTimestamp: now,
+                      readStatus: 'not-applicable',
+                      readTimestamp: null
+                    }],
       subject: 'Test MMS audio message',
       smil: '<smil><body><par><text src="text1"/></par>' +
             '<par><audio src="example.ogg"/></par></body></smil>',
@@ -214,7 +226,8 @@
         location: 'example.bmp',
         content: testImageBlob
       }],
-      timestamp: now
+      timestamp: now,
+      sentTimestamp: now - 100000
     });
   });
 
@@ -238,7 +251,52 @@
         location: 'grid.wbmp',
         content: testImageBlob
       }],
-      timestamp: now
+      timestamp: now,
+      sentTimestamp: now - 100000
+    });
+  });
+
+  getTestFile('/test/unit/media/contact.vcf', function(contactBlob) {
+    messagesDb.messages.push({
+      id: messagesDb.id++,
+      threadId: 6,
+      sender: '052780',
+      type: 'mms',
+      read: true,
+      delivery: 'received',
+      deliveryInfo: [{deliveryStatus: 'success'}],
+      subject: 'Test vard without text content',
+      smil: '<smil><body><par><ref src="contact.vcf"/>' +
+            '</par></body></smil>',
+      attachments: [{
+        location: 'contact.vcf',
+        content: contactBlob
+      }],
+      timestamp: now,
+      sentTimestamp: now - 100000
+    });
+
+    messagesDb.messages.push({
+      id: messagesDb.id++,
+      threadId: 6,
+      sender: '052780',
+      type: 'mms',
+      read: true,
+      delivery: 'received',
+      deliveryInfo: [{deliveryStatus: 'success'}],
+      subject: 'Test vard with text content',
+      smil: '<smil><body><par><ref src="contact.vcf"/>' +
+            '<text src="text1"/></par></body></smil>',
+      attachments: [{
+        location: 'text1',
+        content: new Blob(['This is a vcard'],
+            { type: 'text/plain' })
+      },{
+        location: 'contact.vcf',
+        content: contactBlob
+      }],
+      timestamp: now,
+      sentTimestamp: now - 100000
     });
   });
 
@@ -354,6 +412,30 @@
         timestamp: now
       },
       {
+        threadId: 3,
+        sender: null,
+        receiver: '+18001114321',
+        read: true,
+        type: 'mms',
+        deliveryInfo: [{deliveryStatus: 'not-applicable'}],
+        delivery: 'sent',
+        timestamp: now,
+        subject: 'subject only message',
+        attachments: []
+      },
+      {
+        threadId: 3,
+        sender: '+18001114321',
+        read: true,
+        type: 'mms',
+        deliveryInfo: [{deliveryStatus: 'not-applicable'}],
+        delivery: 'received',
+        timestamp: now,
+        sentTimestamp: now - 100000,
+        subject: '',
+        attachments: []
+      },
+      {
         threadId: 4,
         sender: null,
         read: true,
@@ -422,7 +504,8 @@
         delivery: 'received',
         deliveryStatus: 'success',
         type: 'sms',
-        timestamp: now - 500000
+        timestamp: now - 500000,
+        sentTimestamp: now - 600000
       },
       {
         threadId: 4,
@@ -478,7 +561,8 @@
         delivery: 'received',
         type: 'sms',
         deliveryStatus: 'success',
-        timestamp: now - 100000
+        timestamp: now - 100000,
+        sentTimestamp: now - 200000
       },
       {
         threadId: 8,
@@ -520,6 +604,7 @@
         smil: '<smil><body><par><text src="text1"/></par></body></smil>',
         attachments: null,
         timestamp: now - 150000,
+        sentTimestamp: now - 250000,
         expiryDate: now + ONE_DAY_TIME
       },
       {
@@ -529,7 +614,8 @@
         body: '<html>',
         delivery: 'received',
         type: 'sms',
-        timestamp: now
+        timestamp: now,
+        sentTimestamp: now - 100000
       },
       {
         threadId: 11,
@@ -538,7 +624,8 @@
         body: 'Hello!',
         delivery: 'received',
         type: 'sms',
-        timestamp: now - 3600000
+        timestamp: now - 3600000,
+        sentTimestamp: now - 3700000
       }
     ],
     threads: [
@@ -647,7 +734,8 @@
       delivery: 'received',
       id: messagesDb.id++,
       type: 'sms',
-      timestamp: now - 60000000
+      timestamp: now - 60000000,
+      sentTimestamp: now - 60100000
     });
   }
 
@@ -674,7 +762,8 @@
         location: 'text1',
         content: new Blob(['hi! this is ' + sender], { type: 'text/plain' })
       }],
-      timestamp: now - first
+      timestamp: now - first,
+      sentTimestamp: now - first - 100000
     });
     first -= 60000;
   }
@@ -701,7 +790,8 @@
         location: 'text1',
         content: new Blob(['hi! this is ' + sender], { type: 'text/plain' })
       }],
-      timestamp: now - first
+      timestamp: now - first,
+      sentTimestamp: now - first - 100000
     });
     first -= 60000;
   }
@@ -728,7 +818,8 @@
          { type: 'text/plain' }
       )
     }],
-    timestamp: now
+    timestamp: now,
+    sentTimestamp: now - 100000
   });
 
 
@@ -876,6 +967,7 @@
           type: 'sms',
           read: false,
           timestamp: now,
+          sentTimestamp: now - 100000,
           threadId: thread.id
         }
       };
@@ -904,7 +996,7 @@
         attachments: ...
       }
     */
-
+    var now = Date.now();
     var sendId = messagesDb.id++;
     var request = {
       error: null
@@ -940,9 +1032,10 @@
         receivers: params.receivers,
         type: 'mms',
         delivery: 'sending',
-        deliveryInfo: [{receiver: null, deliveryStatus: 'not-applicable'}],
+        deliveryInfo: [{receiver: null, deliveryStatus: 'not-applicable',
+                        readStatus: 'not-applicable'}],
         read: true,
-        subject: '',
+        subject: params.subject,
         smil: params.smil,
         attachments: params.attachments,
         timestamp: now
@@ -999,12 +1092,13 @@
             receiver: null,
             delivery: 'received',
             id: messagesDb.id++,
-            timestamp: now,
+            timestamp: Date.now(),
+            sentTimestamp: Date.now() - 100000,
             threadId: thread.id,
             type: 'mms',
             deliveryInfo: [{deliveryStatus: 'success'}],
             read: false,
-            subject: '',
+            subject: 'Re: ' + params.subject,
             smil: '<smil><body><par><text src="text1"/></par></body></smil>',
             attachments: [{
               location: 'text1',
@@ -1016,6 +1110,8 @@
           }
         };
         messagesDb.messages.push(receivedInfo.message);
+
+        thread.timestamp = Date.now();
         thread.unreadCount++;
         trigger('received', receivedInfo);
       });

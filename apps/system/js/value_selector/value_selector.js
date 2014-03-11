@@ -417,11 +417,7 @@ var ValueSelector = {
         minutes: now.getMinutes()
       };
     } else {
-      var inputParser = ValueSelector.InputParser;
-      if (!inputParser)
-        console.error('Cannot get input parser for value selector');
-
-      time = inputParser.importTime(currentValue);
+      time = InputParser.importTime(currentValue);
     }
 
     var timePicker = TimePicker.timePicker;
@@ -472,11 +468,7 @@ var ValueSelector = {
     // Show current date as default value
     var date = new Date();
     if (currentValue) {
-      var inputParser = ValueSelector.InputParser;
-      if (!inputParser)
-        console.error('Cannot get input parser for value selector');
-
-      date = inputParser.formatInputDate(currentValue, '');
+      date = InputParser.formatInputDate(currentValue, '');
     }
     this._datePicker.value = date;
   }
@@ -510,7 +502,7 @@ var TimePicker = {
   },
 
   initTimePicker: function tp_initTimePicker() {
-    var localeTimeFormat = navigator.mozL10n.get('dateTimeFormat_%X');
+    var localeTimeFormat = navigator.mozL10n.get('shortTimeFormat');
     var is12hFormat = (localeTimeFormat.indexOf('%p') >= 0);
     this.timePicker.is12hFormat = is12hFormat;
     this.setTimePickerStyle();
@@ -542,16 +534,32 @@ var TimePicker = {
 
     if (is12hFormat) {
       var hour24StateUnitStyle = {
-        valueDisplayedText: ['AM', 'PM'],
+        valueDisplayedText: [
+          navigator.mozL10n.get('time_am'),
+          navigator.mozL10n.get('time_pm')
+        ],
         className: unitClassName
       };
       this.timePicker.hour24State =
         new ValuePicker(this.hour24StateSelector, hour24StateUnitStyle);
     }
+
+    var separator = ':';
+    var minutesPosition = localeTimeFormat.indexOf('%M');
+    if (minutesPosition > 0) {
+      separator = localeTimeFormat.substr(minutesPosition - 1, 1);
+    }
+    document.getElementById('hours-minutes-separator').textContent = separator;
   },
 
   setTimePickerStyle: function tp_setTimePickerStyle() {
-    var style = (this.timePicker.is12hFormat) ? 'format12h' : 'format24h';
+    var style = 'format24h';
+    if (this.timePicker.is12hFormat) {
+      var localeTimeFormat = navigator.mozL10n.get('shortTimeFormat');
+      var reversedPeriod =
+        (localeTimeFormat.indexOf('%p') < localeTimeFormat.indexOf('%M'));
+      style = (reversedPeriod) ? 'format12hrev' : 'format12h';
+    }
     var container = ValueSelector._context.querySelector('.picker-container');
     container.classList.add(style);
   },

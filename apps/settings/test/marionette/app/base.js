@@ -1,10 +1,11 @@
+'use strict';
 /**
  * Base app object to provide common methods to app objects
  * @constructor
  * @param {Marionette.Client} client for operations.
  */
 function Base(client, origin, selectors) {
-  this.client = client;
+  this.client = client.scope({ searchTimeout: 20000 });
   this.origin = origin;
   this.selectors = selectors;
 }
@@ -44,6 +45,17 @@ Base.prototype = {
    */
   waitForElement: function(name) {
     return this.client.helper.waitForElement(this.selectors[name]);
-  }
+  },
 
+  /**
+   * Use to select an options as currently we are not able to tap on a select
+   * element. Please refer to bug 977522 for details.
+   *
+   * @protected
+   * @param {String} name of selector [its a key in Settings.Selectors].
+   * @param {String} text content of an option
+   */
+  tapSelectOption: function(name, optionText) {
+    this.client.helper.tapSelectOption(this.selectors[name], optionText);
+  }
 };

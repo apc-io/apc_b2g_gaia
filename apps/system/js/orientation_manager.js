@@ -16,9 +16,7 @@
    * <code>reset-orientation</code> event and AppWindowManager would reset the
    * orientation of the active window.
    *
-   * <a href="http://i.imgur.com/KCUgFH6.png" target="_blank">
-   *   <img src="http://i.imgur.com/KCUgFH6.png"></img>
-   * </a>
+   * ![Change orientation flow](http://i.imgur.com/KCUgFH6.png)
    *
    * @module OrientationManager
    */
@@ -48,6 +46,10 @@
         case 'sleepmenuhide':
         case 'trusteduiclose':
         case 'will-unlock':
+          // We don't need to reset orientation if lockscreen is locked.
+          if (window.lockScreen && window.lockScreen.locked) {
+            return;
+          }
         /**
          * Fired when the orientation needs to be locked/unlocked again.
          * @event module:OrientationManager#reset-orientation
@@ -72,7 +74,7 @@
 
     /**
      * Test if our default orientation is portrait.
-     * @return {Boolean} If our default orientation is portrait
+     * @return {Boolean} If our default orientation is portrait.
      * @memberOf module:OrientationManager
      */
     isDefaultPortrait: function() {
@@ -135,7 +137,7 @@
      * Get current orientation
      * @return {String} Current orientation, possible values: portrait-primary,
      *                  portrait-secondary, landscape-primary,
-     *                  landscape-secondary
+     *                  landscape-secondary.
      *
      * @memberOf module:OrientationManager
      */

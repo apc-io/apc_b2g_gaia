@@ -3,9 +3,7 @@
    * HomescreenWindow creates a instance of homescreen by give manifestURL.
    *
    * ##### Flow chart
-   * <a href="http://i.imgur.com/vLA8YEN.png" target="_blank">
-   * <img src="http://i.imgur.com/vLA8YEN.png"></img>
-   * </a>
+   * ![Boot to Homescreen flow chart](http://i.imgur.com/vLA8YEN.png)
    *
    * @class HomescreenWindow
    * @param {String} manifestURL The manifestURL of the homescreen app.
@@ -111,14 +109,12 @@
 
   HomescreenWindow.prototype._handle_mozbrowserclose =
     function hw__handle_mozbrowserclose(evt) {
-      evt.stopImmediatePropagation();
       this.restart();
     };
 
   HomescreenWindow.prototype._handle_mozbrowsererror =
     function hw__handle_mozbrowsererror(evt) {
       if (evt.detail.type == 'fatal') {
-        evt.stopImmediatePropagation();
         this.publish('crashed');
         this.restart();
       }

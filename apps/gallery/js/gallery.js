@@ -120,6 +120,8 @@ var hasSaved = false;
 // selected thumbnails.
 var lastFocusedThumbnail = null;
 
+var currentOverlay;  // The id of the current overlay or null if none.
+
 // The localized event is the main entry point for the app.
 // We don't do anything until we receive it.
 navigator.mozL10n.ready(function showBody() {
@@ -176,22 +178,11 @@ function init() {
   // Clicking on the share button in select mode shares all selected images
   $('thumbnails-share-button').onclick = shareSelectedItems;
 
-  // Click to open the media storage panel when the default storage
-  // is unavailable.
-  $('storage-setting-button').onclick = function() {
-    var activity = new MozActivity({
-      name: 'configure',
-      data: {
-        target: 'device',
-        section: 'mediaStorage'
-      }
-    });
-  };
   $('overlay-cancel-button').onclick = function() {
     cancelPick();
   };
-
-  window.addEventListener('screenlayoutchange', screenLayoutChange);
+  // Handle resize events
+  window.onresize = resizeHandler;
 
   // If we were not invoked by an activity, then start off in thumbnail
   // list mode, and fire up the MediaDB object.
@@ -244,8 +235,8 @@ function initDB() {
   photodb = new MediaDB('pictures', metadataParserWrapper, {
     version: 2,
     autoscan: false,     // We're going to call scan() explicitly
-    batchHoldTime: 150,  // Batch files during scanning
-    batchSize: PAGE_SIZE // Max batch size: one screenful
+    batchHoldTime: 2000, // Batch files during scanning
+    batchSize: 3         // Max batch size when scanning
   });
 
   // This is where we find videos once the photodb notifies us that a
@@ -584,47 +575,59 @@ function deleteFile(n) {
 }
 
 function fileCreated(fileinfo) {
-  var insertPosition;
   // If the new file is a video and we're handling an image pick activity
   // then we won't display the new file.
   if (pendingPick && fileinfo.metadata.video)
     return;
 
-  // If we were showing the 'no pictures' overlay, hide it
-  if (currentOverlay === 'emptygallery' || currentOverlay === 'scanning')
-    showOverlay(null);
+  // The fileinfo object that MediaDB sends us has a thumbnail blob in it,
+  // fresh from the metadata parser. This blob has been stored in the db, but
+  // the copy we have is still a memory-backed blob. We need to be using a
+  // file backed blob here so that we don't leak memory if the user scans a
+  // fresh sdcard full of hundreds of photos. So we go get the db record out
+  // of the database. It should be an exact copy of what we already have,
+  // except that the thumbnail will be file-backed instead of memory-backed.
+  photodb.getFileInfo(fileinfo.name, function(fileinfo) {
+    var insertPosition;
 
-  // Create a thumbnailItem for this image and insert it at the right spot
-  var thumbnailItem = thumbnailList.addItem(fileinfo);
-  insertPosition = getFileIndex(fileinfo.name);
-  if (insertPosition < 0)
-    return;
+    // If we were showing the 'no pictures' overlay, hide it
+    if (currentOverlay === 'emptygallery' || currentOverlay === 'scanning')
+      showOverlay(null);
 
-  // Insert the image info into the array
-  files.splice(insertPosition, 0, fileinfo);
+    // Create a thumbnailItem for this image and insert it at the right spot
+    var thumbnailItem = thumbnailList.addItem(fileinfo);
+    insertPosition = getFileIndex(fileinfo.name);
+    if (insertPosition < 0)
+      return;
 
-  if (currentFileIndex >= insertPosition)
-    currentFileIndex++;
-  if (editedPhotoIndex >= insertPosition)
-    editedPhotoIndex++;
+    // Insert the image info into the array
+    files.splice(insertPosition, 0, fileinfo);
 
-  // Redisplay the current photo if we're in photo view. The current
-  // photo should not change, but the content of the next or previous frame
-  // might. This call will only make changes if the filename to display
-  // in a frame has actually changed.
-  if (currentView === LAYOUT_MODE.fullscreen) {
-    if (hasSaved) {
-      showFile(0);
-    } else {
-      showFile(currentFileIndex);
+    if (currentFileIndex >= insertPosition)
+      currentFileIndex++;
+    if (editedPhotoIndex >= insertPosition)
+      editedPhotoIndex++;
+
+    // Redisplay the current photo if we're in photo view. The current
+    // photo should not change, but the content of the next or previous frame
+    // might. This call will only make changes if the filename to display
+    // in a frame has actually changed.
+    if (currentView === LAYOUT_MODE.fullscreen) {
+      if (hasSaved) {
+        showFile(0);
+      } else {
+        showFile(currentFileIndex);
+      }
     }
-  }
-  hasSaved = false;
+    hasSaved = false;
+  });
 }
 
 // Make the thumbnail for image n visible
 function scrollToShowThumbnail(n) {
-  var selector = 'li[data-index="' + n + '"]';
+  if (!files[n])
+    return;
+  var selector = 'li[data-filename="' + files[n].name + '"]';
   var thumbnail = thumbnails.querySelector(selector);
   if (thumbnail) {
     var screenTop = thumbnails.scrollTop;
@@ -681,15 +684,23 @@ function setView(view) {
       // or video, so make sure its thumbnail is fully on the screen.
       // XXX: do we need to defer this?
       scrollToShowThumbnail(currentFileIndex);
+      if (currentView === LAYOUT_MODE.fullscreen) {
+        // only do it when we back from fullscreen.
+        setNFCSharing(false);
+      }
       break;
     case LAYOUT_MODE.fullscreen:
       resizeFrames();
+      setNFCSharing(true);
       break;
     case LAYOUT_MODE.select:
       clearSelection();
       // When entering select view, we pause the video
       if (!isPhone && currentFrame.video && !isPortrait)
         currentFrame.video.pause();
+      break;
+    case LAYOUT_MODE.edit:
+      setNFCSharing(false);
       break;
   }
 
@@ -706,6 +717,35 @@ function setView(view) {
   }
   // Remember the current view
   currentView = view;
+}
+
+function setNFCSharing(enable) {
+  if (!window.navigator.mozNfc) {
+    return;
+  }
+
+  if (enable) {
+    // If we have NFC, we need to put the callback to have shrinking UI.
+    window.navigator.mozNfc.onpeerready = function(event) {
+      // The callback function is called when user confirm to share the
+      // content, send it with NFC Peer.
+      var fileInfo = files[currentFileIndex];
+      if (fileInfo.metadata.video) {
+        // share video
+        getVideoFile(fileInfo.metadata.video, function(file) {
+          navigator.mozNfc.getNFCPeer(event.detail).sendFile(file);
+        });
+      } else {
+        // share photo
+        photodb.getFile(fileInfo.name, function(file) {
+          navigator.mozNfc.getNFCPeer(event.detail).sendFile(file);
+        });
+      }
+    };
+  } else {
+    // We need to remove onpeerready while out of fullscreen view.
+    window.navigator.mozNfc.onpeerready = null;
+  }
 }
 
 // monitorChildVisibility() calls this when a thumbnail comes onscreen
@@ -1035,12 +1075,24 @@ function updateSelection(thumbnail) {
 }
 
 function launchCameraApp() {
+  fullscreenButtons.camera.classList.add('disabled');
+  $('thumbnails-camera-button').classList.add('disabled');
+  $('overlay-camera-button').classList.add('disabled');
+
   var a = new MozActivity({
     name: 'record',
     data: {
       type: 'photos'
     }
   });
+
+  // Wait 2000ms before re-enabling the Camera buttons to prevent
+  // hammering them and causing a crash (Bug 957709)
+  window.setTimeout(function() {
+    fullscreenButtons.camera.classList.remove('disabled');
+    $('thumbnails-camera-button').classList.remove('disabled');
+    $('overlay-camera-button').classList.remove('disabled');
+  }, 2000);
 }
 
 function deleteSelectedItems() {
@@ -1048,7 +1100,7 @@ function deleteSelectedItems() {
   if (selected.length === 0)
     return;
 
-  showConfirmDialog({
+  Dialogs.confirm({
     message: navigator.mozL10n.get('delete-n-items?', {n: selected.length}),
     cancelText: navigator.mozL10n.get('cancel'),
     confirmText: navigator.mozL10n.get('delete'),
@@ -1064,61 +1116,6 @@ function deleteSelectedItems() {
     clearSelection();
   });
 }
-
-// show a confirm dialog
-function showConfirmDialog(options, onConfirm, onCancel) {
-  LazyLoader.load('shared/style/confirm.css', function() {
-    var dialog = $('confirm-dialog');
-    var msgEle = $('confirm-msg');
-    var cancelButton = $('confirm-cancel');
-    var confirmButton = $('confirm-ok');
-
-    // set up the dialog based on the options
-    msgEle.textContent = options.message;
-    cancelButton.textContent = options.cancelText ||
-      navigator.mozL10n.get('cancel');
-    confirmButton.textContent = options.confirmText ||
-      navigator.mozL10n.get('ok');
-
-    if (options.danger) {
-      confirmButton.classList.add('danger');
-    }
-    else {
-      confirmButton.classList.remove('danger');
-    }
-
-    // show the confirm dialog
-    dialog.classList.remove('hidden');
-
-    // attach event handlers
-    var onCancelClick = function(ev) {
-      close(ev);
-      if (onCancel) {
-        onCancel();
-      }
-      return false;
-    };
-    var onConfirmClick = function(ev) {
-      close(ev);
-      if (onConfirm) {
-        onConfirm();
-      }
-      return false;
-    };
-    cancelButton.addEventListener('click', onCancelClick);
-    confirmButton.addEventListener('click', onConfirmClick);
-
-    function close(ev) {
-      dialog.classList.add('hidden');
-      cancelButton.removeEventListener('click', onCancelClick);
-      confirmButton.removeEventListener('click', onConfirmClick);
-      ev.preventDefault();
-      ev.stopPropagation();
-      return false;
-    }
-  });
-}
-
 
 // Clicking on the share button in select mode shares all selected images
 function shareSelectedItems() {
@@ -1185,17 +1182,24 @@ function share(blobs) {
   };
 }
 
-function screenLayoutChange(evt) {
-  if (evt.detail.name !== 'portrait')
-    return;
-  isPortrait = evt.detail.status;
+// This happens when the user rotates the phone.
+// When we used mozRequestFullscreen, it would also happen
+// when we entered or left fullscreen mode.
+// As a workaround for Bug 961636, use resize event handler
+// in place of screenlayoutchange event handler.
+function resizeHandler() {
+  isPortrait = ScreenLayout.getCurrentLayout('portrait');
 
   // In list view when video is playing, if user rotate screen from
-  // landscape to portrait, the video pause
+  // landscape to portrait, the video pause.
+  // Check if currentFrame is undefined for cases where frame_script.js
+  // is not loaded e.g. if a user rotates phone
+  // in list mode before opening an image.
   if (currentView === LAYOUT_MODE.list && isPortrait &&
-      currentFrame.video) {
+      typeof currentFrame !== 'undefined' && currentFrame.video) {
     currentFrame.video.pause();
   }
+
   // We'll need to resize and reposition frames for below cases, since
   // the size of container has been changed.
   if (currentView === LAYOUT_MODE.fullscreen ||
@@ -1212,93 +1216,9 @@ function screenLayoutChange(evt) {
 //
 // Overlay messages
 //
-var currentOverlay;  // The id of the current overlay or null if none.
-
-//
-// If id is null then hide the overlay. Otherwise, look up the localized
-// text for the specified id and display the overlay with that text.
-// Supported ids include:
-//
-//   nocard: no sdcard is installed in the phone
-//   pluggedin: the sdcard is being used by USB mass storage
-//   emptygallery: no pictures found
-//   scanning: scanning the sdcard for photo's, but none found yet
-//
-// Localization is done using the specified id with "-title" and "-text"
-// suffixes.
-//
 function showOverlay(id) {
-  LazyLoader.load('shared/style/confirm.css', function() {
-    currentOverlay = id;
-
-    // hide any special elements
-    $('storage-setting-button').classList.add('hidden');
-    $('overlay-camera-button').classList.add('hidden');
-    $('overlay-cancel-button').classList.add('hidden');
-    $('overlay-menu').classList.add('hidden');
-    var title, text;
-    switch (currentOverlay) {
-      case null:
-        $('overlay').classList.add('hidden');
-        return;
-      case 'nocard':
-        title = navigator.mozL10n.get('nocard3-title');
-        text = navigator.mozL10n.get('nocard3-text');
-        $('overlay-menu').classList.remove('hidden');
-        if (pendingPick) {
-          $('overlay-cancel-button').classList.remove('hidden');
-        } else {
-          $('storage-setting-button').classList.remove('hidden');
-        }
-        break;
-      case 'pluggedin':
-        title = navigator.mozL10n.get('pluggedin2-title');
-        text = navigator.mozL10n.get('pluggedin2-text');
-        if (pendingPick) {
-          $('overlay-cancel-button').classList.remove('hidden');
-          $('overlay-menu').classList.remove('hidden');
-        }
-        break;
-      case 'scanning':
-        title = navigator.mozL10n.get('scanning-title');
-        text = navigator.mozL10n.get('scanning-text');
-        if (pendingPick) {
-          $('overlay-cancel-button').classList.remove('hidden');
-          $('overlay-menu').classList.remove('hidden');
-        }
-        break;
-      case 'emptygallery':
-        title = navigator.mozL10n.get(pendingPick ? 'emptygallery2-title-pick' :
-                                                    'emptygallery2-title');
-        text = navigator.mozL10n.get('emptygallery2-text');
-        $('overlay-menu').classList.remove('hidden');
-        if (pendingPick) {
-          $('overlay-cancel-button').classList.remove('hidden');
-        } else {
-          $('overlay-camera-button').classList.remove('hidden');
-        }
-        break;
-      case 'upgrade':
-        title = navigator.mozL10n.get('upgrade-title');
-        text = navigator.mozL10n.get('upgrade-text');
-        if (pendingPick) {
-          $('overlay-cancel-button').classList.remove('hidden');
-          $('overlay-menu').classList.remove('hidden');
-        }
-        break;
-      default:
-        console.warn('Reference to undefined overlay', currentOverlay);
-        if (pendingPick) {
-          $('overlay-cancel-button').classList.remove('hidden');
-          $('overlay-menu').classList.remove('hidden');
-        }
-        return;
-    }
-
-    $('overlay-title').textContent = title;
-    $('overlay-text').textContent = text;
-    $('overlay').classList.remove('hidden');
-  });
+  currentOverlay = id;
+  Dialogs.showOverlay(id);
 }
 
 // XXX
@@ -1307,3 +1227,14 @@ function showOverlay(id) {
 // make it opaque to touch events. Without this, it does not prevent
 // the user from interacting with the UI.
 $('overlay').addEventListener('click', function dummyHandler() {});
+
+
+// Change the thumbnails quality while scrolling using the scrollstart/scrollend
+// events from shared/js/scroll_detector.js.
+window.addEventListener('scrollstart', function onScrollStart(e) {
+  thumbnails.classList.add('scrolling');
+});
+
+window.addEventListener('scrollend', function onScrollEnd(e) {
+  thumbnails.classList.remove('scrolling');
+});

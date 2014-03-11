@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="style/VideoPlayer.css" type="text/css" />
     <link rel="stylesheet" href="style/VideoPlayer_tablet.css" type="text/css" media="(min-height: 768px) and (min-width: 768px)" />
     <link rel="stylesheet" href="shared/style/headers.css" type="text/css" />
-    <link rel="stylesheet" href="shared/style_unstable/progress_activity.css"/>
+    <link rel="stylesheet" href="shared/style/progress_activity.css"/>
     <!-- Reponsive design for tiny & large device -->
     <link rel="stylesheet" href="style/gallery_tablet.css" type="text/css" media="(min-height: 768px) and (min-width: 768px)" />
     <!-- this file is loaded lazily but is listed here so it gets packaged
@@ -27,12 +27,14 @@
     <script defer src="shared/js/tag_visibility_monitor.js"></script>
     <script defer src="shared/js/media/media_utils.js"></script>
     <script defer src="shared/js/screen_layout.js"></script>
+    <script defer src="shared/js/scroll_detector.js"></script>
 
     <!-- Specific code -->
     <script defer src="js/config.js"></script>
     <script defer src="js/thumbnail_item.js"></script>
     <script defer src="js/thumbnail_date_group.js"></script>
     <script defer src="js/thumbnail_list.js"></script>
+    <script defer src="js/dialogs.js"></script>
     <script defer src="js/gallery.js"></script>
 
   </head>
@@ -234,8 +236,6 @@
         <p id="overlay-text">ter</p>
       </section>
       <menu id="overlay-menu" class="hidden">
-        <button type="button" id="storage-setting-button" class="hidden full"
-                data-l10n-id="storage-setting-button">Media storage settings</button>
         <button type="button" id="overlay-camera-button" class="hidden full"
                 data-l10n-id="overlay-camera-button">Go to Camera</button>
         <button type="button" id="overlay-cancel-button" data-l10n-id="cancel" class="full">Cancel</button>

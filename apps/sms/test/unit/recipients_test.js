@@ -2,7 +2,7 @@
          MockDialog, Template, MockL10n */
 'use strict';
 
-requireApp('system/test/unit/mock_gesture_detector.js');
+require('/shared/test/unit/mocks/mock_gesture_detector.js');
 
 requireApp('sms/js/recipients.js');
 requireApp('sms/js/utils.js');
@@ -534,7 +534,7 @@ suite('Recipients', function() {
       suite('Clicks on accepted recipients', function() {
 
         setup(function() {
-          Recipients.View.isObscured = false;
+          Recipients.View.isFocusable = true;
         });
 
         test('while manually entering a recipient ', function() {
@@ -582,7 +582,15 @@ suite('Recipients', function() {
 
           view.firstElementChild.click();
 
-          assert.isTrue(Recipients.View.isObscured);
+          assert.isFalse(Recipients.View.isFocusable);
+        });
+
+        test('interaction restores focusability ', function() {
+          var view = document.getElementById('messages-recipients-list');
+
+          Recipients.View.isFocusable = false;
+          view.firstElementChild.click();
+          assert.isTrue(Recipients.View.isFocusable);
         });
 
         test('with only accepted recipients ', function() {
@@ -711,6 +719,34 @@ suite('Recipients', function() {
           view.lastElementChild.dispatchEvent(event);
 
           assert.isTrue(view.lastElementChild.focus.called);
+        });
+
+        test('test for comma as a recipient delimiter ', function() {
+          var view = document.getElementById('messages-recipients-list');
+          var event;
+
+          event = new CustomEvent('keyup', {
+            bubbles: true
+          });
+
+          view.lastElementChild.textContent = '963852,';
+          view.lastElementChild.dispatchEvent(event);
+
+          assert.equal(recipients.numbers[0], '963852');
+        });
+
+        test('test for semicolon as a recipient delimiter ', function() {
+          var view = document.getElementById('messages-recipients-list');
+          var event;
+
+          event = new CustomEvent('keyup', {
+            bubbles: true
+          });
+
+          view.lastElementChild.textContent = '987654;';
+          view.lastElementChild.dispatchEvent(event);
+
+          assert.equal(recipients.numbers[0], '987654');
         });
       });
     });

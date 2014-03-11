@@ -406,6 +406,16 @@ define('pop3/transport',['exports'], function(exports) {
   }
 
   /**
+   * Trigger the response callback with '-ERR desc\r\n'.
+   */
+  Request.prototype._respondWithError = function(desc) {
+    var rsp = new Response([textEncoder.encode(
+      '-ERR ' + desc + '\r\n')], false);
+    rsp.request = this;
+    this.onresponse(rsp, null);
+  }
+
+  /**
    * Couple a POP3 parser with a request/response model, such that
    * you can easily hook Pop3Protocol up to a socket (or other
    * transport) to get proper request/response semantics.
@@ -422,6 +432,7 @@ define('pop3/transport',['exports'], function(exports) {
     this.unsentRequests = []; // if not pipelining, queue requests one at a time
     this.pipeline = false;
     this.pendingRequests = [];
+    this.closed = false;
   }
 
   exports.Response = Response;
@@ -449,6 +460,12 @@ define('pop3/transport',['exports'], function(exports) {
     } else {
       req = new Request(cmd, args, expectMultiline, cb);
     }
+
+    if (this.closed) {
+      req._respondWithError('(request sent after connection closed)');
+      return;
+    }
+
     if (this.pipeline || this.pendingRequests.length === 0) {
       this.onsend(req.toByteArray());
       this.pendingRequests.push(req);
@@ -490,6 +507,25 @@ define('pop3/transport',['exports'], function(exports) {
           req.onresponse(null, response);
         }
       }
+    }
+  }
+
+  /**
+   * Call this function when the socket attached to this protocol is
+   * closed. Any current requests that have been enqueued but not yet
+   * responded to will be sent a dummy "-ERR" response, indicating
+   * that the underlying connection closed without actually
+   * responding. This avoids the case where we hang if we never
+   * receive a response from the server.
+   */
+  Pop3Protocol.prototype.onclose = function() {
+    this.closed = true;
+    var requestsToRespond = this.pendingRequests.concat(this.unsentRequests);
+    this.pendingRequests = [];
+    this.unsentRequests = [];
+    for (var i = 0; i < requestsToRespond.length; i++) {
+      var req = requestsToRespond[i];
+      req._respondWithError('(connection closed, no response)');
     }
   }
 });
@@ -2608,7 +2644,6 @@ exports.chewHeaderAndBodyStructure =
  *
  */
 exports.updateMessageWithFetch = function(header, body, req, res, _LOG) {
-
   var bodyRep = body.bodyReps[req.bodyRepIndex];
 
   // check if the request was unbounded or we got back less bytes then we
@@ -2837,10 +2872,11 @@ return {
 
 define('pop3/pop3',['module', 'exports', 'rdcommon/log', 'net', 'crypto',
         './transport', 'mailparser/mailparser', '../mailapi/imap/imapchew',
+        '../mailapi/syncbase',
         './mime_mapper', '../mailapi/allback'],
 function(module, exports, log, net, crypto,
          transport, mailparser, imapchew,
-         mimeMapper, allback) {
+         syncbase, mimeMapper, allback) {
 
   /**
    * The Pop3Client modules and classes are organized according to
@@ -2889,20 +2925,6 @@ function(module, exports, log, net, crypto,
     setTimeout = set;
     clearTimeout = clear;
   }
-
-  // CONSTANTS:
-
-  // If a message is larger than INFER_ATTACHMENTS_SIZE bytes, guess
-  // that it has an attachment.
-  var INFER_ATTACHMENTS_SIZE = 512 * 1024;
-
-  // Attempt to fetch SNIPPET_SIZE_GOAL bytes for each message to
-  // generate the snippet.
-  var SNIPPET_SIZE_GOAL = 4 * 1024; // in bytes
-  // Based on SNIPPET_SIZE_GOAL, calculate approximately how many
-  // lines we'll need to fetch in order to roughly retrieve
-  // SNIPPET_SIZE_GOAL bytes.
-  var LINES_TO_FETCH_FOR_SNIPPET = Math.floor(SNIPPET_SIZE_GOAL / 80);
 
   /***************************************************************************
    * Pop3Client
@@ -3043,6 +3065,11 @@ function(module, exports, log, net, crypto,
         message: 'Socket exception: ' + JSON.stringify(err),
         exception: err,
       });
+    }.bind(this));
+
+    this.socket.on('close', function() {
+      this.protocol.onclose();
+      this.die();
     }.bind(this));
 
     // To track requests/responses in the presence of a server
@@ -3517,7 +3544,11 @@ function(module, exports, log, net, crypto,
   // it creates unnecessary garbage. Clean this up when we switch over
   // to jsmime.
   Pop3Client.prototype.downloadPartialMessageByNumber = function(number, cb) {
-    this.protocol.sendRequest('TOP', [number, LINES_TO_FETCH_FOR_SNIPPET],
+    // Based on SNIPPET_SIZE_GOAL, calculate approximately how many
+    // lines we'll need to fetch in order to roughly retrieve
+    // SNIPPET_SIZE_GOAL bytes.
+    var numLines = Math.floor(syncbase.POP3_SNIPPET_SIZE_GOAL / 80);
+    this.protocol.sendRequest('TOP', [number, numLines],
                               true, function(err, rsp) {
       if(err) {
         cb && cb({
@@ -3719,7 +3750,7 @@ function(module, exports, log, net, crypto,
         !rep.header.hasAttachments &&
         (rootNode.parsedHeaders['x-ms-has-attach'] ||
          rootNode.meta.mimeMultipart === 'mixed' ||
-         estSize > INFER_ATTACHMENTS_SIZE)) {
+         estSize > syncbase.POP3_INFER_ATTACHMENTS_SIZE)) {
       rep.header.hasAttachments = true;
     }
 

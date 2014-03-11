@@ -1,23 +1,24 @@
 (function() {
 
   'use strict';
+  /* global MozActivity, Provider, Search */
 
   function Contacts() {
-    this.name = 'Contacts';
   }
 
   Contacts.prototype = {
 
-    init: function(config) {
-      this.container = config.container;
-      this.container.addEventListener('click', this.click);
-    },
+    __proto__: Provider.prototype,
+
+    name: 'Contacts',
 
     click: function(e) {
       var target = e.target;
 
       Search.close();
-      var activity = new MozActivity({
+      /* prevent jshint new error */
+      /* jshint -W031 */
+      new MozActivity({
         name: 'open',
         data: {
           type: 'webcontacts/contact',
@@ -28,7 +29,7 @@
       });
     },
 
-    search: function(input) {
+    search: function(input, collect) {
       var options = {
         filterValue: input,
         filterBy: ['givenName'],
@@ -44,43 +45,29 @@
           return;
         }
 
-        var fragment = document.createDocumentFragment();
+        var renderResults = [];
         for (var i = 0; i < results.length; i++) {
           var result = results[i];
           for (var j = 0; j < result.name.length; j++) {
-            var div = document.createElement('div');
-            div.className = 'result';
-            div.dataset.contactId = result.id;
+            var renderObj = {
+              title: result.name[j],
+              dataset: {
+                contactId: result.id
+              }
+            };
 
-            if (!result.photo) {
-              var placeholder = document.createElement('span');
-              placeholder.classList.add('placeholder', 'contact');
-              div.appendChild(placeholder);
-            } else {
-              var contactPhoto = document.createElement('img');
-              contactPhoto.src = URL.createObjectURL(result.photo[0]);
-              contactPhoto.onload = function onload() {
-                URL.revokeObjectURL(contactPhoto.src);
-              };
-              div.appendChild(contactPhoto);
+            if (result.photo) {
+              renderObj.icon = result.photo[0];
             }
 
-            var nameText = document.createElement('span');
-            nameText.textContent = result.name[j];
-            div.appendChild(nameText);
-
-            fragment.appendChild(div);
+            renderResults.push(renderObj);
           }
         }
-        this.container.appendChild(fragment.cloneNode(true));
+        collect(renderResults);
       }).bind(this);
 
       request.onerror = function() {
       };
-    },
-
-    clear: function() {
-      this.container.innerHTML = '';
     }
   };
 

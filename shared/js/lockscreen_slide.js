@@ -15,14 +15,13 @@
    * We should care about the need of testing,
    * and make all stateful objects become instance-able.
    *
-   * @param {LockScreen.intentionRouter} |ir|
    * @param {Object} |opts| (Opional) addtional, options that may overwrite the
    *                        default settings.
-   *                        The options should follow the default settings above
+   *                        The options should follow default settings above.
    * @constructor
    */
-  var LockScreenSlide = function(ir, opts) {
-    this.initialize(ir, opts);
+  var LockScreenSlide = function(opts) {
+    this.initialize(opts);
   };
 
   var LockScreenSlidePrototype = {
@@ -50,8 +49,8 @@
     },
 
     areas: {
-      camera: null,
-      unlock: null
+      left: null,
+      right: null
     },
 
     // The handle area can touch by the user.
@@ -108,6 +107,7 @@
 
       // Most of them need to be initialized later.
       touch: {
+        id: '',
         touched: false,
         initX: -1,
         pageX: -1,
@@ -125,8 +125,8 @@
       area: 'lockscreen-area',
       canvas: 'lockscreen-canvas',
       areas: {
-        camera: 'lockscreen-area-camera',
-        unlock: 'lockscreen-area-unlock'
+        left: 'lockscreen-area-camera',
+        right: 'lockscreen-area-unlock'
       }
     },
 
@@ -134,35 +134,30 @@
     resources: {
       larrow: '/style/lockscreen/images/larrow.png',
       rarrow: '/style/lockscreen/images/rarrow.png'
-    },
-
-    // How we communicate with the LockScreen.
-    intentionRouter: null
+    }
   };
 
   /**
    * Initialize this unlocker strategy.
    *
-   * @param {IntentionRouter} |ir| see LockScreen's intentionRouter.
    * @param {Object} |opts| (Opional) addtional, options that may overwrite the
    *                        default settings.
-   *                        The options should follow the default settings above
+   *                        The options should follow default settings above.
    * @this {LockScreenSlide}
    */
   LockScreenSlidePrototype.initialize =
-    function(ir, opts) {
-      this.intentionRouter = ir;
+    function(opts) {
       if (opts)
         this._overwriteSettings(opts);
       this._initializeCanvas();
-      ir.unlockerInitialize();
+      this.publish('lockscreenslide-unlocker-initializer');
       this.states.initialized = true;
     };
 
   /**
    * Overwrite settings recursively.
    *
-   * @param {Object} |options|
+   * @param {Object} |options| options for overwrite default settings.
    * @this {LockScreenSlide}
    */
   LockScreenSlidePrototype._overwriteSettings =
@@ -186,7 +181,7 @@
   /**
    * The dispatcher. Unlocker would manager all its DOMs individually.
    *
-   * @param {event} |evt|
+   * @param {event} |evt| LockScreen Slide event.
    * @this {LockScreenSlide}
    */
   LockScreenSlidePrototype.handleEvent =
@@ -206,15 +201,23 @@
           break;
 
         case 'touchstart':
-            if (evt.target === this.area) {
-              this._onSlideBegin(this._dpx(evt.touches[0].pageX));
-            }
-            evt.preventDefault();
-            window.addEventListener('touchend', this);
-            window.addEventListener('touchmove', this);
+          evt.preventDefault();
+          if (evt.target !== this.area || evt.touches.length > 1) {
+            return;
+          }
+          this.states.touch.id = evt.touches[0].identifier;
+          this._onSlideBegin(this._dpx(evt.touches[0].pageX));
+          window.addEventListener('touchend', this);
+          window.addEventListener('touchmove', this);
           break;
 
         case 'touchmove':
+          // In order to prevent pocket unlocks we reset the slide progress and
+          // end the gesture detection if a new touch point appears on screen.
+          if (evt.touches.length > 1) {
+            this._endGesture();
+            return;
+          }
           // Records touch states.
           this._onTouchMove(
             this._dpx(evt.touches[0].pageX),
@@ -226,14 +229,10 @@
           break;
 
         case 'touchend':
-          window.removeEventListener('touchmove', this);
-          window.removeEventListener('touchend', this);
+          if (evt.changedTouches[0].identifier !== this.states.touch.id)
+            return;
 
-          if (this.states.sliding) {
-            this._onSlideEnd();
-          }
-          this._resetTouchStates();
-          this.overlay.classList.remove('touched');
+          this._endGesture();
           break;
       }
     };
@@ -249,8 +248,8 @@
       this.overlay = document.getElementById(this.IDs.overlay);
       this.area = document.getElementById(this.IDs.area);
       this.canvas = document.getElementById(this.IDs.canvas);
-      this.areas.camera = document.getElementById(this.IDs.areas.camera);
-      this.areas.unlock = document.getElementById(this.IDs.areas.unlock);
+      this.areas.left = document.getElementById(this.IDs.areas.left);
+      this.areas.right = document.getElementById(this.IDs.areas.right);
 
       this.area.addEventListener('touchstart', this);
 
@@ -301,7 +300,7 @@
       this.center.x =
         this.canvas.offsetLeft + this.canvas.width >> 1;
       this.center.y =
-        this.canvas.offsetHeight + this.canvas.height >> 1;
+        this.canvas.offsetTop + this.canvas.height >> 1;
 
       this.handle.radius =
         this._dpx(this.handle.radius);
@@ -394,11 +393,13 @@
           if (isLeft) {
             slow = this.states.touch.deltaX > 0;
             if (prevState !== currentState)
-              this.intentionRouter.nearLeft(currentState, prevState);
+              this.publish('lockscreenslide-near-left',
+                  {'currentState': currentState, 'prevState': prevState});
           } else {
             slow = this.states.touch.deltaX < 0;
             if (prevState !== currentState)
-              this.intentionRouter.nearRight(currentState, prevState);
+              this.publish('lockscreenslide-near-right',
+                  {'currentState': currentState, 'prevState': prevState});
           }
       } else {
         var prevState = this.handle.autoExpand.accState;
@@ -407,10 +408,12 @@
         if (prevState !== currentState) {
           if (isLeft) {
             if (prevState !== currentState)
-              this.intentionRouter.nearLeft(currentState, prevState);
+              this.publish('lockscreenslide-near-left',
+                  {'currentState': currentState, 'prevState': prevState});
           } else {
             if (prevState !== currentState)
-              this.intentionRouter.nearRight(currentState, prevState);
+              this.publish('lockscreenslide-near-right',
+                  {'currentState': currentState, 'prevState': prevState});
           }
         }
       }
@@ -443,10 +446,27 @@
         return; // Do nothing.
       }
 
+      this.publish('lockscreenslide-unlocking-start');
       this.states.touch.initX = tx;
-
       this.states.sliding = true;
       this._lightIcons();
+    };
+
+  /**
+   * Encapsulating all the cleanups needed at the end of a gesture.
+   *
+   * @this {LockScreenSlide}
+   */
+  LockScreenSlidePrototype._endGesture =
+    function lss_endGesture() {
+      window.removeEventListener('touchmove', this);
+      window.removeEventListener('touchend', this);
+
+      this.states.sliding = false;
+      this._onSlideEnd();
+      this._resetTouchStates();
+      this.overlay.classList.remove('touched');
+      this.states.slideReachEnd = false;
     };
 
   /**
@@ -469,15 +489,16 @@
       if (false === this.states.slideReachEnd) {
         this._bounceBack(this.states.touch.pageX, bounceEnd);
       } else {
-        var intention = isLeft ? this.intentionRouter.activateLeft :
-          this.intentionRouter.activateRight;
-        intention();
+        var intention = isLeft ? 'lockscreenslide-activate-left' :
+          'lockscreenslide-activate-right';
+        this.publish(intention);
 
         // Restore it only after screen changed.
         var appLaunchDelay = 400;
         setTimeout(bounceEnd, appLaunchDelay);
       }
 
+      this.publish('lockscreenslide-unlocking-stop');
       this._darkIcons();
     };
 
@@ -518,7 +539,7 @@
   /**
    * Accelerate the slide when the finger is near the end.
    *
-   * @param {number} |tx|
+   * @param {number} |tx| The absolute coordinate of the touching position.
    * @return {number}
    * @this {LockScreenSlide}
    */
@@ -604,14 +625,14 @@
     };
 
   /**
-   * Dark the camera and unlocking icons when user leave our LockScreen.
+   * Dark the left and right icons when user leave our LockScreen.
    *
    * @this {LockScreenSlide}
    */
   LockScreenSlidePrototype._darkIcons =
     function lss_darkIcons() {
-      this.areas.camera.classList.add('dark');
-      this.areas.unlock.classList.add('dark');
+      this.areas.left.classList.add('dark');
+      this.areas.right.classList.add('dark');
     };
 
   /**
@@ -806,7 +827,7 @@
    * Return the mapping pixels according to the device pixel ratio.
    * This may need to be put int the shared/js.
    *
-   * @param {number} |px|
+   * @param {number} |px| original px distance.
    * @return {number}
    * @this {LockScreenSlide}
    */
@@ -816,25 +837,25 @@
     };
 
   /**
-   * Light the camera and unlocking icons when user touch on our LockScreen.
+   * Light the left and right icons when user touch on our LockScreen.
    *
    * @this {LockScreenSlide}
    */
   LockScreenSlidePrototype._lightIcons =
     function lss_lightIcons() {
-      this.areas.camera.classList.remove('dark');
-      this.areas.unlock.classList.remove('dark');
+      this.areas.left.classList.remove('dark');
+      this.areas.right.classList.remove('dark');
     };
 
   /**
-   * Map absolution X and Y to canvas' X and Y.
+   * Map  and Y to canvas' X and Y.
    * Note this should only be used when user want to draw something
    * follow the user's input. If the canvans need adjust its position,
    * the absolute coordinates should be used.
    *
-   * @param {number} |x|
-   * @param {number} |y|
-   * @return {[number]} Array of single pair of X and Y
+   * @param {number} |x| absolution X.
+   * @param {number} |y| absolution Y.
+   * @return {[number]} Array of single pair of X and Y.
    * @this {LockScreenSlide}
    */
   LockScreenSlidePrototype._mapCoord =
@@ -886,6 +907,7 @@
   LockScreenSlidePrototype._resetTouchStates =
     function lss_resetTouchStates() {
       this.states.touch = {
+        id: null,
         touched: false,
         initX: this.center.x,
         pageX: this.center.x,
@@ -894,6 +916,11 @@
         prevX: this.center.x,
         deltaX: 0
       };
+    };
+
+  LockScreenSlidePrototype.publish =
+    function lss_publish(type, detail) {
+      window.dispatchEvent(new CustomEvent(type, {'detail': detail}));
     };
 
   LockScreenSlide.prototype = LockScreenSlidePrototype;

@@ -173,10 +173,12 @@ function init() {
     // select the mix page so we have to change the hash to it to trigger the
     // css pseudo-class or the tab of mix page will not be highlighted.
     // Also the option of the TabBar should be set to "mix" to sync with it.
-    window.location.hash = '#mix';
-    TabBar.option = 'mix';
-    ModeManager.start(MODE_TILES);
-    TilesView.hideSearch();
+    if (!pendingPick) {
+      window.location.hash = '#mix';
+      TabBar.option = 'mix';
+      ModeManager.start(MODE_TILES);
+      TilesView.hideSearch();
+    }
   };
 
   musicdb.onready = function() {
@@ -193,8 +195,12 @@ function init() {
       // Concurrently, start scanning for new music
       musicdb.scan();
 
-      // we shouldn't init the bluetooth comms until the UI is
-      MusicComms.init();
+      // Only init the communication when music is not in picker mode.
+      if (document.URL.indexOf('#pick') === -1) {
+        // We need to wait to init the music comms until the UI is fully loaded
+        // because the init of music comms could slow down the startup time.
+        MusicComms.init();
+      }
     });
   };
 
@@ -301,18 +307,13 @@ function init() {
     }
   };
 
-  // Click to open the media storage panel when the default storage
-  // is unavailable.
-  document.getElementById('storage-setting-button').
-    addEventListener('click', function() {
-      var activity = new MozActivity({
-      name: 'configure',
-      data: {
-        target: 'device',
-        section: 'mediaStorage'
+  // If the overlay is displayed during a pick, let the user get out of it
+  document.getElementById('overlay-cancel-button')
+    .addEventListener('click', function() {
+      if (pendingPick) {
+        pendingPick.postError('pick cancelled');
       }
     });
-  });
 }
 
 //
@@ -341,7 +342,7 @@ function showOverlay(id) {
   }
 
   var menu = document.getElementById('overlay-menu');
-  if (id === 'nocard') {
+  if (pendingPick) {
     menu.classList.remove('hidden');
   } else {
     menu.classList.add('hidden');
@@ -350,7 +351,7 @@ function showOverlay(id) {
   var title, text;
   if (id === 'nocard') {
     title = navigator.mozL10n.get('nocard2-title');
-    text = navigator.mozL10n.get('nocard2-text');
+    text = navigator.mozL10n.get('nocard3-text');
   } else {
     title = navigator.mozL10n.get(id + '-title');
     text = navigator.mozL10n.get(id + '-text');
@@ -650,6 +651,10 @@ var TitleBar = {
               }
 
               cleanupPick();
+            }
+            // clear onpeerready while come out from PLAYER MODE.
+            if (ModeManager.currentMode === MODE_PLAYER && navigator.mozNfc) {
+              navigator.mozNfc.onpeerready = null;
             }
 
             ModeManager.pop();
@@ -1955,3 +1960,13 @@ var TabBar = {
     }
   }
 };
+
+window.addEventListener('scrollstart', function onScroll(e) {
+  var views = document.getElementById('views');
+  views.classList.add('scrolling');
+});
+
+window.addEventListener('scrollend', function onScroll(e) {
+  var views = document.getElementById('views');
+  views.classList.remove('scrolling');
+});

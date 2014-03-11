@@ -19,6 +19,15 @@ form[role="dialog"].no-overlay button {
   pointer-events: auto;
 }
 
+/* BB lists */
+.import-list header {
+  padding-left: 0 0 0 1.5rem;
+  position: sticky;
+  top: -3.7rem;
+  background: #fff;
+  z-index: 2;
+}
+
 /* Force having always checkboxes */
 #groups-list.import-list label,
 #search-list label {
@@ -32,16 +41,17 @@ form[role="dialog"].no-overlay button {
 
 [data-type="list"].import-list.active li:after {
   right: 0;
+  left: 0;
 }
 
 #groups-list.import-list li,
-.facebook #search-list[data-type="list"] li {
-  padding-left: 4rem;
+.import #search-list[data-type="list"] li {
+  padding-left: 3.5rem;
 }
 
 #groups-list.active li:not(:active):after,
 #search-list.active li:not(:active):after {
-  display: none !important;
+  background-color: transparent;
 }
 
 /* End BB */
@@ -96,6 +106,10 @@ p#friends-msg {
   height: calc(100% - 6.9rem);
   padding-top: 3.7rem; /* Equal to search form height */
   position: relative;
+}
+
+.link #mainContent {
+  padding-top: 0; /* Remove search form height  */
 }
 
 #main.no-proposal #mainContent {

@@ -184,14 +184,13 @@ var DeviceStorageHelper = (function DeviceStorageHelper() {
  * Connectivity accessors
  */
 var getMobileConnection = function() {
-  // XXX: check bug-926169
-  // this is used to keep all tests passing while introducing multi-sim APIs
-  var mobileConnection = navigator.mozMobileConnection ||
-    navigator.mozMobileConnections &&
+  var mobileConnection = navigator.mozMobileConnections &&
       navigator.mozMobileConnections[0];
 
-  if (mobileConnection && mobileConnection.data)
+  if (mobileConnection && mobileConnection.data) {
     return mobileConnection;
+  }
+  return null;
 };
 
 var getBluetooth = function() {
@@ -209,53 +208,53 @@ var getNfc = function() {
  * The function returns an object of the supporting state of category of network
  * types. The categories are 'gsm' and 'cdma'.
  */
-var getSupportedNetworkInfo = (function() {
-  var _result = null;
+function getSupportedNetworkInfo(mobileConnection, callback) {
+  var types = [
+    'wcdma/gsm',
+    'gsm',
+    'wcdma',
+    'wcdma/gsm-auto',
+    'cdma/evdo',
+    'cdma',
+    'evdo',
+    'wcdma/gsm/cdma/evdo'
+  ];
 
-  return function(callback) {
-    if (!callback)
-      return;
+  if (!mobileConnection) {
+    return;
+  }
 
-    // early return if the result is available
-    if (_result) {
-      callback(_result);
-      return;
-    }
+  var _hwSupportedTypes = mobileConnection.supportedNetworkTypes;
+  if (!_hwSupportedTypes) {
+    return;
+  }
 
-    // get network type
-    loadJSON('/resources/network.json', function loadNetwork(network) {
-      _result = {
-        gsm: false,
-        cdma: false,
-        networkTypes: null
-      };
-
-      /*
-       * Possible values of the item in network.types are:
-       * "wcdma/gsm", "gsm", "wcdma", "wcdma/gsm-auto",
-       * "cdma/evdo", "cdma", "evdo", "wcdma/gsm/cdma/evdo"
-       */
-      if (network.types) {
-        var types = _result.networkTypes = network.types;
-        for (var i = 0; i < types.length; i++) {
-          var type = types[i];
-          type.split('/').forEach(function(subType) {
-            _result.gsm = _result.gsm || (subType === 'gsm') ||
-                         (subType === 'gsm-auto') || (subType === 'wcdma');
-            _result.cdma = _result.cdma || (subType === 'cdma') ||
-                          (subType === 'evdo');
-          });
-
-          if (_result.gsm && _result.cdma) {
-            break;
-          }
-        }
-      }
-
-      callback(_result);
-    });
+  var _result = {
+    gsm: _hwSupportedTypes.indexOf('gsm') !== -1,
+    cdma: _hwSupportedTypes.indexOf('cdma') !== -1,
+    wcdma: _hwSupportedTypes.indexOf('wcdma') !== -1,
+    evdo: _hwSupportedTypes.indexOf('evdo') !== -1,
+    networkTypes: null
   };
-})();
+
+  var _networkTypes = [];
+  for (var i = 0; i < types.length; i++) {
+    var type = types[i];
+    var subtypes = type.split('/');
+    var allSubTypesSupported = true;
+    for (var j = 0; j < subtypes.length; j++) {
+      allSubTypesSupported =
+        allSubTypesSupported && _result[subtypes[j].split('-')[0]];
+    }
+    if (allSubTypesSupported) {
+      _networkTypes.push(type);
+    }
+  }
+  if (_networkTypes.length !== 0) {
+    _result.networkTypes = _networkTypes;
+  }
+  callback(_result);
+}
 
 function isIP(address) {
   return /^\d+\.\d+\.\d+\.\d+$/.test(address);
@@ -414,4 +413,30 @@ function getTruncated(oldName, options) {
   }
 
   return newName;
+}
+
+/**
+ * Retrieve current ICC by a given index. If no index is provided, it will
+ * use the index provided by `DsdsSettings.getIccCardIndexForCallSettings`,
+ * which is the default. Unless there are very specific reasons to provide an
+ * index, this function should always be invoked with no parameters in order to
+ * use the currently selected ICC index.
+ *
+ * @param {Number} index index of the mobile connection to get the ICC from
+ * @return {object}
+ */
+function getIccByIndex(index) {
+  if (index === undefined) {
+    index = DsdsSettings.getIccCardIndexForCallSettings();
+  }
+  var iccObj;
+
+  if (navigator.mozMobileConnections[index]) {
+    var iccId = navigator.mozMobileConnections[index].iccId;
+    if (iccId) {
+      iccObj = navigator.mozIccManager.getIccById(iccId);
+    }
+  }
+
+  return iccObj;
 }

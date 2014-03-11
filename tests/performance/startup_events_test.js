@@ -1,13 +1,18 @@
 'use strict';
 
+var assert = require('assert');
 
 var App = require('./app');
 var PerformanceHelper = requireGaia('/tests/performance/performance_helper.js');
 var MarionetteHelper = requireGaia('/tests/js-marionette/helper.js');
 
-// This test is only for communications/contacts for now.
-// XXX extend to more apps.
-var whitelistedApps = ['communications/contacts'];
+var whitelistedApps = [
+  'communications/contacts',
+  'clock',
+  'fm',
+  'sms'
+];
+
 if (whitelistedApps.indexOf(mozTestInfo.appPath) === -1) {
   return;
 }
@@ -56,6 +61,7 @@ marionette('startup event test > ' + mozTestInfo.appPath + ' >', function() {
 
       performanceHelper.waitForPerfEvent(function(runResults) {
         performanceHelper.reportRunDurations(runResults);
+        assert.ok(Object.keys(runResults).length, 'empty results');
         app.close();
       });
     });

@@ -33,6 +33,7 @@ var Gaia = {
     config.GAIA_PORT = ':8080';
     config.GAIA_LOCALES_PATH = 'locales';
     config.LOCALES_FILE = 'shared/resources/languages.json';
+    config.LOCALE_BASEDIR = '';
     config.BUILD_APP_NAME = '*';
     config.PRODUCTION = '0';
     config.GAIA_OPTIMIZE = '0';
@@ -46,8 +47,9 @@ var Gaia = {
     config.TARGET_BUILD_VARIANT = '';
     config.NOFTU = '1';
     config.REMOTE_DEBUGGER = '0';
-    config.SETTINGS_PATH = 'build/custom-settings.json';
-    config.GAIA_DISTRIBUTION_DIR = gaiaPath + SEP + 'distribution';
+    config.SETTINGS_PATH = ['build', 'config',
+      'custom-settings.json'].join(SEP);
+    config.GAIA_DISTRIBUTION_DIR = [gaiaPath, 'distribution'].join(SEP);
     config.GAIA_BUILD_DIR = 'file://' + gaiaPath + '/build/';
     config.GAIA_KEYBOARD_LAYOUTS = 'en,pt-BR,es,de,fr,pl';
     return config;

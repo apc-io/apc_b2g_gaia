@@ -1,11 +1,10 @@
+'use strict';
 mocha.setup({ globals: ['GestureDetector'] });
 
 suite('Picker', function() {
   var Picker, Spinner;
 
   suiteSetup(function(done) {
-    loadBodyHTML('/index.html');
-
     testRequire(['picker/picker', 'mocks/mock_picker/spinner'], {
         mocks: ['picker/spinner']
       }, function(picker, mockSpinner) {
@@ -17,12 +16,14 @@ suite('Picker', function() {
 
   test('shape:prototype ', function() {
     assert.ok(Picker);
-    assert.ok(Picker.prototype.reset);
+    assert.include(Picker.prototype, 'reset');
+    assert.include(Picker.prototype, 'value');
+    assert.isNull(Picker.prototype.value);
   });
 
   test('shape:instance ', function() {
     var picker = new Picker({
-      element: document.getElementById('time-picker'),
+      element: document.createElement('div'),
       pickers: {
         hours: {
           range: [0, 23]
@@ -49,7 +50,7 @@ suite('Picker', function() {
 
   test('values ', function() {
     var picker = new Picker({
-      element: document.getElementById('time-picker'),
+      element: document.createElement('div'),
       pickers: {
         hours: {
           range: [0, 23]
@@ -73,12 +74,34 @@ suite('Picker', function() {
     assert.equal(picker.value, '0:0');
   });
 
+  test('get and set value ', function() {
+    var picker = new Picker({
+      element: document.createElement('div'),
+      pickers: {
+        hours: {
+          range: [0, 23]
+        },
+        minutes: {
+          range: [0, 59],
+          isPadded: true
+        }
+      }
+    });
+
+    picker.value = '1:59';
+
+    var spinners = picker.spinners;
+
+    assert.equal(spinners.hours.value, '1');
+    assert.equal(spinners.minutes.value, '59');
+  });
 
   test('isPadded = true', function() {
     Spinner.args.length = 0;
 
+    /* jshint unused:false */
     var picker = new Picker({
-      element: document.getElementById('time-picker'),
+      element: document.createElement('div'),
       pickers: {
         list: {
           range: [9, 10],

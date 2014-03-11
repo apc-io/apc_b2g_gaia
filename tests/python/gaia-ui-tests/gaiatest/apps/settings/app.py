@@ -29,9 +29,9 @@ class Settings(Base):
     _device_info_menu_item_locator = (By.ID, 'menuItem-deviceInfo')
     _app_permissions_menu_item_locator = (By.ID, 'menuItem-appPermissions')
     _battery_menu_item_locator = (By.ID, 'menuItem-battery')
+    _sim_manager_menu_item_locator = (By.ID, 'menuItem-simManager')
 
-    def launch(self):
-        Base.launch(self)
+    def wait_for_airplane_toggle_ready(self):
         checkbox = self.marionette.find_element(*self._airplane_checkbox_locator)
         self.wait_for_condition(lambda m: checkbox.is_enabled())
 
@@ -133,9 +133,18 @@ class Settings(Base):
         self._tap_menu_item(self._battery_menu_item_locator)
         return Battery(self.marionette)
 
+    def open_sim_manager_settings(self):
+        from gaiatest.apps.settings.regions.sim_manager import SimManager
+        self._tap_menu_item(self._sim_manager_menu_item_locator)
+        return SimManager(self.marionette)
+
     def _tap_menu_item(self, menu_item_locator):
-        self.wait_for_element_displayed(*menu_item_locator)
         menu_item = self.marionette.find_element(*menu_item_locator)
         parent_section = menu_item.find_element(By.XPATH, 'ancestor::section')
+
+        # Some menu items require some async setup to be completed
+        self.wait_for_condition(lambda m:
+            not menu_item.find_element(By.XPATH, 'ancestor::li').get_attribute('aria-disabled'))
+
         menu_item.tap()
         self.wait_for_condition(lambda m: parent_section.location['x'] + parent_section.size['width'] == 0)

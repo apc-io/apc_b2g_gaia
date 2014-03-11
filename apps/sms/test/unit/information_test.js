@@ -1,6 +1,6 @@
 /*global Information, loadBodyHTML, MockContact, MockL10n, MocksHelper,
          ThreadUI, MessageManager, ContactRenderer, Utils, Template, Threads,
-         MockMessages */
+         MockMessages, Settings */
 
 'use strict';
 
@@ -13,6 +13,7 @@ require('/test/unit/mock_l10n.js');
 require('/test/unit/mock_messages.js');
 require('/test/unit/mock_contact.js');
 require('/test/unit/mock_contacts.js');
+require('/test/unit/mock_settings.js');
 require('/test/unit/mock_message_manager.js');
 require('/test/unit/mock_contact_renderer.js');
 require('/js/information.js');
@@ -24,7 +25,8 @@ var mocksHelperForInformation = new MocksHelper([
   'Threads',
   'Contacts',
   'MessageManager',
-  'ContactRenderer'
+  'ContactRenderer',
+  'Settings'
 ]).init();
 
 suite('Information view', function() {
@@ -93,6 +95,23 @@ suite('Information view', function() {
         reportView.reset();
         assert.isFalse(reportView.parent.classList.contains('information'));
         assert.isTrue(reportView.container.classList.contains('hide'));
+      });
+    });
+
+    suite('view refresh', function() {
+      setup(function() {
+        this.sinon.stub(reportView, 'render');
+      });
+      test('view refresh when page showed', function() {
+        reportView.show();
+        reportView.refresh();
+        sinon.assert.called(reportView.render);
+      });
+
+      test('view does not refresh when page hided', function() {
+        reportView.reset();
+        reportView.refresh();
+        sinon.assert.notCalled(reportView.render);
       });
     });
 
@@ -197,11 +216,14 @@ suite('Information view', function() {
       };
       window.location.hash = '#report-view=1';
       reportView.render();
+      assert.isFalse(reportView.container.classList.contains('received'));
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.type,
         'message-type-sms');
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.status,
         'message-status-sending');
       assert.equal(reportView.status.dataset.type, 'sending');
+      sinon.assert.calledWith(navigator.mozL10n.localize,
+        reportView.contactTitle, 'report-recipients');
       assert.isTrue(reportView.sizeBlock.classList.contains('hide'));
       sinon.assert.called(reportView.renderContactList);
     });
@@ -215,11 +237,14 @@ suite('Information view', function() {
       };
       window.location.hash = '#report-view=1';
       reportView.render();
+      assert.isFalse(reportView.container.classList.contains('received'));
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.type,
         'message-type-sms');
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.status,
         'message-status-sent');
       assert.equal(reportView.status.dataset.type, 'sent');
+      sinon.assert.calledWith(navigator.mozL10n.localize,
+        reportView.contactTitle, 'report-recipients');
       assert.isTrue(reportView.sizeBlock.classList.contains('hide'));
       sinon.assert.called(reportView.renderContactList);
     });
@@ -232,11 +257,14 @@ suite('Information view', function() {
       };
       window.location.hash = '#report-view=1';
       reportView.render();
+      assert.isFalse(reportView.container.classList.contains('received'));
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.type,
         'message-type-sms');
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.status,
         'message-status-error');
       assert.equal(reportView.status.dataset.type, 'error');
+      sinon.assert.calledWith(navigator.mozL10n.localize,
+        reportView.contactTitle, 'report-recipients');
       assert.isTrue(reportView.sizeBlock.classList.contains('hide'));
       sinon.assert.called(reportView.renderContactList);
     });
@@ -252,12 +280,15 @@ suite('Information view', function() {
       };
       window.location.hash = '#report-view=2';
       reportView.render();
+      assert.isFalse(reportView.container.classList.contains('received'));
       assert.equal(reportView.subject.textContent, messageOpts.subject);
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.type,
         'message-type-mms');
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.status,
         'message-status-sent');
       assert.equal(reportView.status.dataset.type, 'sent');
+      sinon.assert.calledWith(navigator.mozL10n.localize,
+        reportView.contactTitle, 'report-recipients');
       assert.isTrue(reportView.sizeBlock.classList.contains('hide'));
       sinon.assert.called(reportView.renderContactList);
     });
@@ -272,6 +303,7 @@ suite('Information view', function() {
       };
       window.location.hash = '#report-view=2';
       reportView.render();
+      assert.isFalse(reportView.container.classList.contains('received'));
       assert.equal(reportView.subject.textContent, '');
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.type,
         'message-type-mms');
@@ -280,6 +312,8 @@ suite('Information view', function() {
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.status,
         'message-status-sent');
       assert.equal(reportView.status.dataset.type, 'sent');
+      sinon.assert.calledWith(navigator.mozL10n.localize,
+        reportView.contactTitle, 'report-recipients');
       assert.isFalse(reportView.sizeBlock.classList.contains('hide'));
       sinon.assert.called(reportView.renderContactList);
     });
@@ -291,11 +325,14 @@ suite('Information view', function() {
       var message = MockMessages.sms(messageOpts);
       window.location.hash = '#report-view=1';
       reportView.render();
+      assert.isTrue(reportView.container.classList.contains('received'));
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.type,
         'message-type-sms');
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.status,
         'message-status-received');
       assert.equal(reportView.status.dataset.type, 'received');
+      sinon.assert.calledWith(navigator.mozL10n.localize,
+        reportView.contactTitle, 'report-from');
       assert.isTrue(reportView.sizeBlock.classList.contains('hide'));
       sinon.assert.calledWith(reportView.renderContactList, [message.sender]);
     });
@@ -309,6 +346,7 @@ suite('Information view', function() {
       var message = MockMessages.mms(messageOpts);
       window.location.hash = '#report-view=2';
       reportView.render();
+      assert.isTrue(reportView.container.classList.contains('received'));
       assert.equal(reportView.subject.textContent, message.subject);
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.type,
         'message-type-mms');
@@ -317,6 +355,8 @@ suite('Information view', function() {
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.status,
         'message-status-received');
       assert.equal(reportView.status.dataset.type, 'received');
+      sinon.assert.calledWith(navigator.mozL10n.localize,
+        reportView.contactTitle, 'report-from');
       assert.isFalse(reportView.sizeBlock.classList.contains('hide'));
       sinon.assert.calledWith(reportView.renderContactList, [message.sender]);
     });
@@ -329,25 +369,115 @@ suite('Information view', function() {
       };
       window.location.hash = '#report-view=2';
       reportView.render();
+      assert.isTrue(reportView.container.classList.contains('received'));
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.type,
         'message-type-mms');
       sinon.assert.calledWith(navigator.mozL10n.localize, reportView.status,
         'message-status-not-downloaded');
       assert.equal(reportView.status.dataset.type, 'not-downloaded');
+      sinon.assert.calledWith(navigator.mozL10n.localize,
+        reportView.contactTitle, 'report-from');
       sinon.assert.called(reportView.renderContactList);
     });
 
-    suite('Render report block in contact list', function() {
+    suite('Message report with SIM information', function() {
+      var simInfo;
+      var simDetail;
+
+      setup(function() {
+        if (!('mozMobileConnections' in navigator)) {
+          navigator.mozMobileConnections = null;
+        }
+
+        if (!('mozIccManager' in navigator)) {
+          navigator.mozIccManager = null;
+        }
+
+        simInfo = reportView.simInfo;
+        simDetail = simInfo.querySelector('.sim-detail');
+        messageOpts = {
+          iccId: '1'
+        };
+        window.location.hash = '#report-view=1';
+      });
+
+      teardown(function() {
+        simInfo.classList.add('hide');
+      });
+
+      test('Hide SIM information for single SIM', function() {
+        reportView.render();
+        assert.isTrue(simInfo.classList.contains('hide'));
+      });
+
+      test('no phone number', function() {
+        this.sinon.stub(window.navigator, 'mozIccManager', {
+          getIccById: function() {
+            return {
+              'iccInfo': {
+                msisdn: ''
+              }
+            };
+          }
+        });
+        this.sinon.stub(Settings, 'hasSeveralSim').returns(true);
+        this.sinon.stub(Settings, 'getSimNameByIccId').returns('SIM 1');
+        this.sinon.stub(Settings, 'getOperatorByIccId').returns('operator');
+        reportView.render();
+        assert.equal(simDetail.textContent, 'SIM 1, operator');
+        assert.isFalse(simInfo.classList.contains('hide'));
+      });
+
+      test('no operator', function() {
+        this.sinon.stub(window.navigator, 'mozIccManager', {
+          getIccById: function() {
+            return {
+              'iccInfo': {
+                msisdn: '1111'
+              }
+            };
+          }
+        });
+        this.sinon.stub(Settings, 'hasSeveralSim').returns(true);
+        this.sinon.stub(Settings, 'getSimNameByIccId').returns('SIM 1');
+        this.sinon.stub(Settings, 'getOperatorByIccId').returns('');
+        reportView.render();
+        assert.equal(simDetail.textContent, 'SIM 1, 1111');
+        assert.isFalse(simInfo.classList.contains('hide'));
+      });
+
+      test('All information is accessible', function() {
+        this.sinon.stub(window.navigator, 'mozIccManager', {
+          getIccById: function() {
+            return {
+              'iccInfo': {
+                msisdn: '1111'
+              }
+            };
+          }
+        });
+        this.sinon.stub(Settings, 'hasSeveralSim').returns(true);
+        this.sinon.stub(Settings, 'getSimNameByIccId').returns('SIM 2');
+        this.sinon.stub(Settings, 'getOperatorByIccId').returns('operator');
+        reportView.render();
+        assert.equal(simDetail.textContent, 'SIM 2, operator, 1111');
+        assert.isFalse(simInfo.classList.contains('hide'));
+      });
+    });
+
+    suite('Render report block in contact list(delivery status)', function() {
       var data;
 
       setup(function() {
         data = {
-          delivery: '',
+          deliveryClass: '',
           deliveryL10n: '',
           deliveryDateL10n: '',
-          read: 'hide',
-          readL10n: 'message-read',
-          readDateL10n: ''
+          deliveryTimestamp: '',
+          readClass: 'hide',
+          readL10n: '',
+          readDateL10n: '',
+          readTimestamp: ''
         };
       });
 
@@ -359,11 +489,11 @@ suite('Information view', function() {
         };
         window.location.hash = '#report-view=1';
         reportView.render();
-        data.delivery = 'hide';
+        data.deliveryClass = 'hide';
         sinon.assert.calledWith(Template.prototype.interpolate, data);
       });
 
-      test('report requested but not return yet', function() {
+      test('delivery report requested but not return yet', function() {
         messageOpts = {
           sender: null,
           delivery: 'sent',
@@ -388,6 +518,7 @@ suite('Information view', function() {
           new Date(messageOpts.deliveryTimestamp),
           navigator.mozL10n.get('report-dateTimeFormat')
         );
+        data.deliveryTimestamp = '' + messageOpts.deliveryTimestamp;
         sinon.assert.calledWith(Template.prototype.interpolate, data);
       });
 
@@ -400,6 +531,88 @@ suite('Information view', function() {
         window.location.hash = '#report-view=1';
         reportView.render();
         data.deliveryL10n = 'message-status-error';
+        sinon.assert.calledWith(Template.prototype.interpolate, data);
+      });
+    });
+
+    suite('Render report block in contact list(read status)', function() {
+      var data;
+
+      setup(function() {
+        data = {
+          deliveryClass: 'hide',
+          deliveryL10n: '',
+          deliveryDateL10n: '',
+          deliveryTimestamp: '',
+          readClass: '',
+          readL10n: '',
+          readDateL10n: '',
+          readTimestamp: ''
+        };
+      });
+
+      test('no read report', function() {
+        messageOpts = {
+          sender: null,
+          delivery: 'sent',
+          deliveryInfo: [{
+            receiver: 'receiver',
+            readStatus: 'not-applicable'
+          }]
+        };
+        window.location.hash = '#report-view=2';
+        reportView.render();
+        data.readClass = 'hide';
+        sinon.assert.calledWith(Template.prototype.interpolate, data);
+      });
+
+      test('read report requested but not return yet', function() {
+        messageOpts = {
+          sender: null,
+          delivery: 'sent',
+          deliveryInfo: [{
+            receiver: 'receiver',
+            readStatus: 'pending'
+          }]
+        };
+        window.location.hash = '#report-view=2';
+        reportView.render();
+        data.readL10n = 'message-requested';
+        sinon.assert.calledWith(Template.prototype.interpolate, data);
+      });
+
+      test('read report success', function() {
+        messageOpts = {
+          sender: null,
+          delivery: 'sent',
+          deliveryInfo: [{
+            receiver: 'receiver',
+            readStatus: 'success',
+            readTimestamp: Date.now()
+          }]
+        };
+        window.location.hash = '#report-view=2';
+        reportView.render();
+        data.readDateL10n = Utils.date.format.localeFormat(
+          new Date(messageOpts.deliveryInfo[0].readTimestamp),
+          navigator.mozL10n.get('report-dateTimeFormat')
+        );
+        data.readTimestamp = '' + messageOpts.deliveryInfo[0].readTimestamp;
+        sinon.assert.calledWith(Template.prototype.interpolate, data);
+      });
+
+      test('read report error', function() {
+        messageOpts = {
+          sender: null,
+          delivery: 'sent',
+          deliveryInfo: [{
+            receiver: 'receiver',
+            readStatus: 'error'
+          }]
+        };
+        window.location.hash = '#report-view=2';
+        reportView.render();
+        data.readL10n = 'message-status-error';
         sinon.assert.calledWith(Template.prototype.interpolate, data);
       });
     });

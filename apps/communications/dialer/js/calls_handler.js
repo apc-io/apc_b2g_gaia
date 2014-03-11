@@ -71,18 +71,29 @@ var CallsHandler = (function callsHandler() {
       telephony.muted = false;
     }
 
+    // XXX: Use BTManager.isConnected() through btHelper
+    // once bug 929376 is finished.
+    btHelper.getConnectedDevicesByProfile(btHelper.profiles.HFP,
+    function(result) {
+      CallScreen.setBTReceiverIcon(!!(result && result.length));
+    });
+
+    btHelper.onhfpstatuschanged = function(evt) {
+      CallScreen.setBTReceiverIcon(evt.status);
+    };
+
     var acm = navigator.mozAudioChannelManager;
     if (acm) {
       acm.addEventListener('headphoneschange', function onheadphoneschange() {
         if (acm.headphones) {
-          CallScreen.turnSpeakerOff();
+          CallScreen.switchToDefaultOut();
         }
       });
     }
 
     btHelper.onscostatuschanged = function onscostatuschanged(evt) {
       if (evt.status) {
-        CallScreen.turnSpeakerOff();
+        CallScreen.switchToDefaultOut();
       }
     };
 
@@ -187,7 +198,7 @@ var CallsHandler = (function callsHandler() {
     // First incoming or outgoing call, reset mute and speaker.
     if (handledCalls.length == 0) {
       CallScreen.unmute();
-      CallScreen.turnSpeakerOff();
+      CallScreen.switchToDefaultOut();
     }
 
     // Find an available node for displaying the call
@@ -202,7 +213,8 @@ var CallsHandler = (function callsHandler() {
         if (call.state == 'disconnected') {
           var callInfo = {
             type: 'notification',
-            number: call.number
+            number: call.number,
+            serviceId: call.serviceId
           };
           postToMainWindow(callInfo);
         }
@@ -238,44 +250,49 @@ var CallsHandler = (function callsHandler() {
     var removedCall = handledCalls[index];
     handledCalls.splice(index, 1);
 
-    if (handledCalls.length > 0) {
-      // Only hiding the incoming bar if we have another one to display.
-      // Let handledCall catches disconnect event itself.
-      CallScreen.hideIncoming();
-
-      var remainingCall = handledCalls[0];
-      if (remainingCall.call.state == 'incoming') {
-        // The active call ended, showing the incoming call
-        remainingCall.show();
-
-        // This is the difference between an endAndAnswer() and
-        // the active call being disconnected while a call is waiting
-        setTimeout(function nextTick() {
-          if (remainingCall.call.state == 'incoming') {
-            CallScreen.render('incoming');
-          }
-        });
-
-        return;
-      }
-
-      // The incoming call was rejected, resuming...
-      remainingCall.call.resume();
+    if (handledCalls.length === 0) {
+      exitCallScreen(true);
       return;
     }
 
-    exitCallScreen(true);
+    // Only hiding the incoming bar if we have another one to display.
+    // Let handledCall catches disconnect event itself.
+    CallScreen.hideIncoming();
+
+    var remainingCall = handledCalls[0];
+    if (remainingCall.call.state == 'incoming') {
+      // The active call ended, showing the incoming call
+      remainingCall.show();
+
+      // This is the difference between an endAndAnswer() and
+      // the active call being disconnected while a call is waiting
+      setTimeout(function nextTick() {
+        if (remainingCall.call.state == 'incoming') {
+          CallScreen.render('incoming');
+        }
+      });
+
+      return;
+    }
+
+    // The remaining call was held, resume it
+    if (remainingCall.call.group) {
+      remainingCall.call.group.resume();
+    } else {
+      remainingCall.call.resume();
+    }
   }
 
   function handleFirstIncoming(call) {
     var vibrateInterval = 0;
-    if (activateVibration != false) {
+    if ('vibrate' in navigator && activateVibration != false) {
       vibrateInterval = window.setInterval(function vibrate() {
         // Wait for the setting value to return before starting a vibration.
-        if ('vibrate' in navigator && activateVibration) {
+        if (activateVibration) {
           navigator.vibrate([200]);
         }
       }, 600);
+      navigator.vibrate([200]);
     }
 
     if (activePhoneSound == true) {
@@ -377,12 +394,12 @@ var CallsHandler = (function callsHandler() {
     window.close();
   }
 
-  function _changeMaxFontSize(evt) {
-    handledCalls.forEach(function(hc) {
-      hc.formatPhoneNumber();
+  function updateAllPhoneNumberDisplays() {
+    handledCalls.forEach(function(call) {
+      call.restorePhoneNumber();
     });
   }
-  window.addEventListener('resize', _changeMaxFontSize);
+  window.addEventListener('resize', updateAllPhoneNumberDisplays);
 
   /* Handle commands send to the callscreen via postmessage */
   function handleCommand(evt) {
@@ -525,7 +542,11 @@ var CallsHandler = (function callsHandler() {
     if (telephony.active) {
       // connected, incoming
       telephony.active.hold(); // the incoming call is answered by gecko
-      btHelper.answerWaitingCall();
+
+      // Check for CDMA mode before calling bluetooth CDMA-specific functions
+      if (cdmaCallWaiting()) {
+        btHelper.answerWaitingCall();
+      }
     } else if (handledCalls.length >= 2) {
       // held, incoming
       var lastCall = handledCalls[handledCalls.length - 1].call;
@@ -615,10 +636,14 @@ var CallsHandler = (function callsHandler() {
   }
 
   function holdOrResumeSingleCall() {
-    if (handledCalls.length !== 1) {
+    var openLines = telephony.calls.length +
+      (telephony.conferenceGroup.calls.length ? 1 : 0);
+
+    if (openLines !== 1) {
       return;
     }
-    if (telephony.calls[0].state === 'incoming') {
+
+    if (telephony.calls.length && telephony.calls[0].state === 'incoming') {
       return;
     }
 
@@ -626,7 +651,10 @@ var CallsHandler = (function callsHandler() {
       telephony.active.hold();
       CallScreen.render('connected-hold');
     } else {
-      telephony.calls[0].resume();
+      var line = telephony.calls.length ?
+        telephony.calls[0] : telephony.conferenceGroup;
+
+      line.resume();
       CallScreen.render('connected');
     }
   }
@@ -692,21 +720,30 @@ var CallsHandler = (function callsHandler() {
     telephony.muted = false;
   }
 
-  function turnSpeakerOn() {
+  function switchToSpeaker() {
+    // add a btHelper.isConnected() check before calling disconnectSco
+    // once bug 929376 lands.
+    btHelper.disconnectSco();
     if (!telephony.speakerEnabled) {
       telephony.speakerEnabled = true;
-      if (settings) {
-        settings.createLock().set({'telephony.speaker.enabled': true});
-      }
     }
   }
 
-  function turnSpeakerOff() {
+  function switchToDefaultOut() {
     if (telephony.speakerEnabled) {
       telephony.speakerEnabled = false;
-      if (settings) {
-        settings.createLock().set({'telephony.speaker.enabled': false});
-      }
+    }
+    // add a btHelper.isConnected() check before calling disconnectSco
+    // once bug 929376 lands.
+    btHelper.connectSco();
+  }
+
+  function switchToReceiver() {
+    // add a btHelper.isConnected() check before calling disconnectSco
+    // once bug 929376 lands.
+    btHelper.disconnectSco();
+    if (telephony.speakerEnabled) {
+      telephony.speakerEnabled = false;
     }
   }
 
@@ -715,10 +752,11 @@ var CallsHandler = (function callsHandler() {
   }
 
   function toggleSpeaker() {
-    if (telephony.speakerEnabled)
-      turnSpeakerOff();
-    else
-      turnSpeakerOn();
+    if (telephony.speakerEnabled) {
+      CallsHandler.switchToDefaultOut();
+    } else {
+      CallsHandler.switchToSpeaker();
+    }
   }
 
   /* === Recents management === */
@@ -812,14 +850,16 @@ var CallsHandler = (function callsHandler() {
     toggleMute: toggleMute,
     toggleSpeaker: toggleSpeaker,
     unmute: unmute,
-    turnSpeakerOn: turnSpeakerOn,
-    turnSpeakerOff: turnSpeakerOff,
+    switchToReceiver: switchToReceiver,
+    switchToSpeaker: switchToSpeaker,
+    switchToDefaultOut: switchToDefaultOut,
 
     addRecentEntry: addRecentEntry,
     checkCalls: onCallsChanged,
     mergeActiveCallWith: mergeActiveCallWith,
     mergeConferenceGroupWithActiveCall: mergeConferenceGroupWithActiveCall,
     requestContactsTab: requestContactsTab,
+    updateAllPhoneNumberDisplays: updateAllPhoneNumberDisplays,
 
     get activeCall() {
       return activeCall();

@@ -1,42 +1,107 @@
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+}
+
+html {
+  background: #212121;
+}
+
 body {
   color: #5A5A5A;
+  font-size: 10px;
 }
+
 section {
-  color: #fff;
+  color: #858585;
+  font-size: 1rem;
 }
-section#localapps .result,
-section#contacts .result{
-  -moz-box-sizing: border-box;
-  padding: 0.5rem;
-  border-bottom: 1px solid #5A5A5A;
-  background-color: #353534;
-  color: #fff;
-  min-height: 3rem;
-  line-height: 2rem;
+
+section.suggestions {
+  background: #1a1a1a;
 }
-section:last-child .result:last-child {
-  border-bottom: none;
+
+section.suggestions ul {
+  list-style: none;
+  white-space: nowrap;
+  overflow-x: scroll;
+  padding-left: 0;
+}
+
+section.suggestions ul li {
+  display: inline-block;
+  margin-left: 1rem;
+  padding: 0.9rem 0.7rem 0.9rem 0;
+  margin: 0;
+}
+
+section.suggestions ul li+li:before {
+  content: "\2022";
+  padding-right: 0.7rem;
+}
+
+section.suggestions ul li:first-child {
+  padding-left: 0.7rem;
 }
 
 section .result * {
   pointer-events: none;
 }
 
-section .result .placeholder,
-section .result img {
-  display: inline-block;
-  float: left;
-  margin-right: 0.8rem;
-  height: 2rem;
-  width: 2rem;
+.local .result {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid #5A5A5A;
+  padding: 8px;
+}
+
+.local .icon {
+  margin: 2px 8px 0 0;
+  margin-top: 2px;
+  display: block;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.local .icon.empty {
+  border: 1px dashed #5A5A5A;
+  border-radius: 2px;
+}
+
+.local .meta {
+  color: #858585;
+}
+
+.local .title, .local .meta {
+  display: block;
+  white-space:nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.local .highlight {
+  font-weight: bold;
+  text-decoration: underline;
 }
 
 /* web */
-section#everythingme:not(:empty) {
-  background-color: #353534;
-  padding: 1rem 0;
+section.apps {
+  padding-top: 1rem;
+  /* Hide the whitespace between inline elements */
+  font-size: 0;
 }
-section#everythingme > * {
+
+section.apps section {
+  display: inline;
+  font-size: 0.8125rem;
+}
+
+section.apps .result {
   width: calc(100%/4 - 0.4rem);
   display: inline-block;
   text-align: center;
@@ -46,9 +111,14 @@ section#everythingme > * {
   line-height: 1rem;
   padding: 0 0.2rem;
 }
-section#everythingme img {
+
+section.apps img {
   display: block;
   margin: 0 auto 0.3rem;
   pointer-events: none;
   width: 2.75rem;
+}
+
+#webresults .result img {
+  border-radius: 50%;
 }

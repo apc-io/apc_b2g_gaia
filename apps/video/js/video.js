@@ -21,8 +21,8 @@ var ids = ['thumbnail-list-view', 'thumbnails-bottom', 'thumbnail-list-title',
            'thumbnails-single-delete-button', 'thumbnails-single-share-button',
            'thumbnails-single-info-button', 'info-view', 'info-close-button',
            'player', 'overlay', 'overlay-title', 'overlay-text',
-           'overlay-menu', 'storage-setting-button', 'video-container',
-           'videoControls', 'videoBar', 'videoActionBar',
+           'overlay-menu', 'overlay-action-button',
+           'video-container', 'videoControls', 'videoBar', 'videoActionBar',
            'close', 'play', 'playHead', 'timeSlider', 'elapsedTime',
            'video-title', 'duration-text', 'elapsed-text', 'bufferedTime',
            'slider-wrapper', 'throbber', 'delete-video-button',
@@ -171,11 +171,17 @@ function init() {
     });
   }
 
-  // Click to open the media storage panel when the default storage is
-  // unavailable.
-  dom.storageSettingButton.addEventListener('click', launchSettingsApp);
-
   navigator.mozSetMessageHandler('activity', handleActivityEvents);
+
+  // the overlay action button may be used in both normal mode and activity
+  // mode, we need to wire its event handler here.
+  dom.overlayActionButton.addEventListener('click', function() {
+    if (pendingPick) {
+      cancelPick();
+    } else if (currentOverlay === 'empty') {
+      launchCameraApp();
+    }
+  });
 }
 
 function initThumbnailSize() {
@@ -325,6 +331,12 @@ function handleScreenLayoutChange() {
   // text to have correct ellipsis position. Otherwise, we update them when
   // leaving fullscreen mode.
   if (currentLayoutMode !== LAYOUT_MODE.fullscreenPlayer) {
+    // XXX: to workaround bug 961636 which fires two resize event at the app
+    // start-up,we need to check the existence of thumbnailList before using
+    // it.
+    if (!thumbnailList) {
+      return;
+    }
     thumbnailList.upateAllThumbnailTitle();
   } else {
     pendingUpdateTitleText = true;
@@ -482,16 +494,6 @@ function updateSelection(videodata) {
     dom.thumbnailsDeleteButton.classList.remove('disabled');
     dom.thumbnailsShareButton.classList.remove('disabled');
   }
-}
-
-function launchSettingsApp() {
-  var activity = new MozActivity({
-    name: 'configure',
-    data: {
-      target: 'device',
-      section: 'mediaStorage'
-    }
-  });
 }
 
 function launchCameraApp() {
@@ -668,6 +670,7 @@ function updateLoadingSpinner() {
   if (processingQueue) {
     noMoreWorkCallback = updateLoadingSpinner;
   } else {
+    PerformanceTestingHelper.dispatch('scan-finished');
     dom.spinnerOverlay.classList.add('hidden');
     dom.playerView.classList.remove('disabled');
     if (thumbnailList.count) {
@@ -727,19 +730,28 @@ function showOverlay(id) {
     return;
   }
 
-  if (id === 'nocard') {
+  var _ = navigator.mozL10n.get;
+
+  if (pendingPick || id === 'empty') {
+    // We cannot use hidden attribute because confirm.css overrides it.
     dom.overlayMenu.classList.remove('hidden');
+    dom.overlayActionButton.classList.remove('hidden');
+    dom.overlayActionButton.textContent = _(pendingPick ?
+                                            'overlay-cancel-button' :
+                                            'overlay-camera-button');
   } else {
     dom.overlayMenu.classList.add('hidden');
+    dom.overlayActionButton.classList.add('hidden');
   }
 
   if (id === 'nocard') {
-    dom.overlayTitle.textContent = navigator.mozL10n.get('nocard2-title');
-    dom.overlayText.textContent = navigator.mozL10n.get('nocard2-text');
+    dom.overlayTitle.textContent = _('nocard2-title');
+    dom.overlayText.textContent = _('nocard3-text');
   } else {
-    dom.overlayTitle.textContent = navigator.mozL10n.get(id + '-title');
-    dom.overlayText.textContent = navigator.mozL10n.get(id + '-text');
+    dom.overlayTitle.textContent = _(id + '-title');
+    dom.overlayText.textContent = _(id + '-text');
   }
+
   dom.overlay.classList.remove('hidden');
 }
 
@@ -941,6 +953,17 @@ function showPlayer(video, autoPlay, enterFullscreen, keepControls) {
     } else {
       doneSeeking();
     }
+
+   if (window.navigator.mozNfc) {
+      // If we have NFC, we need to put the callback to have shrinking UI.
+      window.navigator.mozNfc.onpeerready = function(event) {
+        // The callback function is called when user confirm to share the
+        // content, send it with NFC Peer.
+        videodb.getFile(video.name, function(file) {
+          navigator.mozNfc.getNFCPeer(event.detail).sendFile(file);
+        });
+      };
+    }
   });
 }
 
@@ -953,6 +976,10 @@ function hidePlayer(updateVideoMetadata, callback) {
   }
 
   dom.player.pause();
+  if (window.navigator.mozNfc) {
+    // We need to remove onpeerready while out of sharable context.
+    window.navigator.mozNfc.onpeerready = null;
+  }
 
   function completeHidingPlayer() {
     // switch to the video gallery view
@@ -1006,10 +1033,7 @@ function hidePlayer(updateVideoMetadata, callback) {
 
   function updateMetadata() {
     // Update the thumbnail image for this video
-    var imageblob = video.metadata.bookmark || video.metadata.poster;
-    if (imageblob) {
-      thumbnail.updatePoster(imageblob);
-    }
+    thumbnail.updatePoster(video.metadata.bookmark || video.metadata.poster);
 
     // If this is the first time the video was watched, record that it has
     // been watched now and update the corresponding document element.
@@ -1196,9 +1220,7 @@ function showPickView() {
   thumbnailList.setPickMode(true);
   document.body.classList.add('pick-activity');
 
-  dom.pickerClose.addEventListener('click', function() {
-    pendingPick.postError('pick cancelled');
-  });
+  dom.pickerClose.addEventListener('click', cancelPick);
 
   // In tablet, landscape mode, the pick view will have different UI from normal
   // view.
@@ -1206,6 +1228,11 @@ function showPickView() {
     // update all title text when rotating.
     thumbnailList.upateAllThumbnailTitle();
   }
+}
+
+function cancelPick() {
+  pendingPick.postError('pick cancelled');
+  cleanupPick();
 }
 
 function cleanupPick() {

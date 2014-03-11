@@ -4,6 +4,7 @@ const { Cc, Ci, Cr, Cu } = require('chrome');
 Cu.import('resource://gre/modules/Services.jsm');
 
 const INSTALL_TIME = 132333986000;
+const DEBUG = false;
 // Match this to value in applications-data.js
 
 function debug(msg) {
@@ -69,47 +70,36 @@ function checkOrigin(origin) {
   }
 }
 
-function fillCommsAppManifest(webapp, webappTargetDir) {
-  let manifestContent = utils.getFileContent(webapp.manifestFile);
-  var manifestObject = JSON.parse(manifestContent);
+/**
+ * Updates hostnames for InterApp Communication APIs
+ */
+function manifestInterAppHostnames(webapp, webappTargetDir) {
+  function convertToLocalUrl(url) {
+    var host = config.GAIA_DOMAIN + config.GAIA_PORT;
 
-  let redirects = manifestObject.redirects;
+    return url
+      .replace(/^(http|app):\/\//, config.GAIA_SCHEME)
+      .replace(/gaiamobile.org(:[0-9])?/, host);
+  }
 
-  let indexedRedirects = {};
-  redirects.forEach(function(aRedirect) {
-    indexedRedirects[aRedirect.from] = aRedirect.to;
-  });
+  let manifest = utils.getJSON(
+    utils.getFile(webappTargetDir.path, 'manifest.webapp'));
 
-  let mappingParameters = {
-    'facebook': 'redirectURI',
-    'live': 'redirectURI',
-    'gmail': 'redirectURI',
-    'facebook_dialogs': 'redirectMsg',
-    'facebook_logout': 'redirectLogout'
-  };
+  if (manifest.connections) {
+    for (let i in manifest.connections) {
+      let connection = manifest.connections[i];
+      if (!connection.rules || !connection.rules.manifestURLs) {
+        continue;
+      }
 
-  let content = JSON.parse(utils.getFileContent(utils.getFile(config.GAIA_DIR,
-    'build', 'communications_services.json')));
-  let custom = utils.getDistributionFileContent('communications_services',
-    content);
-  let commsServices = JSON.parse(custom);
-
-  let newRedirects = [];
-  redirects.forEach(function(aRedirect) {
-    let from = aRedirect.from;
-    let service = commsServices[from.split('_')[0] || from] || commsServices;
-    newRedirects.push({
-      from: service[mappingParameters[from]],
-      to: indexedRedirects[from]
-    });
-  });
-
-  manifestObject.redirects = newRedirects;
-
-  debug(webappTargetDir.path);
-
-  let file = utils.getFile(webappTargetDir.path, 'manifest.webapp');
-  utils.writeContent(file, JSON.stringify(manifestObject));
+      var manifestURLs = connection.rules.manifestURLs;
+      manifestURLs.forEach(function(url, idx) {
+        manifestURLs[idx] = convertToLocalUrl(url);
+      });
+    }
+    utils.writeContent(utils.getFile(webappTargetDir.path, 'manifest.webapp'),
+                       JSON.stringify(manifest));
+  }
 }
 
 function fillAppManifest(webapp) {
@@ -119,18 +109,20 @@ function fillAppManifest(webapp) {
   // Copy webapp's manifest to the profile
   let webappTargetDir = webappsTargetDir.clone();
   webappTargetDir.append(webappTargetDirName);
-  webapp.manifestFile.copyTo(webappTargetDir, 'manifest.webapp');
+  let gaia = utils.getGaia(config);
 
-  if (webapp.url.indexOf('communications.gaiamobile.org') !== -1) {
-    fillCommsAppManifest(webapp, webappTargetDir);
+  if (gaia.l10nManager) {
+    let manifest = gaia.l10nManager.localizeManifest(webapp);
+    manifestFile = webappTargetDir.clone();
+    utils.ensureFolderExists(webappTargetDir);
+    manifestFile.append('manifest.webapp');
+    let args = DEBUG ? [manifest, undefined, 2] : [manifest];
+    utils.writeContent(manifestFile, JSON.stringify.apply(JSON, args));
+  } else {
+    webapp.manifestFile.copyTo(webappTargetDir, 'manifest.webapp');
   }
-  else if (webapp.url.indexOf('://keyboard.gaiamobile.org') !== -1) {
-    let kbdConfig = require('keyboard-config');
-    let kbdManifest = utils.getJSON(webapp.manifestFile);
-    kbdManifest = kbdConfig.addEntryPointsToManifest(config, kbdManifest);
-    utils.writeContent(utils.getFile(webappTargetDir.path, 'manifest.webapp'),
-                       JSON.stringify(kbdManifest));
-  }
+
+  manifestInterAppHostnames(webapp, webappTargetDir);
 
   // Add webapp's entry to the webapps global manifest.
   // appStatus == 3 means this is a certified app.
@@ -310,7 +302,6 @@ function cleanProfile(webappsDir) {
 
 function execute(options) {
   config = options;
-
   webappsTargetDir.initWithPath(config.PROFILE_DIR);
   // Create profile folder if doesn't exists
   if (!webappsTargetDir.exists())
@@ -324,13 +315,7 @@ function execute(options) {
   }
 
   utils.getGaia(config).webapps.forEach(function(webapp) {
-    // If BUILD_APP_NAME isn't `*`, we only accept one webapp
-    if (config.BUILD_APP_NAME != '*' &&
-      webapp.sourceDirectoryName != config.BUILD_APP_NAME) {
-      return;
-    }
-
-    if (webapp.metaData) {
+    if (utils.isExternalApp(webapp)) {
       fillExternalAppManifest(webapp);
     } else {
       fillAppManifest(webapp);
@@ -352,7 +337,27 @@ function execute(options) {
   // stringify json with 2 spaces indentation
   utils.writeContent(manifestFile, JSON.stringify(manifests, null, 2) + '\n');
 
+  var mapping = {};
+  for (var appname in webapps) {
+    mapping[appname] = {};
+    // this property contains manifest information before running app-makefiles.
+    mapping[appname].originalManifest = webapps[appname].manifest;
+    mapping[appname].origin = webapps[appname].webappsJson.origin;
+    mapping[appname].manifestURL = webapps[appname].webappsJson.manifestURL;
+  }
+
+  let stageFolder = utils.getEnv('STAGE_FOLDER');
+  let stageDir;
+  if (stageFolder) {
+    stageDir = utils.getFile(config.GAIA_DIR, stageFolder);
+    utils.ensureFolderExists(stageDir);
+  }
+  let mappingFile = stageDir.clone();
+  mappingFile.append('webapps-mapping.json');
+  utils.writeContent(mappingFile, JSON.stringify(mapping, null, 2));
+
   return webapps;
 }
 
 exports.execute = execute;
+exports.INSTALL_TIME = INSTALL_TIME;

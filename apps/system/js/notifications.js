@@ -146,20 +146,10 @@ var NotificationScreen = {
     }
   },
 
-  // TODO: Workaround for bug 929895 until bug 890440 is addressed
-  clearBlacklist: [
-    window.location.protocol + '//wappush.gaiamobile.org/manifest.webapp'
-  ],
-
+  // TODO: Remove this when we ditch mozNotification (bug 952453)
   handleAppopen: function ns_handleAppopen(evt) {
     var manifestURL = evt.detail.manifestURL,
         selector = '[data-manifest-u-r-l="' + manifestURL + '"]';
-
-    var isBlacklisted = (this.clearBlacklist.indexOf(manifestURL) >= 0);
-
-    if (isBlacklisted) {
-      return;
-    }
 
     var nodes = this.container.querySelectorAll(selector);
 
@@ -242,7 +232,6 @@ var NotificationScreen = {
         id: notificationId
       }
     }));
-    window.dispatchEvent(event);
 
     // Desktop notifications are removed when they are clicked (see bug 890440)
     if (notificationNode.dataset.type === 'desktop-notification' &&
@@ -388,7 +377,8 @@ var NotificationScreen = {
     // Notification toaster
     if (notify) {
       this.updateToaster(detail, type, dir);
-      if (this.lockscreenPreview || !LockScreen.locked) {
+      if (this.lockscreenPreview || !window.lockScreen ||
+          !window.lockScreen.locked) {
         this.toaster.classList.add('displayed');
         this._toasterGD.startDetecting();
 
@@ -406,8 +396,8 @@ var NotificationScreen = {
 
     // Adding it to the lockscreen if locked and the privacy setting
     // does not prevent it.
-    if (typeof(LockScreen) !== 'undefined' &&
-        LockScreen.locked && this.lockscreenPreview) {
+    if (typeof(window.lockScreen) !== 'undefined' &&
+        window.lockScreen.locked && this.lockscreenPreview) {
       var lockScreenNode = notificationNode.cloneNode(true);
 
       // First we try and find an existing notification with the same id.

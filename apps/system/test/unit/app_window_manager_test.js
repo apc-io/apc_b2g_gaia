@@ -1,10 +1,11 @@
 'use strict';
 
 mocha.globals(['SettingsListener', 'removeEventListener', 'addEventListener',
-      'dispatchEvent', 'AppWindowManager', 'Applications', 'ManifestHelper',
+      'dispatchEvent', 'ActivityWindow', 'activityWindowFactory',
+      'AppWindowManager', 'Applications', 'ManifestHelper',
       'KeyboardManager', 'StatusBar', 'HomescreenWindow',
       'SoftwareButtonManager', 'AttentionScreen', 'AppWindow',
-      'LockScreen', 'OrientationManager', 'BrowserFrame',
+      'lockScreen', 'OrientationManager', 'BrowserFrame',
       'BrowserConfigHelper', 'System', 'BrowserMixin', 'TransitionMixin',
       'HomescreenLauncher', 'LayoutManager']);
 
@@ -12,6 +13,8 @@ requireApp('system/shared/test/unit/mocks/mock_manifest_helper.js');
 requireApp('system/test/unit/mock_lock_screen.js');
 requireApp('system/test/unit/mock_orientation_manager.js');
 requireApp('system/test/unit/mock_applications.js');
+requireApp('system/test/unit/mock_activity_window.js');
+requireApp('system/test/unit/mock_activity_window_factory.js');
 requireApp('system/test/unit/mock_keyboard_manager.js');
 requireApp('system/test/unit/mock_software_button_manager.js');
 requireApp('system/test/unit/mock_attention_screen.js');
@@ -24,7 +27,8 @@ requireApp('system/js/system.js');
 requireApp('system/shared/test/unit/mocks/mock_settings_listener.js');
 
 var mocksForAppWindowManager = new MocksHelper([
-  'LockScreen', 'OrientationManager', 'AttentionScreen',
+  'OrientationManager', 'AttentionScreen',
+  'ActivityWindow', 'ActivityWindowFactory',
   'Applications', 'SettingsListener', 'HomescreenLauncher',
   'ManifestHelper', 'KeyboardManager', 'StatusBar', 'SoftwareButtonManager',
   'HomescreenWindow', 'AppWindow', 'LayoutManager'
@@ -33,14 +37,18 @@ var mocksForAppWindowManager = new MocksHelper([
 suite('system/AppWindowManager', function() {
   mocksForAppWindowManager.attachTestHelpers();
   var stubById;
-  var app1, app2, app3, app4, app5, app6, home;
+  var app1, app2, app3, app4, app5, app6, app7, home;
   setup(function(done) {
     stubById = this.sinon.stub(document, 'getElementById');
     stubById.returns(document.createElement('div'));
 
+    window.lockScreen = MockLockScreen;
+    window.activityWindowFactory = MockActivityWindowFactory;
+
     home = new HomescreenWindow('fakeHome');
     MockHomescreenLauncher.mHomescreenWindow = home;
-    MockHomescreenLauncher.origin = 'fakeOrigin';
+    MockHomescreenLauncher.origin = 'fakeHomeOrigin';
+    home.origin = MockHomescreenLauncher.origin;
     MockHomescreenLauncher.ready = true;
 
     app1 = new AppWindow(fakeAppConfig1);
@@ -49,6 +57,7 @@ suite('system/AppWindowManager', function() {
     app4 = new AppWindow(fakeAppConfig4Background);
     app5 = new AppWindow(fakeAppConfig5Background);
     app6 = new AppWindow(fakeAppConfig6Browser);
+    app7 = new AppWindow(fakeAppConfig7Activity);
 
     requireApp('system/js/app_window_manager.js', done);
   });
@@ -109,6 +118,14 @@ suite('system/AppWindowManager', function() {
     origin: 'app://www.fake6',
     stayBackground: true,
     changeURL: true
+  };
+
+  var fakeAppConfig7Activity = {
+    url: 'app://www.fake7/index.html',
+    manifest: {},
+    manifestURL: 'app://wwww.fake7/ManifestURL',
+    origin: 'app://www.fake7',
+    isActivity: true
   };
 
   function injectRunningApps() {
@@ -375,6 +392,8 @@ suite('system/AppWindowManager', function() {
     });
 
     test('app to app', function() {
+      var stub_updateActiveApp = this.sinon.stub(AppWindowManager,
+        '_updateActiveApp');
       injectRunningApps(app1, app2);
       AppWindowManager.displayedApp = app1.origin;
       AppWindowManager._activeApp = app1;
@@ -383,6 +402,18 @@ suite('system/AppWindowManager', function() {
       assert.isTrue(stubSwitchApp.called);
       assert.deepEqual(stubSwitchApp.getCall(0).args[0], app1);
       assert.deepEqual(stubSwitchApp.getCall(0).args[1], app2);
+      assert.isTrue(stub_updateActiveApp.called);
+    });
+
+    test('Contiunous app open requests', function() {
+      injectRunningApps(home, app1, app2);
+      AppWindowManager.displayedApp = home.origin;
+      AppWindowManager._activeApp = home;
+
+      AppWindowManager.display(app1.origin);
+      AppWindowManager.display(app2.origin);
+
+      assert.deepEqual(AppWindowManager._activeApp, app2);
     });
   });
 
@@ -390,8 +421,7 @@ suite('system/AppWindowManager', function() {
     test('home to app', function() {
       injectRunningApps(home, app1);
       AppWindowManager._activeApp = home;
-      var stub_updateActiveApp = this.sinon.stub(AppWindowManager,
-        '_updateActiveApp');
+
       var stubReady = this.sinon.stub(app1, 'ready');
       var stubAppNextOpen = this.sinon.stub(app1, 'open');
       var stubAppCurrentClose = this.sinon.stub(home, 'close');
@@ -399,7 +429,6 @@ suite('system/AppWindowManager', function() {
       stubReady.yield();
       assert.isTrue(stubAppNextOpen.called);
       assert.isTrue(stubAppCurrentClose.called);
-      assert.isTrue(stub_updateActiveApp.called);
     });
 
     test('home to an app killed while opening', function() {
@@ -414,14 +443,12 @@ suite('system/AppWindowManager', function() {
       AppWindowManager.switchApp(home, app1);
       stubReady.yield();
       assert.isFalse(stubAppCurrentClose.called);
-      assert.isFalse(stub_updateActiveApp.called);
+      assert.isTrue(stub_updateActiveApp.called);
     });
 
     test('app to home', function() {
       injectRunningApps(home, app1);
       AppWindowManager._activeApp = app1;
-      var stub_updateActiveApp = this.sinon.stub(AppWindowManager,
-        '_updateActiveApp');
       var stubReady = this.sinon.stub(home, 'ready');
       var stubAppNextOpen = this.sinon.stub(home, 'open');
       var stubAppCurrentClose = this.sinon.stub(app1, 'close');
@@ -429,14 +456,11 @@ suite('system/AppWindowManager', function() {
       stubReady.yield();
       assert.isTrue(stubAppNextOpen.called);
       assert.isTrue(stubAppCurrentClose.called);
-      assert.isTrue(stub_updateActiveApp.called);
     });
 
     test('app to app', function() {
       injectRunningApps(app1, app2);
       AppWindowManager._activeApp = app1;
-      var stub_updateActiveApp = this.sinon.stub(AppWindowManager,
-        '_updateActiveApp');
       var stubReady = this.sinon.stub(app2, 'ready');
       var stubAppNextOpen = this.sinon.stub(app2, 'open');
       var stubAppCurrentClose = this.sinon.stub(app1, 'close');
@@ -446,14 +470,11 @@ suite('system/AppWindowManager', function() {
       assert.isTrue(stubAppCurrentClose.called);
       assert.isTrue(stubAppNextOpen.calledWith('invoked'));
       assert.isTrue(stubAppCurrentClose.calledWith('invoking'));
-      assert.isTrue(stub_updateActiveApp.called);
     });
 
     test('close app to cardsview', function() {
       injectRunningApps(app1, home);
       AppWindowManager._activeApp = app1;
-      var stub_updateActiveApp = this.sinon.stub(AppWindowManager,
-        '_updateActiveApp');
       var stubReady = this.sinon.stub(home, 'ready');
       var stubAppNextOpen = this.sinon.stub(home, 'open');
       var stubAppCurrentClose = this.sinon.stub(app1, 'close');
@@ -461,14 +482,11 @@ suite('system/AppWindowManager', function() {
       stubReady.yield();
       assert.isTrue(stubAppNextOpen.called);
       assert.isTrue(stubAppCurrentClose.calledWith('to-cardview'));
-      assert.isTrue(stub_updateActiveApp.called);
     });
 
     test('open app from cardsview', function() {
       injectRunningApps(app1, home);
       AppWindowManager._activeApp = app1;
-      var stub_updateActiveApp = this.sinon.stub(AppWindowManager,
-        '_updateActiveApp');
       var stubReady = this.sinon.stub(app1, 'ready');
       var stubAppNextOpen = this.sinon.stub(app1, 'open');
       var stubAppCurrentClose = this.sinon.stub(home, 'close');
@@ -476,7 +494,6 @@ suite('system/AppWindowManager', function() {
       stubReady.yield();
       assert.isTrue(stubAppNextOpen.calledWith('from-cardview'));
       assert.isTrue(stubAppCurrentClose.called);
-      assert.isTrue(stub_updateActiveApp.called);
     });
   });
 
@@ -531,6 +548,54 @@ suite('system/AppWindowManager', function() {
       var stubDisplay = this.sinon.stub(AppWindowManager, 'display');
       AppWindowManager.launch(fakeAppConfig5Background);
       assert.isFalse(stubDisplay.called);
+    });
+
+    test('Launch an activity app', function() {
+      injectRunningApps(app1, app7);
+      AppWindowManager._updateActiveApp(app1.origin);
+
+      var stubDisplay = this.sinon.stub(AppWindowManager, 'display');
+      AppWindowManager.launch(fakeAppConfig7Activity);
+
+      assert.isTrue(stubDisplay.called);
+      assert.equal(app7.activityCaller, app1);
+      assert.equal(app1.activityCallee, app7);
+    });
+
+    test('Launch activity from inline activity', function() {
+      injectRunningApps(app1, app7);
+      AppWindowManager._updateActiveApp(app1.origin);
+
+      var activity = new ActivityWindow({});
+      ActivityWindowFactory._activeActivity = activity;
+
+      var stubDisplay = this.sinon.stub(AppWindowManager, 'display');
+      AppWindowManager.launch(fakeAppConfig7Activity);
+
+      assert.isTrue(stubDisplay.called);
+      assert.equal(app7.activityCaller, activity);
+      assert.equal(activity.activityCallee, app7);
+    });
+  });
+
+  suite('Settings change', function() {
+    test('app-suspending.enabled', function() {
+      var stubBroadcastMessage =
+        this.sinon.stub(AppWindowManager, 'broadcastMessage');
+      MockSettingsListener.mCallbacks['app-suspending.enabled'](false);
+      assert.ok(stubBroadcastMessage.calledWith('kill_suspended'));
+    });
+
+    test('language.current', function() {
+      var stubBroadcastMessage =
+        this.sinon.stub(AppWindowManager, 'broadcastMessage');
+      MockSettingsListener.mCallbacks['language.current']('chinese');
+      assert.ok(stubBroadcastMessage.calledWith('localized'));
+    });
+
+    test('continuous-transition.enabled', function() {
+      MockSettingsListener.mCallbacks['continuous-transition.enabled'](true);
+      assert.isTrue(AppWindowManager.continuousTransition);
     });
   });
 });

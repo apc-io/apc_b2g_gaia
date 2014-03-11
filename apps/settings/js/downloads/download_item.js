@@ -17,35 +17,15 @@
 
 var DownloadItem = (function DownloadItem() {
 
-  // Map the download status with the classes that the
-  // different elements of a dom download item have.
-  // This is a snapshot on how they should finish depending
-  // on the state.
-  var STATUS_MAPPING = {
-    'downloading': {
-      'asideStatus': ['hide'],
-      'asideAction': ['actionCancel', 'pack-end']
-    },
-    // TODO : This might need a 'canceled' state
-    'succeeded': {
-      'asideStatus': ['hide'],
-      'asideAction': ['hide']
-    },
-    'stopped': {
-      'asideStatus': ['statusError'],
-      'asideAction': ['actionRetry', 'pack-end']
-    }
-  };
-
   // Generates the following DOM, take into account that
   // the css needed for the classes above is in settings app:
   // downloads.css
   // @param {DomDownload} Download object to get the output from
   //
   //<li data-url="{url}" data-state="{download.state}">
-  //  <aside class="{statusError | }">
+  //  <aside class="download-status">
   //  </aside>
-  //  <aside class="{actionCancel | actionRetry} pack-end"
+  //  <aside class="pack-end"
   //      data-id="{download.id}">
   //  </aside>
   //  <p class="fileName">Filename.doc</p>
@@ -56,7 +36,7 @@ var DownloadItem = (function DownloadItem() {
     var id = getDownloadId(download);
     var li = document.createElement('li');
     li.dataset.url = download.url;
-    li.dataset.state = download.state;
+    li.dataset.state = getDownloadState(download);
     li.id = id;
     li.dataset.id = id;
 
@@ -73,7 +53,7 @@ var DownloadItem = (function DownloadItem() {
 
 
     var asideStatus = document.createElement('aside');
-
+    asideStatus.className = 'download-status';
     var asideAction = document.createElement('aside');
     asideAction.classList.add('pack-end');
     asideAction.dataset.id = id;
@@ -104,20 +84,11 @@ var DownloadItem = (function DownloadItem() {
   // @param {Dom Element} LI element representing the download
   // @param {DomDownload} Download object
   var update = function update(domElement, download) {
-    var styles = STATUS_MAPPING[download.state];
-
-    if (styles == null) {
-      // The only possible value is for removed, we don't have UI
-      // for that
-      console.error('Style not found for download_item');
-      return null;
-    }
-
+    var state = getDownloadState(download);
     var domNodes = getElements(domElement);
     // Update the state properly in the element
-    domElement.dataset.state = download.state;
-    // Update styles & content
-    applyStyles(domNodes, styles);
+    domElement.dataset.state = state;
+    // Update content
     updateContent(domNodes, download);
 
     return domElement;
@@ -130,8 +101,8 @@ var DownloadItem = (function DownloadItem() {
   // @param {DomDownload} Download object
   var updateContent = function updateContent(domNodes, download) {
     var _ = navigator.mozL10n.get;
-
-    if (download.state === 'downloading') {
+    var state = getDownloadState(download);
+    if (state === 'downloading') {
       domNodes['progress'].value =
         DownloadFormatter.getPercentage(download);
 
@@ -142,9 +113,10 @@ var DownloadItem = (function DownloadItem() {
 
     } else {
       var status = '';
-      switch (download.state) {
+      switch (state) {
         case 'stopped':
-          status = _('stopped');
+        case 'failed':
+          status = _('download-' + state);
           break;
         case 'succeeded':
           status = DownloadFormatter.getTotalSize(download);
@@ -157,32 +129,6 @@ var DownloadItem = (function DownloadItem() {
         });
       });
     }
-  };
-
-  // Given a state mapping predefined, apply it to the dom elements
-  // of the download item
-  // @param {Object of DOM Element} Dictionary containing the DOM
-  //   elements accesible by name
-  // @param {Object} Dictionary containing what are the classes that
-  //   should be on the different dom elements
-  var applyStyles = function applyStyles(domElements, stateMapping) {
-    var elem = null;
-    Object.keys(stateMapping).forEach(function onElementName(elName) {
-      elem = domElements[elName];
-      if (elem === null) {
-        return;
-      }
-
-      var klasses = stateMapping[elName];
-      if (klasses === null) {
-        return;
-      }
-
-      elem.className = '';
-      klasses.forEach(function(klass) {
-        elem.classList.add(klass);
-      });
-    });
   };
 
   // Get's the DOM nodes for the Download Node to apply
@@ -211,6 +157,16 @@ var DownloadItem = (function DownloadItem() {
   // values on the id field.
   var getDownloadId = function getDownloadId(download) {
     return DownloadFormatter.getUUID(download);
+  };
+
+  var getDownloadState = function getDownloadState(download) {
+    var state = download.state;
+
+    if (state === 'stopped' && download.error !== null) {
+      state = 'failed';
+    }
+
+    return state;
   };
 
   return {

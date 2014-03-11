@@ -2,43 +2,59 @@
 
 var MusicComms = {
   commands: {
+    play: function(event) {
+      this.commands.playpause.call(this, event);
+    },
+
     // For those bluetooth devices that do not keep, request or receive
     // the play status, because the play status may not sync with the player,
     // they will just send "play" or "playpause" when pressing the "playpause"
     // button, so for the "play" and "playpause" commands, we will check
     // the play status for the player then decide we should play or pause.
-    play: function(event) {
-      this._getPlayerReady(function() {
-        // Play in shuffle order if music app is launched remotely.
-        // Please note bug 855208, if music app is launched via system message
-        // in background, the audio channel will be paused.
-        if (PlayerView.playStatus === PLAYSTATUS_STOPPED) {
-          musicdb.getAll(function remote_getAll(dataArray) {
-            PlayerView.setSourceType(TYPE_MIX);
-            PlayerView.dataSource = dataArray;
-            PlayerView.setShuffle(true);
-            PlayerView.play(PlayerView.shuffledList[0]);
-
-            ModeManager.push(MODE_PLAYER);
-          });
-        } else if (PlayerView.playStatus === PLAYSTATUS_PLAYING) {
-          PlayerView.pause();
-        } else {
-          PlayerView.play();
-        }
-      });
-    },
-
     playpause: function(event) {
-      if (PlayerView.playStatus === PLAYSTATUS_PLAYING)
-        PlayerView.pause();
-      else
-        PlayerView.play();
+      this._getPlayerReady(function() {
+        var isResumedBySCO = this.isSCOEnabled;
+        this.isSCOEnabled = event.detail.isSCOConnected;
+
+        // Check if it's resumed by the SCO disconnection, if so, we need to
+        // recover the player to the original status.
+        if (isResumedBySCO) {
+          if (this._statusBeforeSCO === PLAYSTATUS_PLAYING)
+            PlayerView.play();
+          else
+            PlayerView.pause();
+        } else {
+          // Play in shuffle order if music app is launched remotely.
+          // Please note bug 855208, if music app is launched via system message
+          // in background, the audio channel will be paused.
+          if (PlayerView.playStatus === PLAYSTATUS_STOPPED) {
+            musicdb.getAll(function remote_getAll(dataArray) {
+              PlayerView.setSourceType(TYPE_MIX);
+              PlayerView.dataSource = dataArray;
+              PlayerView.setShuffle(true);
+              PlayerView.play(PlayerView.shuffledList[0]);
+
+              ModeManager.push(MODE_PLAYER);
+            });
+          } else if (PlayerView.playStatus === PLAYSTATUS_PLAYING) {
+            PlayerView.pause();
+          } else {
+            PlayerView.play();
+          }
+        }
+      }.bind(this));
     },
 
     pause: function(event) {
+      this.isSCOEnabled = event.detail.isSCOConnected;
+
       if (!this._isPlayerActivated())
         return;
+
+      // Record the current play status so that we can recover the player to
+      // the original status after SCO is disconnected.
+      if (this.isSCOEnabled)
+        this._statusBeforeSCO = PlayerView.playStatus;
 
       PlayerView.pause();
     },
@@ -80,13 +96,30 @@ var MusicComms = {
     },
 
     updatemetadata: function() {
-      PlayerView.updateRemoteMetadata();
+      // After A2DP is connected, some bluetooth devices will try to synchronize
+      // the playing metadata with the player, if the player is not ready, we
+      // have to initial the player to have the metadata, even the player is
+      // stopped.
+      this._getPlayerReady(function() {
+        PlayerView.updateRemoteMetadata();
+      });
     },
 
     updateplaystatus: function() {
-      PlayerView.updateRemotePlayStatus();
+      // After A2DP is connected, some bluetooth devices will try to synchronize
+      // the playstatus with the player, if the player is not ready, we have to
+      // initial the player to have the play status.
+      this._getPlayerReady(function() {
+        PlayerView.updateRemotePlayStatus();
+      });
     }
   },
+
+  enabled: false,
+
+  isSCOEnabled: false,
+
+  _statusBeforeSCO: null,
 
   init: function() {
     // The Media Remote Controls object will handle the remote commands.
@@ -95,12 +128,16 @@ var MusicComms = {
     for (var command in this.commands)
       this.mrc.addCommandListener(command, this.commands[command].bind(this));
 
-    this.mrc.start();
+    // Update the SCO status after the mrc is ready, so that we can know the
+    // current SCO connection and reflect it to the player.
+    this.mrc.start(this.updateSCOStatus.bind(this));
 
     this.mrc.notifyAppInfo({
       origin: window.location.origin,
       icon: window.location.origin + '/style/icons/Music_60.png'
     });
+
+    this.enabled = true;
   },
 
   _getPlayerReady: function(callback) {
@@ -122,10 +159,20 @@ var MusicComms = {
   },
 
   notifyMetadataChanged: function(metadata) {
-    this.mrc.notifyMetadataChanged(metadata);
+    if (this.enabled)
+      this.mrc.notifyMetadataChanged(metadata);
   },
 
   notifyStatusChanged: function(info) {
-    this.mrc.notifyStatusChanged(info);
+    if (this.enabled)
+      this.mrc.notifyStatusChanged(info);
+  },
+
+  updateSCOStatus: function() {
+    if (this.enabled) {
+      this.mrc.getSCOStatus(function(status) {
+        this.isSCOEnabled = status;
+      }.bind(this));
+    }
   }
 };

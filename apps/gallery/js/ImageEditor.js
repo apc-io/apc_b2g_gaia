@@ -181,8 +181,6 @@ var exposureSlider = (function() {
     var thumbWidth = parseInt(thumb.clientWidth, 10);
     var offset = bar.offsetLeft + 4;
 
-    // Remember the new exposure value
-    currentExposure = exposure;
     // Convert exposure value to a unit coefficient position of thumb center
     var unitCoef = (exposure + 3) / 6;
 
@@ -197,6 +195,14 @@ var exposureSlider = (function() {
 
     // Display exposure value in thumb
     thumb.textContent = exposure;
+
+    // Don't need to update the currentExposure and dispatch the event if they
+    // are the same.
+    if (currentExposure === exposure) {
+      return;
+    }
+    // Remember the new exposure value
+    currentExposure = exposure;
 
     // Dispatch an event to actually change the image
     slider.dispatchEvent(new Event('change', {bubbles: true}));
@@ -535,10 +541,6 @@ ImageEditor.prototype.displayCropOnlyPreview = function() {
 ImageEditor.prototype.generateNewPreview = function(callback) {
   var self = this;
 
-  // Create a preview image
-  var canvas = document.createElement('canvas');
-  var context = canvas.getContext('2d');
-
   // infer the previewHeight such that the aspect ratio stays the same
   var scalex = this.previewCanvas.width / this.source.width;
   var scaley = this.previewCanvas.height / this.source.height;
@@ -547,8 +549,14 @@ ImageEditor.prototype.generateNewPreview = function(callback) {
   var previewWidth = Math.floor(this.source.width * this.scale);
   var previewHeight = Math.floor(this.source.height * this.scale);
 
+  // Create a preview image
+  var canvas = document.createElement('canvas');
   canvas.width = previewWidth;
   canvas.height = previewHeight;
+  // In this case, we only need graphic 2d to do the scaling. The
+  // willReadFrequently option makes canvas use software graphic 2d. This can
+  // skip a bug of GPU version, bug 960276.
+  var context = canvas.getContext('2d', { willReadFrequently: true });
 
   // Draw that region of the image into the canvas, scaling it down
   context.drawImage(this.original, this.source.x, this.source.y,
@@ -694,7 +702,7 @@ ImageEditor.prototype.getFullSizeBlob = function(type, done, progress) {
   var canvas = document.createElement('canvas');
   canvas.width = this.source.width; // "full size" is cropped image size
   canvas.height = this.source.height;
-  var context = canvas.getContext('2d');
+  var context = canvas.getContext('2d', { willReadFrequently: true });
   context.drawImage(this.original,
                     this.source.x, this.source.y,
                     this.source.width, this.source.height,
@@ -810,12 +818,11 @@ ImageEditor.prototype.showCropOverlay = function showCropOverlay(newRegion) {
   var self = this;
 
   var canvas = this.cropCanvas = document.createElement('canvas');
-  var context = this.cropContext = canvas.getContext('2d');
   canvas.id = 'edit-crop-canvas'; // for stylesheet
   this.container.appendChild(canvas);
-
   canvas.width = canvas.clientWidth;
   canvas.height = canvas.clientHeight;
+  var context = this.cropContext = canvas.getContext('2d');
 
   // Crop handle styles
   context.translate(15, 15);
@@ -1473,6 +1480,17 @@ ImageProcessor.prototype.destroy = function() {
   gl.deleteTexture(this.sourceTexture);
   gl.deleteBuffer(this.rectangleBuffer);
   gl.viewport(0, 0, 0, 0);
+
+  // Destroy webgl context explicitly. Not wait for GC cleaning up.
+  //
+  // http://www.khronos.org/registry/webgl/extensions/WEBGL_lose_context/
+  //
+  // We use loseContext() to let the context lost.
+  // It will release the buffer here.
+  var loseContextExt = gl.getExtension('WEBGL_lose_context');
+  if (loseContextExt) {
+    loseContextExt.loseContext();
+  }
 };
 
 ImageProcessor.prototype.draw = function(image, needsUpload,

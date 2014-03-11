@@ -1,5 +1,7 @@
 /* -*- Mode: js; js-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
+/* global DsdsSettings, localize, SimPinDialog, Settings, MozActivity */
+/* global FdnAuthorizedNumbers, getIccByIndex, console */
 
 'use strict';
 
@@ -33,7 +35,12 @@ var SimFdnLock = {
 
   updateFdnStatus: function spl_updateSimStatus() {
     var self = this;
-    var req = IccHelper.getCardLock('fdn');
+    var iccObj = getIccByIndex();
+    if (!iccObj) {
+      return console.error('Could not retrieve ICC object');
+    }
+
+    var req = iccObj.getCardLock('fdn');
     req.onsuccess = function spl_checkSuccess() {
       var enabled = req.result.enabled;
       localize(self.simFdnDesc, enabled ? 'enabled' : 'disabled');
@@ -44,12 +51,13 @@ var SimFdnLock = {
   },
 
   init: function spl_init() {
-    if (!IccHelper) {
-      return;
+    var iccObj = getIccByIndex();
+    if (!iccObj) {
+      return console.error('Could not retrieve ICC object');
     }
 
     var callback = this.updateFdnStatus.bind(this);
-    IccHelper.addEventListener('cardstatechange', callback);
+    iccObj.addEventListener('cardstatechange', callback);
 
     this.pinDialog = new SimPinDialog(this.dialog);
     var self = this;
@@ -59,7 +67,7 @@ var SimFdnLock = {
     this.simFdnCheckBox.disabled = true;
     this.simFdnCheckBox.onchange = function spl_togglePin2() {
       var action = this.checked ? 'enable_fdn' : 'disable_fdn';
-      if (IccHelper.cardState === 'puk2Required') {
+      if (iccObj.cardState === 'puk2Required') {
         action = 'unlock_puk2';
       }
       self.pinDialog.show(action, { onsuccess: callback, oncancel: callback });
@@ -96,7 +104,7 @@ var SimFdnLock = {
     };
 
     this.fdnActionMenuEdit.onclick = function() { // edit FDN contact
-      localize(self.fdnContactTitle, 'fdnAction-edit');
+      localize(self.fdnContactTitle, 'fdnAction-edit-header');
       self.fdnContactName.value = self.currentContact.name;
       self.fdnContactNumber.value = self.currentContact.number;
       self.fdnContactSubmit.onclick = function editContact() {

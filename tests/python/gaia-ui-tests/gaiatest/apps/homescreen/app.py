@@ -20,9 +20,16 @@ class Homescreen(Base):
     _landing_page_locator = (By.ID, 'icongrid')
     _collections_locator = (By.CSS_SELECTOR, 'li.icon[data-collection-name]')
     _collection_locator = (By.CSS_SELECTOR, "li.icon[data-collection-name *= '%s']")
+    _pagination_scroller_locator = (By.CSS_SELECTOR, 'div.paginationScroller')
 
     def launch(self):
         Base.launch(self)
+
+    def wait_for_homescreen_to_load(self):
+        # The pagination scroller is shown once number of icons/pages is known
+        self.wait_for_element_displayed(*self._pagination_scroller_locator)
+        # This element is inserted by e.me init
+        self.wait_for_element_displayed(*self._search_bar_icon_locator)
 
     def tap_search_bar(self):
         search_bar = self.marionette.find_element(*self._search_bar_icon_locator)
@@ -60,7 +67,9 @@ class Homescreen(Base):
             wait(3).\
             release().\
             perform()
-        self.wait_for_condition(lambda m: self.marionette.execute_script("return window.wrappedJSObject.Homescreen.isInEditMode()"))
+        self.wait_for_condition(lambda m: app.is_displayed())
+        # Ensure that edit mode is active
+        self.wait_for_condition(lambda m: self.is_edit_mode_active)
 
     def open_context_menu(self):
         test = self.marionette.find_element(*self._landing_page_locator)
@@ -124,7 +133,7 @@ class Homescreen(Base):
 
     class InstalledApp(PageRegion):
 
-        _delete_app_locator = (By.CSS_SELECTOR, 'li.icon[aria-label="%s"] span.options')
+        _delete_app_locator = (By.CSS_SELECTOR, 'span.options')
 
         @property
         def name(self):
@@ -134,13 +143,11 @@ class Homescreen(Base):
             expected_name = self.name
             self.root_element.tap()
             self.wait_for_condition(lambda m: self.apps.displayed_app.name.lower() == expected_name.lower())
-            self.marionette.switch_to_frame(self.apps.displayed_app.frame)
+            self.apps.switch_to_displayed_app()
 
         def tap_delete_app(self):
             """Tap on (x) to delete app"""
-            delete_app_locator = (self._delete_app_locator[0], self._delete_app_locator[1] % self.name)
-            self.wait_for_element_displayed(*delete_app_locator)
-            self.marionette.find_element(*delete_app_locator).tap()
+            self.root_element.find_element(*self._delete_app_locator).tap()
 
             from gaiatest.apps.homescreen.regions.confirm_dialog import ConfirmDialog
             return ConfirmDialog(self.marionette)

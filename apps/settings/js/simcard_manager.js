@@ -1,7 +1,7 @@
 /* exported SimCardManager */
 /* global Template, SimUIModel,
    SimSettingsHelper, MobileOperator, SimCardManager,
-   SettingsListener */
+   AirplaneModeHelper, localize */
 
 'use strict';
 
@@ -9,7 +9,8 @@
 
   // track used constants here
   const EMPTY_OPTION_TEXT = '--';
-  const EMPTY_OPTION_VALUE = '-1';
+  const EMPTY_OPTION_VALUE = '-2';
+  const ALWAYS_ASK_OPTION_VALUE = '-1';
 
   var _ = window.navigator.mozL10n.get;
 
@@ -21,7 +22,6 @@
    */
   var SimCardManager = {
     init: function() {
-      var self = this;
       // we store all SimUIModel instances into this array
       this.simcards = [];
       this.isAirplaneMode = false;
@@ -35,8 +35,8 @@
       this.simManagerOutgoingMessagesSelect.addEventListener('change', this);
       this.simManagerOutgoingDataSelect.addEventListener('change', this);
 
-      // bind change event on them
-      this.addChangeEventOnIccs();
+      this.addVoiceChangeEventOnConns();
+      this.addCardStateChangeEventOnIccs();
 
       // because in fugu, airplaneMode will not change cardState
       // but we still have to make UI consistent. In this way,
@@ -45,17 +45,10 @@
       this.addAirplaneModeChangeEvent();
 
       // init UI
-      var mozSettings = window.navigator.mozSettings;
-      var req = mozSettings.createLock().get('ril.radio.disabled');
-      req.onsuccess = function() {
-        self.isAirplaneMode = req.result['ril.radio.disabled'];
-        self.initSimCardsInfo();
-        self.initSimCardManagerUI();
-      };
-      req.onerror = function() {
-        console.log('Error, cant access ril.radio.disabled');
-        console.log('Initialize simcardLock failed');
-      };
+      this.isAirplaneMode =
+        AirplaneModeHelper.getStatus() === 'enabled' ? true : false;
+      this.initSimCardsInfo();
+      this.initSimCardManagerUI();
     },
     initSimCardsInfo: function() {
       var conns = window.navigator.mozMobileConnections;
@@ -154,7 +147,7 @@
         'sim-manager-outgoing-messages-select',
         'sim-manager-outgoing-messages-desc',
         'sim-manager-outgoing-data-select',
-        'sim-manager-outgoing-data-desc'
+        'sim-manager-outgoing-data-desc-new'
       ];
       var toCamelCase = function toCamelCase(str) {
         return str.replace(/\-(.)/g, function(str, p1) {
@@ -243,15 +236,6 @@
           // we have to set defaultId to available card automatically
           // and disable select/option
           selectedCardIndex = firstCardInfo.absent ? 1 : 0;
-
-          SimSettingsHelper.setServiceOnCard('outgoingCall',
-            selectedCardIndex);
-
-          SimSettingsHelper.setServiceOnCard('outgoingMessages',
-            selectedCardIndex);
-
-          SimSettingsHelper.setServiceOnCard('outgoingData',
-            selectedCardIndex);
         }
 
         // for these two situations, they all have to be disabled
@@ -287,6 +271,18 @@
 
         selectDOM.add(option);
       });
+
+      // we will add `always ask` option these two select
+      if (storageKey === 'outgoingCall' || storageKey === 'outgoingMessages') {
+        var option = document.createElement('option');
+        option.value = ALWAYS_ASK_OPTION_VALUE;
+        localize(option, 'sim-manager-always-ask');
+
+        if (ALWAYS_ASK_OPTION_VALUE == selectedCardIndex) {
+          option.selected = true;
+        }
+        selectDOM.add(option);
+      }
     },
     isSimCardLocked: function(cardState) {
 
@@ -301,7 +297,15 @@
       // make sure the card is in locked mode or not
       return lockedState.indexOf(cardState) !== -1;
     },
-    addChangeEventOnIccs: function() {
+    addVoiceChangeEventOnConns: function() {
+      var conns = window.navigator.mozMobileConnections;
+      for (var i = 0; i < conns.length; i++) {
+        var iccId = conns[i].iccId;
+        conns[i].addEventListener('voicechange',
+          this.updateCardStateWithUI.bind(this, i, iccId));
+      }
+    },
+    addCardStateChangeEventOnIccs: function() {
       var conns = window.navigator.mozMobileConnections;
       var iccManager = window.navigator.mozIccManager;
       for (var i = 0; i < conns.length; i++) {
@@ -316,22 +320,23 @@
       var self = this;
       var icc = window.navigator.mozIccManager.getIccById(iccId);
       if (icc) {
-        icc.oncardstatechange = function() {
+        icc.addEventListener('cardstatechange', function() {
           var cardIndex = self.getCardIndexByIccId(iccId);
-          self.updateCardState(cardIndex, iccId);
-          self.updateSimCardUI(cardIndex);
-          self.updateSimSecurityUI();
-        };
+          self.updateCardStateWithUI(cardIndex, iccId);
+        });
       }
     },
     addAirplaneModeChangeEvent: function() {
       var self = this;
-      var mozSettings = window.navigator.mozSettings;
-      mozSettings.addObserver('ril.radio.disabled', function(evt) {
-        self.isAirplaneMode = evt.settingValue;
-        self.updateCardsState();
-        self.updateSimCardsUI();
-        self.updateSimSecurityUI();
+      AirplaneModeHelper.addEventListener('statechange', function(state) {
+        // we only want to handle these two states
+        if (state === 'enabled' || state === 'disabled') {
+          var enabled = (state === 'enabled') ? true : false;
+          self.isAirplaneMode = enabled;
+          self.updateCardsState();
+          self.updateSimCardsUI();
+          self.updateSimSecurityUI();
+        }
       });
     },
     updateCardsState: function() {
@@ -368,6 +373,11 @@
           });
         }
       }
+    },
+    updateCardStateWithUI: function(cardIndex, iccId) {
+      this.updateCardState(cardIndex, iccId);
+      this.updateSimCardUI(cardIndex);
+      this.updateSimSecurityUI();
     },
     getCardIndexByIccId: function(iccId) {
       var conns = window.navigator.mozMobileConnections;

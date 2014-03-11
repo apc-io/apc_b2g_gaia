@@ -1,69 +1,95 @@
+/* global Provider, Search, UrlHelper */
+
 (function() {
 
   'use strict';
 
   function LocalApps() {
-    this.name = 'LocalApps';
-
     this.apps = {};
-    navigator.mozApps.mgmt.getAll().onsuccess = (function(evt) {
-      evt.target.result.forEach(function r_getApps(app) {
-        this.apps[app.manifestURL] = app;
-      }, this);
-    }).bind(this);
+
+    var mozApps = navigator.mozApps.mgmt;
+    var self = this;
+
+    mozApps.oninstall = function oninstall(e) {
+      self.apps[e.application.manifestURL] = e.application;
+    };
+
+    mozApps.onuninstall = function oninstall(e) {
+      delete self.apps[e.application.manifestURL];
+    };
+
+    mozApps.getAll().onsuccess = function r_getApps(e) {
+      e.target.result.forEach(function r_AppsForEach(app) {
+        self.apps[app.manifestURL] = app;
+      });
+    };
   }
 
   LocalApps.prototype = {
 
-    init: function(config) {
-      this.container = config.container;
-      this.container.addEventListener('click', this.click.bind(this));
-    },
+    __proto__: Provider.prototype,
+
+    name: 'LocalApps',
+
+    dedupes: true,
+    dedupeStrategy: 'exact',
 
     click: function(e) {
       var target = e.target;
 
-      var manifestURL = target.getAttribute('data-manifest');
+      var manifestURL = target.dataset.manifest;
       if (manifestURL && this.apps[manifestURL]) {
-        Search.close();
-        this.apps[manifestURL].launch(
-          target.getAttribute('data-entry-point')
-        );
+        if (target.dataset.entryPoint) {
+          this.apps[manifestURL].launch(
+            target.dataset.entryPoint
+          );
+        } else {
+          this.apps[manifestURL].launch();
+        }
       }
     },
 
-    search: function(input) {
+    search: function(input, collect) {
       this.clear();
 
       var results = this.find(input);
+      var formatted = [];
       results.forEach(function eachResult(result) {
-        var div = document.createElement('div');
-        div.className = 'result';
-        div.dataset.manifest = result.manifestURL;
+        var dataset = {
+          manifest: result.manifestURL
+        };
 
         if (result.entryPoint) {
-          div.dataset.entryPoint = result.entryPoint;
+          dataset.entryPoint = result.entryPoint;
         }
 
         var icons = result.manifest.icons || {};
+        var imgUrl = '';
         for (var i in icons) {
-
-          var a = document.createElement('a');
-          a.href = result.origin;
-          var url = a.protocol + '//' + a.host + icons[i];
-
-          var newImg = document.createElement('img');
-          newImg.src = url;
-          div.appendChild(newImg);
-          break;
+          var eachUrl = icons[i];
+          if (UrlHelper.hasScheme(eachUrl)) {
+            imgUrl = eachUrl;
+          } else {
+            // For relative URLs
+            var a = document.createElement('a');
+            a.href = result.origin;
+            imgUrl = a.protocol + '//' + a.host + eachUrl;
+          }
         }
 
-        var textEl = document.createElement('span');
-        textEl.textContent = result.manifest.name;
+        // Only display results which have icons.
+        if (!imgUrl) {
+          return;
+        }
 
-        div.appendChild(textEl);
-        this.container.appendChild(div);
+        formatted.push({
+          title: result.manifest.name,
+          icon: imgUrl,
+          dedupeId: result.manifestURL,
+          dataset: dataset
+        });
       }, this);
+      collect(formatted);
     },
 
     find: function(query) {
@@ -108,10 +134,6 @@
       }, this);
 
       return results;
-    },
-
-    clear: function() {
-      this.container.innerHTML = '';
     }
   };
 

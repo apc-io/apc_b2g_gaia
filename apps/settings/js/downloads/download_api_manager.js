@@ -32,14 +32,45 @@
     return DownloadFormatter.getUUID(download);
   }
 
-  function _deleteDownload(id, successCb, errorCb) {
+  /*
+   * It deletes a download
+   *
+   * @param{Object} It represents a download item that defines the download id
+   *                and if the user's confirmation should be omitted (optional)
+   *
+   * @param{Function} Success callback
+   *
+   * @param{Function} Error callback
+   */
+  function _deleteDownload(item, successCb, errorCb) {
+    var id = item.id;
     var download = downloadsCache[id];
-    _deleteFromDownloadsCache(id);
-    var req = DownloadHelper.remove(download);
-    req.onsuccess = successCb;
-    req.onerror = errorCb;
 
-    return req;
+    function doDeleteDownload() {
+      var reqRemove = DownloadHelper.remove(download);
+
+      reqRemove.onsuccess = function req_onerror() {
+        _deleteFromDownloadsCache(id);
+        successCb();
+      };
+
+      reqRemove.onerror = function req_onerror() {
+        DownloadHelper.handlerError(reqRemove.error, download);
+        errorCb(reqRemove.error.code);
+      };
+    }
+
+    if (item.force) {
+      doDeleteDownload();
+    } else {
+      var reqShow = DownloadUI.show(DownloadUI.TYPE.DELETE, download);
+
+      reqShow.onconfirm = function confirmed() {
+        doDeleteDownload();
+      };
+
+      reqShow.oncancel = errorCb;
+    }
   }
 
   var DownloadApiManager = {
@@ -100,34 +131,34 @@
     },
 
     deleteDownloads:
-      function(downloadIds, onDeletedSuccess, onDeletedError, oncomplete) {
-      if (downloadIds == null) {
+      function(downloadItems, onDeletedSuccess, onDeletedError, oncomplete) {
+      if (downloadItems == null) {
         if (typeof onDeletedError === 'function') {
-          onDeletedError(null, 'Download IDs not defined or null');
+          onDeletedError(null, 'Download items not defined or null');
         }
         return;
       }
-      if (downloadIds.length === 0) {
+      if (downloadItems.length === 0) {
         if (typeof oncomplete === 'function') {
           oncomplete();
         }
         return;
       }
 
-      var currentId = downloadIds.pop();
+      var currentItem = downloadItems.pop();
       var self = this;
-      _deleteDownload(currentId, function onDelete() {
-        onDeletedSuccess && onDeletedSuccess(currentId);
+      _deleteDownload(currentItem, function onDelete() {
+        onDeletedSuccess && onDeletedSuccess(currentItem.id);
         self.deleteDownloads(
-          downloadIds,
+          downloadItems,
           onDeletedSuccess,
           onDeletedError,
           oncomplete
         );
       }, function onError(msg) {
-        onDeletedError && onDeletedError(currentId, msg);
+        onDeletedError && onDeletedError(currentItem.id, msg);
         self.deleteDownloads(
-          downloadIds,
+          downloadItems,
           onDeletedSuccess,
           onDeletedError,
           oncomplete

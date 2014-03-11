@@ -5,13 +5,18 @@ var contacts = window.contacts || {};
 contacts.Details = (function() {
   var photoPos = 7;
   var initMargin = 8;
+  var DEFAULT_TEL_TYPE = 'other';
+  var DEFAULT_EMAIL_TYPE = 'other';
+  var PHONE_TYPE_MAP = {
+  'cell' : 'mobile'
+  };
   var contactData,
       contactDetails,
       listContainer,
       star,
       detailsName,
       orgTitle,
-      birthdayTemplate,
+      datesTemplate,
       phonesTemplate,
       emailsTemplate,
       addressesTemplate,
@@ -36,10 +41,6 @@ contacts.Details = (function() {
     '#msg_button'
   ];
 
-  function getContact(contact) {
-    return (contact instanceof mozContact) ? contact : new mozContact(contact);
-  }
-
   var init = function cd_init(currentDom) {
     _ = navigator.mozL10n.get;
     dom = currentDom || document;
@@ -47,7 +48,7 @@ contacts.Details = (function() {
     listContainer = dom.querySelector('#details-list');
     detailsName = dom.querySelector('#contact-name-title');
     orgTitle = dom.querySelector('#org-title');
-    birthdayTemplate = dom.querySelector('#birthday-template-\\#i\\#');
+    datesTemplate = dom.querySelector('#dates-template-\\#i\\#');
     phonesTemplate = dom.querySelector('#phone-details-template-\\#i\\#');
     emailsTemplate = dom.querySelector('#email-details-template-\\#i\\#');
     addressesTemplate = dom.querySelector('#address-details-template-\\#i\\#');
@@ -153,7 +154,7 @@ contacts.Details = (function() {
     });
   };
 
-  var render = function cd_render(currentContact, tags, isEnrichedContact) {
+  var render = function cd_render(currentContact, tags, fbContactData) {
     contactData = currentContact || contactData;
 
     TAG_OPTIONS = tags || TAG_OPTIONS;
@@ -163,7 +164,7 @@ contacts.Details = (function() {
     // Initially enabled and only disabled if necessary
     editContactButton.removeAttribute('disabled');
 
-    if (!isEnrichedContact && isFbContact) {
+    if (!fbContactData && isFbContact) {
       var fbContact = new fb.Contact(contactData);
       var req = fbContact.getData();
 
@@ -176,17 +177,14 @@ contacts.Details = (function() {
         doReloadContactDetails(contactData);
       };
     } else {
-      doReloadContactDetails(contactData);
+      doReloadContactDetails(fbContactData || contactData);
     }
   };
-
-
 
   //
   // Method that generates HTML markup for the contact
   //
   var doReloadContactDetails = function doReloadContactDetails(contact) {
-
     detailsName.textContent = contact.name;
     contactDetails.classList.remove('no-photo');
     contactDetails.classList.remove('fb-contact');
@@ -195,11 +193,13 @@ contacts.Details = (function() {
 
     renderFavorite(contact);
     renderOrg(contact);
-    renderBday(contact);
 
     renderPhones(contact);
     renderEmails(contact);
     renderAddresses(contact);
+
+    renderDates(contact);
+
     renderNotes(contact);
     if (fb.isEnabled) {
       renderSocial(contact);
@@ -248,7 +248,7 @@ contacts.Details = (function() {
     // Disabling button while saving the contact
     favoriteMessage.style.pointerEvents = 'none';
 
-    var request = navigator.mozContacts.save(getContact(contact));
+    var request = navigator.mozContacts.save(utils.misc.toMozContact(contact));
     request.onsuccess = function onsuccess() {
       var cList = contacts.List;
       /*
@@ -289,29 +289,38 @@ contacts.Details = (function() {
     }
   };
 
-  var renderBday = function cd_renderBday(contact) {
-    if (!contact.bday) {
+  var renderDates = function cd_renderDates(contact) {
+    if (!contact.bday && !contact.anniversary) {
       return;
     }
 
     var f = new navigator.mozL10n.DateTimeFormat();
-    var birthdayFormat = _('birthdayDateFormat') || '%e %B';
-    var birthdayString = '';
-    try {
-      var offset = contact.bday.getTimezoneOffset() * 60 * 1000;
-      var normalizeBirthdayDate = new Date(contact.bday.getTime() + offset);
-      birthdayString = f.localeFormat(normalizeBirthdayDate, birthdayFormat);
-    } catch (err) {
-      console.error('Error parsing birthday');
-      return;
+    var dateFormat = _('dateFormat') || '%e %B';
+    var dateString = '';
+
+    var fields = ['bday', 'anniversary'];
+    var l10nIds = ['birthday', 'anniversary'];
+
+    var rendered = 0;
+    for (var j = 0; j < fields.length; j++) {
+      var value = contact[fields[j]];
+      if (!value) {
+        continue;
+      }
+      try {
+        dateString = utils.misc.formatDate(value);
+      } catch (err) {
+        console.error('Error parsing date');
+        continue;
+      }
+      var element = utils.templates.render(datesTemplate, {
+        i: ++rendered,
+        date: dateString,
+        type: _(l10nIds[j])
+      });
+
+      listContainer.appendChild(element);
     }
-
-    var element = utils.templates.render(birthdayTemplate, {
-      i: contact.id,
-      bday: birthdayString
-    });
-
-    listContainer.appendChild(element);
   };
 
   var renderSocial = function cd_renderSocial(contact) {
@@ -394,11 +403,13 @@ contacts.Details = (function() {
     var telLength = Contacts.getLength(contact.tel);
     for (var tel = 0; tel < telLength; tel++) {
       var currentTel = contact.tel[tel];
-      var escapedType = Normalizer.escapeHTML(currentTel.type, true);
+      var escapedType = Normalizer.escapeHTML(currentTel.type, true).trim();
+      escapedType =
+            _(PHONE_TYPE_MAP[escapedType] || escapedType || DEFAULT_TEL_TYPE) ||
+            escapedType;
       var telField = {
         value: Normalizer.escapeHTML(currentTel.value, true) || '',
-        type: _(escapedType) || escapedType ||
-                                        TAG_OPTIONS['phone-type'][0].value,
+        type: escapedType,
         'type_l10n_id': currentTel.type,
         carrier: Normalizer.escapeHTML(currentTel.carrier || '', true) || '',
         i: tel
@@ -438,8 +449,7 @@ contacts.Details = (function() {
       var escapedType = Normalizer.escapeHTML(currentEmail['type'], true);
       var emailField = {
         value: Normalizer.escapeHTML(currentEmail['value'], true) || '',
-        type: _(escapedType) || escapedType ||
-                                          TAG_OPTIONS['email-type'][0].value,
+        type: _(escapedType) || escapedType || DEFAULT_EMAIL_TYPE,
         'type_l10n_id': currentEmail['type'],
         i: email
       };
@@ -533,13 +543,60 @@ contacts.Details = (function() {
     }
   };
 
+  var calculateHash = function calculateHash(photo, cb) {
+    var START_BYTES = 127;
+    var BYTES_HASH = 16;
+
+    var out = [photo.type, photo.size];
+
+    // We skip the first bytes that typically are headers
+    var chunk = photo.slice(START_BYTES, START_BYTES + BYTES_HASH);
+    var reader = new FileReader();
+    reader.onloadend = function() {
+      out.push(reader.result);
+      cb(out.join(''));
+    };
+    reader.onerror = function() {
+      window.console.error('Error while calculating the hash: ',
+                           reader.error.name);
+      cb(out.join(''));
+    };
+    reader.readAsDataURL(chunk);
+  };
+
+  var updateHash = function updateHash(photo, cover) {
+    calculateHash(photo, function(hash) {
+      cover.dataset.imgHash = hash;
+    });
+  };
+
   var renderPhoto = function cd_renderPhoto(contact) {
     contactDetails.classList.remove('up');
     if (isFbContact) {
       contactDetails.classList.add('fb-contact');
     }
-    if (contact.photo && contact.photo.length > 0) {
-      Contacts.updatePhoto(contact.photo[0], cover);
+
+    var photo = ContactPhotoHelper.getFullResolution(contact);
+    if (photo) {
+      var currentHash = cover.dataset.imgHash;
+      if (!currentHash) {
+        Contacts.updatePhoto(photo, cover);
+        updateHash(photo, cover);
+      }
+      else {
+        // Need to recalculate the hash and see whether the images changed
+        calculateHash(photo, function(newHash) {
+          if (currentHash !== newHash) {
+            Contacts.updatePhoto(photo, cover);
+            cover.dataset.imgHash = newHash;
+          }
+          else {
+            // Only for testing purposes
+            cover.dataset.photoReady = 'true';
+          }
+        });
+      }
+
       contactDetails.classList.add('up');
       cover.classList.add('translated');
       contactDetails.classList.add('translated');
@@ -562,6 +619,7 @@ contacts.Details = (function() {
     cover.style.overflow = 'auto';
     contactDetails.style.transform = '';
     contactDetails.classList.add('no-photo');
+    cover.dataset.imgHash = '';
   };
 
   var reMark = function(field, value) {
@@ -578,6 +636,7 @@ contacts.Details = (function() {
     'toggleFavorite': toggleFavorite,
     'render': render,
     'onLineChanged': checkOnline,
-    'reMark': reMark
+    'reMark': reMark,
+    'defaultTelType' : DEFAULT_TEL_TYPE
   };
 })();

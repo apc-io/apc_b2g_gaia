@@ -15,7 +15,7 @@
  *
  *   For launching a download
  *
- *   var req = DownloadHelper.launch(download);
+ *   var req = DownloadHelper.open(download);
  *
  *   req.onsuccess = function req_onsuccess() {
  *     alert('The download was opened so we can remove the notification');
@@ -35,6 +35,7 @@ var DownloadHelper = (function() {
     MIME_TYPE_NOT_SUPPORTED: 'MIME_TYPE_NOT_SUPPORTED',
     INVALID_STATE: 'INVALID_STATE',
     NO_SDCARD: 'NO_SDCARD',
+    NO_PROVIDER: 'NO_PROVIDER',
     UNMOUNTED_SDCARD: 'UNMOUNTED_SDCARD'
   };
 
@@ -162,67 +163,147 @@ var DownloadHelper = (function() {
   }
 
   /*
-   * It creates an activity to open a blob
+   * Base action that implements the commom logic for actions based on the
+   * MozActivity API
    *
-   * @param{Object} The download object
-   *
-   * @param{String} Mime type
-   *
-   * @param{Object} The blob object that represents the file
-   *
-   * @param{Object} This is the Request object
+   * @param{Object} Configuration parameters
    */
-  function createActivity(download, contentType, blob, req) {
-    var activity = new MozActivity({
-      name: 'open',
-      data: {
-        url: download.path,
-        type: contentType,
-        blob: blob
-      }
-    });
+  var Action = function Action(params) {
+    this.req = params.request;
+    this.name = params.actionType.activityName;
+  };
 
-    activity.onsuccess = function activity_onsuccess() {
-      req.done();
-    };
-
-    activity.onerror = function activity_onerror() {
-      req.failed({
-        message: activity.error.name
+  Action.prototype = {
+    /*
+     * It performs the action based on MozActivity
+     */
+    run: function a_run() {
+      var activity = new MozActivity({
+        name: this.name,
+        data: this.data
       });
-    };
-  }
 
-  function doLaunch(download, req) {
+      activity.onsuccess = this._onsuccess.bind(this);
+      activity.onerror = this._onerror.bind(this);
+    },
+
+    /*
+     * This method implements the generic onsuccess callback
+     */
+    _onsuccess: function a_onsuccess() {
+      this.req.done();
+    },
+
+    /*
+     * This method implements the generic onerror callback
+     */
+    _onerror: function a_onerror(evt) {
+      this.req.failed({
+        message: evt.target.error.name
+      });
+    }
+  };
+
+  /*
+   * This action opens downloads extending the Action Object
+   *
+   * @param{Object} Configuration parameters
+   */
+  var OpenAction = function OpenAction(params) {
+    Action.call(this, params);
+
+    this.data = {
+      url: params.download.path,
+      filename: DownloadFormatter.getFileName(params.download),
+      type: params.type,
+      blob: params.blob
+    };
+  };
+
+  OpenAction.prototype = {
+    __proto__: Action.prototype
+  };
+
+  /*
+   * This action shares downloads extending the Action Object
+   *
+   * @param{Object} Configuration parameters
+   */
+  var ShareAction = function ShareAction(params) {
+    Action.call(this, params);
+
+    this.data = {
+      // 'share' activities do not work with specific mime types
+      type: params.type.split('/')[0] + '/*',
+      blobs: [params.blob],
+      filenames: [DownloadFormatter.getFileName(params.download)]
+    };
+  };
+
+  ShareAction.prototype = {
+    __proto__: Action.prototype,
+
+    /*
+     * It overrides the generic onerror callback for another more suitable
+     */
+    _onerror: function sa_onerror(evt) {
+      if (evt.target.error.name !== 'NO_PROVIDER') {
+        return;
+      }
+
+      sendError(this.req, 'No provider to share file', CODE.NO_PROVIDER);
+    }
+  };
+
+  // This is a factory that deals with different <Action> objects
+  var ActionsFactory = {
+    TYPE: {
+      OPEN: {
+        activityName: 'open',
+        actionClass: OpenAction
+      },
+      SHARE: {
+        activityName: 'share',
+        actionClass: ShareAction
+      },
+      WALLPAPER: {
+        activityName: 'setwallpaper',
+        actionClass: ShareAction
+      },
+      RINGTONE: {
+        activityName: 'setringtone',
+        actionClass: ShareAction
+      }
+    },
+
+    create: function af_create(params) {
+      return new params.actionType.actionClass(params);
+    }
+  };
+
+  /*
+   * Returns the mime type
+   *
+   * @param{Object} It represents a DOMDownload object
+   *
+   * @returns(String) Mime type
+   */
+  function getType(download) {
     var fileName = DownloadFormatter.getFileName(download);
     var type = MimeMapper.guessTypeFromFileProperties(fileName,
                                                       download.contentType);
-
-    if (type.length === 0) {
-      sendError(req, 'Mime type not supported: ' + type,
-                CODE.MIME_TYPE_NOT_SUPPORTED);
-      return;
-    }
-
-    var blobReq = getBlob(download);
-
-    blobReq.onsuccess = function() {
-      // We have the blob, so opening and crossing fingers...
-      createActivity(download, type, blobReq.result, req);
-    };
-
-    blobReq.onerror = function() {
-      // Problem getting the blob from the sdcard
-      req.failed(blobReq.error);
-    };
+    return type;
   }
 
   /*
-   * This method allows clients to open a downlaod
+   * This method allows third-parties to open or share downloads
+   *
+   * @param{Object} Action types: <ActionsFactory.TYPE.OPEN> or
+   *                              <ActionsFactory.TYPE.SHARE>
    *
    * @param{Object} It represents a DOMDownload object
    */
-  function launch(download) {
+  function runAction(actionType, download) {
     var req = new Request();
 
     window.setTimeout(function launching() {
@@ -231,7 +312,30 @@ var DownloadHelper = (function() {
         LazyLoader.load(['shared/js/mime_mapper.js',
                          'shared/js/download/download_formatter.js'],
                         function loaded() {
-          doLaunch(download, req);
+          var type = getType(download);
+
+          if (type.length === 0) {
+            sendError(req, 'Mime type not supported: ' + type,
+                      CODE.MIME_TYPE_NOT_SUPPORTED);
+            return;
+          }
+
+          var blobReq = getBlob(download);
+
+          blobReq.onsuccess = function() {
+            ActionsFactory.create({
+              actionType: actionType,
+              download: download,
+              type: type,
+              blob: blobReq.result,
+              request: req
+            }).run();
+          };
+
+          blobReq.onerror = function() {
+            // Problem getting the blob from the sdcard
+            req.failed(blobReq.error);
+          };
         });
         return;
       }
@@ -251,10 +355,11 @@ var DownloadHelper = (function() {
    */
   function remove(download) {
     var req = new Request();
+    var incompleteDownload = download.state !== 'succeeded';
     // If is not done, use download manager to remove it,
     // otherwise, deal with the datastore.
     setTimeout(function() {
-      if (download.state !== 'succeeded') {
+      if (incompleteDownload) {
         if (!navigator.mozDownloadManager) {
           sendError(req, 'DownloadManager not present', CODE.INVALID_STATE);
         } else {
@@ -273,7 +378,7 @@ var DownloadHelper = (function() {
       }
     }, 0);
 
-    return doRemoveFromPhone(req, download);
+    return incompleteDownload ? req : doRemoveFromPhone(req, download);
   }
 
   /*
@@ -287,27 +392,49 @@ var DownloadHelper = (function() {
     var req = new Request();
 
     deleteRequest.onsuccess = function() {
-      var storeReq =
-        navigator.getDeviceStorage(storageName).
-          delete(getRelativePath(download.path));
+      var storage = navigator.getDeviceStorage(storageName);
+      var storeAvailableReq = storage.available();
 
-      storeReq.onsuccess = function store_onsuccess() {
-        // Remove from the datastore if status is 'succeeded'
-        // if we find any problem with the datastore, don't send
-        // an error, since the physical remove already happened
-        if (download.state === 'succeeded') {
-          LazyLoader.load(['/shared/js/download/download_store.js'],
-            function() {
-              DownloadStore.remove(download);
-            }
-          );
+      storeAvailableReq.onsuccess = function available_onsuccess(e) {
+        var path = download.path;
+        switch (storeAvailableReq.result) {
+          case 'unavailable':
+            sendError(req, ' Could not delete the file: ' + path + ' from ' +
+                      storageName, CODE.NO_SDCARD);
+            break;
+
+          case 'shared':
+            sendError(req, ' Could not delete the file: ' + path + ' from ' +
+                      storageName, CODE.UNMOUNTED_SDCARD);
+            break;
+
+          default:
+            var storeDeleteReq = storage.delete(getRelativePath(path));
+
+            storeDeleteReq.onsuccess = function store_onsuccess() {
+              // Remove from the datastore if status is 'succeeded'
+              // if we find any problem with the datastore, don't send
+              // an error, since the physical remove already happened
+              if (download.state === 'succeeded') {
+                LazyLoader.load(['/shared/js/download/download_store.js'],
+                  function() {
+                    DownloadStore.remove(download);
+                  }
+                );
+              }
+              req.done(storeDeleteReq.result);
+            };
+
+            storeDeleteReq.onerror = function store_onerror() {
+              sendError(req, storeDeleteReq.error.name +
+                ' Could not remove the file: ' + download.path + ' from ' +
+                storageName, CODE.FILE_NOT_FOUND);
+            };
         }
-        req.done(storeReq.result);
       };
 
-      storeReq.onerror = function store_onerror() {
-        sendError(req, storeReq.error.name + ' Could not remove the file: ' +
-                  download.path + ' from ' + storageName, CODE.FILE_NOT_FOUND);
+      storeAvailableReq.onerror = function available_onerror() {
+        sendError(req, 'Error getting storage state ', CODE.DEVICE_STORAGE);
       };
     };
 
@@ -327,6 +454,7 @@ var DownloadHelper = (function() {
         case CODE.NO_SDCARD:
         case CODE.UNMOUNTED_SDCARD:
         case CODE.FILE_NOT_FOUND:
+        case CODE.NO_PROVIDER:
           req = show(DownloadUI.TYPE[error.code], download, true);
           req.onconfirm = cb;
 
@@ -368,13 +496,62 @@ var DownloadHelper = (function() {
     };
   }
 
+  function getFreeSpace(cb) {
+    var storage = navigator.getDeviceStorage(storageName);
+
+    if (!storage) {
+      console.error('Cannot get free space size in sdcard');
+      cb(null);
+      return;
+    }
+
+    var req = storage.freeSpace();
+
+    req.onsuccess = function(e) {
+      cb(e.target.result);
+    };
+
+    req.onerror = function() {
+      cb(null);
+    };
+  }
+
   return {
    /*
     * This method allows clients to open a downlaod
     *
     * @param{Object} It represents a DOMDownload object
     */
-    launch: launch,
+    open: function(download) {
+      return runAction(ActionsFactory.TYPE.OPEN, download);
+    },
+
+   /*
+    * This method allows clients to share a downlaoded file
+    *
+    * @param{Object} It represents a DOMDownload object
+    */
+    share: function(download) {
+      return runAction(ActionsFactory.TYPE.SHARE, download);
+    },
+
+   /*
+    * This method allows clients to set as wallaper a downlaoded file
+    *
+    * @param{Object} It represents a DOMDownload object
+    */
+    wallpaper: function(download) {
+      return runAction(ActionsFactory.TYPE.WALLPAPER, download);
+    },
+
+   /*
+    * This method allows clients to set as ringtone a downlaoded file
+    *
+    * @param{Object} It represents a DOMDownload object
+    */
+    ringtone: function(download) {
+      return runAction(ActionsFactory.TYPE.RINGTONE, download);
+    },
 
     /*
      * Given a download, remove it from the DownloadManager
@@ -400,6 +577,14 @@ var DownloadHelper = (function() {
      *
      * @param{Function} This function is performed when the flow is finished
      */
-    handlerError: handlerError
+    handlerError: handlerError,
+
+    /*
+     * Returns the free memory size in bytes
+     *
+     * @param{Function} This function is performed when the free memory size has
+     *                  been calculated
+     */
+    getFreeSpace: getFreeSpace
   };
 }());

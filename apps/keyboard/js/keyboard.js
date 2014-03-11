@@ -1,8 +1,10 @@
 /* -*- Mode: js; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- /
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 
-/*
- * keyboard.js:
+/**
+ * @fileoverview Keyboard Overview.
+ *
+ * **keyboard.js**:
  *
  * This is the main module of the Gaia keyboard app. It does these things:
  *
@@ -26,8 +28,8 @@
  * This module includes code that was formerly in the controller.js and
  * feedback.js modules. Other modules handle other parts of the keyboard:
  *
- *   layout.js: defines data structures that represent keyboard layouts
- *   render.js: creates the on-screen keyboard with HTML and CSS
+ *  * **layout.js**: defines data structures that represent keyboard layouts
+ *  * **render.js**: creates the on-screen keyboard with HTML and CSS
  *
  * Input methods are in subdirectories of imes/.  The latin input method
  * in imes/latin/ provides word suggestions, auto capitalization, and
@@ -186,11 +188,9 @@ var touchCount = 0;
 var currentInputType = null;
 var currentInputMode = null;
 var menuLockedArea = null;
-var layoutMenuLockedArea = null;
 var isKeyboardRendered = false;
 var currentCandidates = [];
 var candidatePanelScrollTimer = null;
-const CANDIDATE_PANEL_SWITCH_TIMEOUT = 100;
 
 // Show accent char menu (if there is one) after ACCENT_CHAR_MENU_TIMEOUT
 const ACCENT_CHAR_MENU_TIMEOUT = 700;
@@ -208,7 +208,7 @@ const CAPS_LOCK_TIMEOUT = 450;
 
 // Time we wait after blur to hide the keyboard
 // in case we get a focus event right after
-const HIDE_KEYBOARD_TIMEOUT = 100;
+const HIDE_KEYBOARD_TIMEOUT = 500;
 
 // timeout and interval for delete, they could be cancelled on mouse over
 var deleteTimeout = 0;
@@ -237,8 +237,6 @@ var suggestionsEnabled;
 var correctionsEnabled;
 var clickEnabled;
 var vibrationEnabled;
-var enabledKeyboardGroups = {};
-var enabledKeyboardNames;
 var isSoundEnabled;
 
 // data URL for keyboard click sound
@@ -731,7 +729,18 @@ function modifyLayout(keyboardName) {
     console.warn('No space key found. No special keys will be added.');
   }
 
+  layout.keyboardName = keyboardName;
+  layout.altLayoutName = altLayoutName;
+
   return layout;
+}
+
+var _t = {};
+function startTime(key) {
+  // _t[key] = +new Date;
+}
+function endTime(key) {
+  // dump('~' + key + ' ' + (+new Date - _t[key]) + '\n');
 }
 
 //
@@ -750,70 +759,63 @@ function modifyLayout(keyboardName) {
 // layout for keyboardName
 //
 function renderKeyboard(keyboardName, callback) {
+  startTime('BLOCKING (main) renderKeyboard');
+
   // Add meta keys and type-specific keys to the base layout
   currentLayout = modifyLayout(keyboardName);
 
   function drawKeyboard() {
-    // Tell the renderer what input method we're using. This will set a CSS
-    // classname that can be used to style the keyboards differently
     var keyboard = Keyboards[keyboardName];
-    IMERender.setInputMethodName(keyboard.imEngine || 'default');
 
     IMERender.ime.classList.remove('full-candidate-panel');
 
+    // Rule of thumb: always render uppercase, unless secondLayout has been
+    // specified (for e.g. arabic, then depending on shift key)
+    var needsUpperCase = currentLayout.secondLayout ?
+      (isUpperCaseLocked || isUpperCase) :
+      true;
+
     // And draw the layout
     IMERender.draw(currentLayout, {
-      uppercase: isUpperCaseLocked || isUpperCase,
+      uppercase: needsUpperCase,
       inputType: currentInputType,
       showCandidatePanel: needsCandidatePanel()
+    }, function() {
+      startTime('BLOCKING (nextTick) renderKeyboard');
+      // So there are a couple of things that we want don't want to block
+      // on here, so we can do it if resizeUI is fully finished
+      IMERender.setUpperCaseLock(isUpperCaseLocked ? 'locked' : isUpperCase);
+
+      // Tell the input method about the new keyboard layout
+      updateLayoutParams();
+
+      IMERender.showCandidates(currentCandidates);
+      endTime('BLOCKING (nextTick) renderKeyboard');
     });
 
-    IMERender.setUpperCaseLock(isUpperCaseLocked ? 'locked' : isUpperCase);
+    // Tell the renderer what input method we're using. This will set a CSS
+    // classname that can be used to style the keyboards differently
+    IMERender.setInputMethodName(keyboard.imEngine || 'default');
 
     // If needed, empty the candidate panel
     if (inputMethod.empty)
       inputMethod.empty();
 
-    // Tell the input method about the new keyboard layout
-    updateLayoutParams();
-
-    //restore the previous candidates
-    IMERender.showCandidates(currentCandidates);
-
     isKeyboardRendered = true;
 
-    if (callback)
+    endTime('BLOCKING (main) renderKeyboard');
+
+    if (callback) {
       callback();
+    }
   }
 
   clearTimeout(redrawTimeout);
 
-  // Does this new keyboard use the candidate panel?
-  var showsCandidates = needsCandidatePanel();
-
-  // If it doesn't and the keyboard has be shown, then notify the keyboard
-  // manager update the app window size before redrawing the keyboard.
-  // XXX: for Bug 893755 - we would always do the delay of keyboard redrawing
-  // without regard to whether candidate panel was enabled or not last time.
-  if (!showsCandidates && isKeyboardRendered) {
-    var candidatePanel = document.getElementById('keyboard-candidate-panel');
-    var candidatePanelHeight = (candidatePanel) ?
-                               candidatePanel.scrollHeight : 0;
-
-    var imeHeight = IMERender.ime.scrollHeight - candidatePanelHeight;
-    var imeWidth = IMERender.getWidth();
-    window.resizeTo(imeWidth, imeHeight);
-    redrawTimeout = window.setTimeout(drawKeyboard,
-                                      CANDIDATE_PANEL_SWITCH_TIMEOUT);
-  } else {
-    drawKeyboard();
-  }
-
-  // Remember whether the candidate panel is shown or not
+  drawKeyboard();
 }
 
 function setUpperCase(upperCase, upperCaseLocked) {
-
   upperCaseLocked = (typeof upperCaseLocked == 'undefined') ?
                      isUpperCaseLocked : upperCaseLocked;
 
@@ -827,19 +829,24 @@ function setUpperCase(upperCase, upperCaseLocked) {
 
   if (!isKeyboardRendered)
     return;
-  // When case changes we have to re-render the keyboard.
-  // But note that we don't have to relayout the keyboard, so
-  // we call draw() directly instead of renderKeyboard()
-  IMERender.draw(currentLayout, {
-    uppercase: isUpperCaseLocked || isUpperCase,
-    inputType: currentInputType,
-    showCandidatePanel: needsCandidatePanel()
-  });
-  // And make sure the caps lock key is highlighted correctly
-  IMERender.setUpperCaseLock(isUpperCaseLocked ? 'locked' : isUpperCase);
 
-  //restore the previous candidates
-  IMERender.showCandidates(currentCandidates);
+  // When we have secondLayout, we need to force re-render on uppercase switch
+  if (currentLayout.secondLayout) {
+    return renderKeyboard(keyboardName);
+  }
+
+  // Otherwise we can just update only the keys we need...
+  // Try to block the event loop as little as possible
+  requestAnimationFrame(function() {
+    startTime('BLOCKING (nextTick) updateUpperCaseUI');
+    // And make sure the caps lock key is highlighted correctly
+    IMERender.setUpperCaseLock(isUpperCaseLocked ? 'locked' : isUpperCase);
+
+    //restore the previous candidates
+    IMERender.showCandidates(currentCandidates);
+
+    endTime('BLOCKING (nextTick) updateUpperCaseUI');
+  });
 }
 
 function resetUpperCase() {
@@ -1007,6 +1014,7 @@ function showAlternatives(key) {
   // TODO: look for [LOCKED_AREA]
   var top = getWindowTop(key);
   var bottom = getWindowTop(key) + key.scrollHeight;
+  var keybounds = key.getBoundingClientRect();
 
   IMERender.showAlternativesCharMenu(key, alternatives);
   isShowingAlternativesMenu = true;
@@ -1020,8 +1028,19 @@ function showAlternatives(key) {
     right: getWindowLeft(IMERender.menu) + IMERender.menu.scrollWidth
   };
   menuLockedArea.width = menuLockedArea.right - menuLockedArea.left;
-  menuLockedArea.ratio =
-    menuLockedArea.width / IMERender.menu.children.length;
+
+  // Add some more properties to this locked area object that will help us
+  // redirect touch events to the appropriate alternative key.
+  menuLockedArea.keybounds = keybounds;
+  menuLockedArea.firstAlternative =
+    IMERender.menu.classList.contains('kbr-menu-left') ?
+      IMERender.menu.lastElementChild :
+      IMERender.menu.firstElementChild;
+  menuLockedArea.boxes = [];
+  var children = IMERender.menu.children;
+  for (var i = 0; i < children.length; i++) {
+    menuLockedArea.boxes[i] = children[i].getBoundingClientRect();
+  }
 }
 
 // Hide alternatives.
@@ -1031,41 +1050,6 @@ function hideAlternatives() {
 
   IMERender.hideAlternativesCharMenu();
   isShowingAlternativesMenu = false;
-}
-
-function showKeyboardLayoutMenu(key) {
-
-  // Get the coordinates of the key first, since it will be replaced
-  // in the call to showKeyboardAlternatives()
-  var top = getWindowTop(key);
-  var bottom = getWindowTop(key) + key.scrollHeight;
-
-  IMERender.showKeyboardAlternatives(
-    key,
-    enabledKeyboardNames,
-    keyboardName,
-    SWITCH_KEYBOARD
-  );
-
-  isShowingKeyboardLayoutMenu = true;
-
-  // create "LOCKED_AREA" for keyboard layout menu
-  layoutMenuLockedArea = {
-    top: getWindowTop(IMERender.menu),
-    bottom: bottom,
-    left: getWindowLeft(IMERender.menu),
-    right: getWindowLeft(IMERender.menu) + IMERender.menu.scrollWidth
-  };
-}
-
-// Hide keyboard layout menu
-function hideKeyboardLayoutMenu() {
-  if (!isShowingKeyboardLayoutMenu)
-    return;
-
-  IMERender.hideAlternativesCharMenu();
-  KeyboardMenuScroll.reset();
-  isShowingKeyboardLayoutMenu = false;
 }
 
 // Test if an HTML node is a normal key
@@ -1228,13 +1212,19 @@ function onMouseDown(evt) {
   startPress(currentKey, evt, null);
 }
 
+function getKeyCodeFromTarget(target) {
+  return isUpperCase || isUpperCaseLocked ?
+    parseInt(target.dataset.keycodeUpper, 10) :
+    parseInt(target.dataset.keycode, 10);
+}
+
 // The coords object can either be a mouse event or a touch. We just expect the
 // coords object to have clientX, clientY, pageX, and pageY properties.
 function startPress(target, coords, touchId) {
   if (!isNormalKey(target))
     return;
 
-  var keyCode = parseInt(target.dataset.keycode);
+  var keyCode = getKeyCodeFromTarget(target);
 
   // Feedback
   var isSpecialKey = specialCodes.indexOf(keyCode) >= 0 || keyCode < 0;
@@ -1286,11 +1276,29 @@ function onMouseMove(evt) {
 function movePress(target, coords, touchId) {
   // Control locked zone for menu
   if (isShowingAlternativesMenu && inMenuLockedArea(menuLockedArea, coords)) {
-    var menuChildren = IMERender.menu.children;
-    var redirectTarget = menuChildren[Math.floor(
-      (coords.pageX - menuLockedArea.left) / menuLockedArea.ratio)];
 
-    target = redirectTarget;
+    // If the x coordinate is between the bounds of the original key
+    // then redirect to the first (or last) alternative. This is to
+    // ensure that we always get the first alternative when the menu
+    // first pops up.  Otherwise, loop through the children of the
+    // menu and test each one. Once we have moved away from the
+    // original keybounds we delete them and always loop through the children.
+    if (menuLockedArea.keybounds &&
+        coords.pageX >= menuLockedArea.keybounds.left &&
+        coords.pageX < menuLockedArea.keybounds.right) {
+      target = menuLockedArea.firstAlternative;
+    }
+    else {
+      menuLockedArea.keybounds = null; // Do it this way from now on.
+      var menuChildren = IMERender.menu.children;
+      for (var i = 0; i < menuChildren.length; i++) {
+        if (coords.pageX >= menuLockedArea.boxes[i].left &&
+            coords.pageX < menuLockedArea.boxes[i].right) {
+          break;
+        }
+      }
+      target = menuChildren[i];
+    }
   }
 
   if (isShowingKeyboardLayoutMenu &&
@@ -1308,7 +1316,7 @@ function movePress(target, coords, touchId) {
   // Update highlight: remove from older
   IMERender.unHighlightKey(oldTarget);
 
-  var keyCode = parseInt(target.dataset.keycode);
+  var keyCode = getKeyCodeFromTarget(target);
 
   // Update highlight: add to the new (Ignore if moving over delete key)
   if (keyCode != KeyEvent.DOM_VK_BACK_SPACE)
@@ -1325,12 +1333,6 @@ function movePress(target, coords, touchId) {
       isShowingAlternativesMenu &&
       !inMenuLockedArea(menuLockedArea, coords))
     hideAlternatives();
-
-  // Hide keyboard layout menu if the touch moved out of its locked area
-  if (isShowingKeyboardLayoutMenu &&
-      !inMenuLockedArea(layoutMenuLockedArea, coords)) {
-      hideKeyboardLayoutMenu();
-  }
 
   // Control showing alternatives menu
   setMenuTimeout(target, coords, touchId);
@@ -1359,9 +1361,8 @@ function endPress(target, coords, touchId, hasCandidateScrolled) {
 
   var wasShowingKeyboardLayoutMenu = isShowingKeyboardLayoutMenu;
   hideAlternatives();
-  hideKeyboardLayoutMenu();
 
-  if (target.id === 'dismiss-suggestions-button') {
+  if (target.classList.contains('dismiss-suggestions-button')) {
     if (inputMethod.dismissSuggestions)
       inputMethod.dismissSuggestions();
     return;
@@ -1397,7 +1398,7 @@ function endPress(target, coords, touchId, hasCandidateScrolled) {
     return;
   }
 
-  var keyCode = parseInt(target.dataset.keycode);
+  var keyCode = getKeyCodeFromTarget(target);
 
   // Delete is a special key, it reacts when pressed not released
   if (keyCode == KeyEvent.DOM_VK_BACK_SPACE)
@@ -1444,7 +1445,7 @@ function endPress(target, coords, touchId, hasCandidateScrolled) {
 
     // Expand / shrink the candidate panel
   case TOGGLE_CANDIDATE_PANEL:
-    var candidatePanel = document.getElementById('keyboard-candidate-panel');
+    var candidatePanel = IMERender.candidatePanel;
 
     if (IMERender.ime.classList.contains('candidate-panel')) {
       var doToggleCandidatePanel = function doToggleCandidatePanel() {
@@ -1553,7 +1554,7 @@ function candidatePanelOnScroll() {
     candidatePanelScrollTimer = setTimeout(function() {
       var pageRows = 12;
       var numberOfCandidatesPerRow = IMERender.getNumberOfCandidatesPerRow();
-      var candidatePanel = document.getElementById('keyboard-candidate-panel');
+      var candidatePanel = IMERender.candidatePanel;
       var candidateIndicator =
         parseInt(candidatePanel.dataset.candidateIndicator);
 
@@ -1574,7 +1575,7 @@ function candidatePanelOnScroll() {
 }
 
 function getKeyCoordinateY(y) {
-  var candidatePanel = document.getElementById('keyboard-candidate-panel');
+  var candidatePanel = IMERender.candidatePanel;
 
   var yBias = 0;
   if (candidatePanel)
@@ -1613,13 +1614,13 @@ function sendKey(keyCode) {
   case KeyEvent.DOM_VK_BACK_SPACE:
   case KeyEvent.DOM_VK_RETURN:
     if (inputContext) {
-      inputContext.sendKey(keyCode, 0, 0);
+      return inputContext.sendKey(keyCode, 0, 0);
     }
     break;
 
   default:
     if (inputContext) {
-      inputContext.sendKey(0, keyCode, 0);
+      return inputContext.sendKey(0, keyCode, 0);
     }
     break;
   }
@@ -1627,9 +1628,10 @@ function sendKey(keyCode) {
 
 function replaceSurroundingText(text, offset, length) {
   if (inputContext) {
-    inputContext.replaceSurroundingText(text, offset, length);
+    return inputContext.replaceSurroundingText(text, offset, length);
   } else {
     console.warn('no inputContext for replaceSurroudingText');
+    return new Promise(function(res, rej) { rej(); });
   }
 }
 
@@ -1702,8 +1704,8 @@ function showKeyboard() {
   promise.then(function gotText(value) {
     state.value = value;
     doShowKeyboard();
-  }, function failedToGetText() {
-    doShowKeyboard();
+  }, function failedToGetText(ex) {
+    // something is wrong with the inputcontext. We should not proceed.
   });
 }
 

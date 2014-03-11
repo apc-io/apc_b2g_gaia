@@ -7,18 +7,24 @@ suite('Latin suggestions', function() {
   var im, workers = [], imSettings;
   var _windowWorker;
 
+  function queue(q, n) {
+    q.length ? q.shift()(queue.bind(this, q, n)) : n();
+  }
+
   setup(function() {
     // This is the input method object we're testing
     im = InputMethods.latin;
 
     imSettings = {
       resetUpperCase: sinon.stub(),
-      sendKey: sinon.stub(),
+      sendKey: sinon.stub().returns(
+        new Promise(function(res, rej) { res(); })),
       sendString: sinon.stub(),
       sendCandidates: sinon.stub(),
       setUpperCase: sinon.stub(),
       setLayoutPage: sinon.stub(),
-      replaceSurroundingText: sinon.stub()
+      replaceSurroundingText: sinon.stub().returns(
+        new Promise(function(res, rej) { res(); }))
     };
     im.init(imSettings);
 
@@ -46,41 +52,36 @@ suite('Latin suggestions', function() {
     });
   }
 
-  test('Suggestion data doesnt match input? Ignore.', function() {
-    setState('janj');
+  function testPrediction(state, input, suggestions) {
+    setState(state);
 
     workers[0].onmessage({
       data: {
         cmd: 'predictions',
-        input: 'jan', // old input
-        suggestions: [
-          ['Jan', 1],
-          ['jan', 1],
-          ['Pietje', 1]
-        ]
+        input: input, // old input
+        suggestions: suggestions
       }
     });
+  }
 
+  test('Suggestion data doesnt match input? Ignore.', function() {
+    testPrediction('janj', 'jan', [
+        ['Jan', 1],
+        ['jan', 1],
+        ['Pietje', 1]
+      ]);
     sinon.assert.callCount(imSettings.sendCandidates, 1);
     // maybe we shouldnt call this at all? don't know...
     sinon.assert.calledWith(imSettings.sendCandidates, []);
   });
 
   test('One char input should not autocorrect to a multichar word', function() {
-    setState('n');
-
-    workers[0].onmessage({
-      data: {
-        cmd: 'predictions',
-        input: 'n',
-        suggestions: [
-          ['no', 1], // we want to ensure that this first suggestion is not
-                  // marked (with * prefix) as an autocorrection
-          ['not', 1],
-          ['now', 1]
-        ]
-      }
-    });
+    testPrediction('n', 'n', [
+        ['no', 1], // we want to ensure that this first suggestion is not
+                // marked (with * prefix) as an autocorrection
+        ['not', 1],
+        ['now', 1]
+      ]);
 
     sinon.assert.callCount(imSettings.sendCandidates, 1);
     // maybe we shouldnt call this at all? don't know...
@@ -89,159 +90,76 @@ suite('Latin suggestions', function() {
 
     // But we also want to be sure that single letters like i do get
     // autocorrected to single letter words like I
-    setState('i');
-
-    workers[0].onmessage({
-      data: {
-        cmd: 'predictions',
-        input: 'i',
-        suggestions: [
-          ['I', 1], // we're testing that this gets marked as an autocorrection
-          ['in', 1],
-          ['it', 1]
-        ]
-      }
-    });
+    testPrediction('i', 'i', [
+        ['I', 1], // we want to ensure that this first suggestion is not
+                // marked (with * prefix) as an autocorrection
+        ['in', 1],
+        ['it', 1]
+      ]);
 
     sinon.assert.calledWith(imSettings.sendCandidates,
       ['*I', 'in', 'it']);
   });
 
-  test('Shows suggestions from worker: input is not a word', function() {
-    setState('jan');
+  test('Space to accept suggestion', function(next) {
+    testPrediction('jan', 'jan', [
+      ['Jan'],
+      ['han'],
+      ['Pietje']
+    ]);
 
-    workers[0].onmessage({
-      data: {
-        cmd: 'predictions',
-        input: 'jan',
-        suggestions: [
-          ['Jan', 1],
-          ['han', 1],
-          ['Pietje', 1],
-          ['extra', 1]
-        ]
-      }
+    im.click(KeyEvent.DOM_VK_SPACE).then(function() {
+      sinon.assert.callCount(imSettings.replaceSurroundingText, 1);
+      sinon.assert.calledWith(imSettings.replaceSurroundingText, 'Jan', -3, 3);
+      sinon.assert.calledWith(imSettings.sendKey, KeyEvent.DOM_VK_SPACE);
+
+      next();
     });
-
-    sinon.assert.callCount(imSettings.sendCandidates, 1);
-    // Show 3 suggestions and mark the first as an autocorrect
-    sinon.assert.calledWith(imSettings.sendCandidates,
-                            ['*Jan', 'han', 'Pietje']);
   });
 
-  test('Shows suggestions from worker: input is a common word', function() {
-    setState('the');
-
-    workers[0].onmessage({
-      data: {
-        cmd: 'predictions',
-        input: 'the',
-        suggestions: [
-          ['the', 10],
-          ['they', 5],
-          ['then', 4],
-          ['there', 3]
-        ]
-      }
-    });
-
-    sinon.assert.callCount(imSettings.sendCandidates, 1);
-    // Verify that we show 3 suggestions that do not include the input
-    // and that we do not mark the first as an autocorrection.
-    sinon.assert.calledWith(imSettings.sendCandidates,
-                            ['they', 'then', 'there']);
-  });
-
-  test('Shows suggestions from worker: input is an uncommon word', function() {
-    setState('wont');
-
-    workers[0].onmessage({
-      data: {
-        cmd: 'predictions',
-        input: 'wont',
-        suggestions: [
-          ['won\'t', 10],
-          ['wont', 8],
-          ['won', 7],
-          ['went', 6]
-        ]
-      }
-    });
-
-    sinon.assert.callCount(imSettings.sendCandidates, 1);
-    // Verify that we show 3 suggestions that do not include the input
-    // and that we do mark the first as an autocorrection because it is
-    // more common than the valid word input.
-    sinon.assert.calledWith(imSettings.sendCandidates,
-                            ['*won\'t', 'won', 'went']);
-  });
-
-  test('Space to accept suggestion', function() {
-    setState('jan');
-
-    workers[0].onmessage({
-      data: {
-        cmd: 'predictions',
-        input: 'jan',
-        suggestions: [
-          ['Jan'],
-          ['han'],
-          ['Pietje']
-        ]
-      }
-    });
-
-    im.click(KeyEvent.DOM_VK_SPACE);
-
-    sinon.assert.callCount(imSettings.replaceSurroundingText, 1);
-    sinon.assert.calledWith(imSettings.replaceSurroundingText, 'Jan ', 3, 0);
-  });
-
-  test('Should communicate updated text to worker', function() {
+  test('Should communicate updated text to worker', function(next) {
     setState('');
 
     workers[0].postMessage = sinon.stub();
 
-    im.click('p'.charCodeAt(0));
-    sinon.assert.calledWith(workers[0].postMessage,
-                            { args: ['p'], cmd: 'predict' });
+    function clickAndAssert(key, assertion, callback) {
+      im.click(key.charCodeAt(0)).then(function() {
+        sinon.assert.calledWith(workers[0].postMessage,
+                        { args: [assertion], cmd: 'predict' });
+        callback();
+      });
+    }
 
-    im.click('a'.charCodeAt(0));
-    sinon.assert.calledWith(workers[0].postMessage,
-                            { args: ['pa'], cmd: 'predict' });
-
-    im.click('i'.charCodeAt(0));
-    sinon.assert.calledWith(workers[0].postMessage,
-                            { args: ['pai'], cmd: 'predict' });
-
-    sinon.assert.callCount(workers[0].postMessage, 3);
+    queue([
+      clickAndAssert.bind(null, 'p', 'p'),
+      clickAndAssert.bind(null, 'a', 'pa'),
+      clickAndAssert.bind(null, 'i', 'pai')
+    ], function() {
+      sinon.assert.callCount(workers[0].postMessage, 3);
+      next();
+    });
   });
 
-  test('Two spaces after suggestion should autopunctuate', function() {
-    setState('jan');
+  test('Two spaces after suggestion should autopunctuate', function(next) {
+    testPrediction('jan', 'jan', [
+      ['Jan'],
+      ['han'],
+      ['Pietje']
+    ]);
 
-    workers[0].onmessage({
-      data: {
-        cmd: 'predictions',
-        input: 'jan',
-        suggestions: [
-          ['Jan'],
-          ['han'],
-          ['Pietje']
-        ]
-      }
+    im.click(KeyEvent.DOM_VK_SPACE).then(function() {
+      return im.click(KeyEvent.DOM_VK_SPACE);
+    }).then(function() {
+      sinon.assert.callCount(imSettings.replaceSurroundingText, 1);
+      sinon.assert.calledWith(imSettings.replaceSurroundingText, 'Jan', -3, 3);
+
+      sinon.assert.callCount(imSettings.sendKey, 4);
+      assert.equal(imSettings.sendKey.args[0][0], KeyEvent.DOM_VK_SPACE);
+      assert.equal(imSettings.sendKey.args[1][0], KeyEvent.DOM_VK_BACK_SPACE);
+      assert.equal(imSettings.sendKey.args[2][0], '.'.charCodeAt(0));
+      assert.equal(imSettings.sendKey.args[3][0], ' '.charCodeAt(0));
+      next();
     });
-
-    im.click(KeyEvent.DOM_VK_SPACE);
-    im.click(KeyEvent.DOM_VK_SPACE);
-
-    sinon.assert.callCount(imSettings.replaceSurroundingText, 1);
-    sinon.assert.calledWith(imSettings.replaceSurroundingText, 'Jan ', 3, 0);
-
-    sinon.assert.callCount(imSettings.sendKey, 3);
-    assert.equal(imSettings.sendKey.args[0][0], 8); // backspace
-    assert.equal(imSettings.sendKey.args[1][0], '.'.charCodeAt(0));
-    assert.equal(imSettings.sendKey.args[2][0], ' '.charCodeAt(0));
   });
 
   test('dismissSuggestions hides suggestions and inserts space', function() {
@@ -257,4 +175,76 @@ suite('Latin suggestions', function() {
     sinon.assert.calledWith(imSettings.sendKey, 32);
   });
 
+  suite('handleSuggestions', function() {
+    test('input is not a word', function() {
+      testPrediction('jan', 'jan', [
+          ['Jan', 1],
+          ['han', 1],
+          ['Pietje', 1],
+          ['extra', 1]
+        ]);
+
+      sinon.assert.callCount(imSettings.sendCandidates, 1);
+      // Show 3 suggestions and mark the first as an autocorrect
+      sinon.assert.calledWith(imSettings.sendCandidates,
+                              ['*Jan', 'han', 'Pietje']);
+    });
+
+    test('input is a common word', function() {
+      testPrediction('the', 'the', [
+          ['the', 10],
+          ['they', 5],
+          ['then', 4],
+          ['there', 3]
+        ]);
+
+      sinon.assert.callCount(imSettings.sendCandidates, 1);
+      // Verify that we show 3 suggestions that do not include the input
+      // and that we do not mark the first as an autocorrection.
+      sinon.assert.calledWith(imSettings.sendCandidates,
+                              ['they', 'then', 'there']);
+    });
+
+    test('input is an uncommon word', function() {
+      testPrediction('wont', 'wont', [
+          ['won\'t', 11],
+          ['wont', 8],
+          ['won', 7],
+          ['went', 6]
+        ]);
+
+      sinon.assert.callCount(imSettings.sendCandidates, 1);
+      // Verify that we show 3 suggestions that do not include the input
+      // and that we do mark the first as an autocorrection because it is
+      // more common than the valid word input.
+      sinon.assert.calledWith(imSettings.sendCandidates,
+                              ['*won\'t', 'won', 'went']);
+    });
+
+    test('Foe', function() {
+      testPrediction('foe', 'foe', [
+        ['for', 16.878906249999996],
+        ['foe', 15],
+        ['Doe', 7.566406249999998],
+        ['doe', 6.984374999999998]
+      ]);
+
+      sinon.assert.callCount(imSettings.sendCandidates, 1);
+      sinon.assert.calledWith(imSettings.sendCandidates,
+                              ['for', 'Doe', 'doe']);
+    });
+
+    test('Hid', function() {
+      testPrediction('hid', 'hid', [
+        ['his', 16.296874999999996],
+        ['hid', 16],
+        ['HUD', 7.415834765624998],
+        ['hide', 7.2]
+      ]);
+
+      sinon.assert.callCount(imSettings.sendCandidates, 1);
+      sinon.assert.calledWith(imSettings.sendCandidates,
+                              ['his', 'HUD', 'hide']);
+    });
+  });
 });

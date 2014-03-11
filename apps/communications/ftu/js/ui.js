@@ -1,5 +1,7 @@
 'use strict';
 
+var _;
+
 var UIManager = {
 
   // As in other Gaia apps, we store all the dom selectors in one
@@ -10,6 +12,7 @@ var UIManager = {
     'splash-screen',
     'activation-screen',
     'progress-bar',
+    'progress-bar-state',
     'finish-screen',
     'nav-bar',
     'main-title',
@@ -85,6 +88,7 @@ var UIManager = {
     // Tutorial
     'tutorial-screen',
     'tutorial-progress',
+    'tutorial-progress-state',
     'lets-go-button',
     'skip-tutorial-button',
     // Privacy Settings
@@ -99,6 +103,8 @@ var UIManager = {
   ],
 
   init: function ui_init() {
+    _ = navigator.mozL10n.get;
+
     // Initialization of the DOM selectors
     this.domSelectors.forEach(function createElementRef(name) {
       this[toCamelCase(name)] = document.getElementById(name);
@@ -155,13 +161,13 @@ var UIManager = {
     });
 
     // Input scroll workaround
-    var top = this.newsletterInput.offsetTop;
     this.newsletterInput.addEventListener('focus', function() {
       window.addEventListener('resize', function resize() {
         window.removeEventListener('resize', resize);
         // Need to wait till resize is done
         setTimeout(function() {
-          document.getElementById('browser_privacy').scrollTop = top;
+          var page = document.getElementById('browser_privacy');
+          UIManager.scrollToElement(page, UIManager.newsletterInput);
         }, 30);
       });
     });
@@ -228,6 +234,10 @@ var UIManager = {
                             this.onOfflineDialogButtonClick.bind(this));
   },
 
+  scrollToElement: function ui_scrollToElement(container, element) {
+    container.scrollTop = element.offsetTop;
+  },
+
   sendNewsletter: function ui_sendNewsletter(callback) {
     var self = this;
     var emailValue = self.newsletterInput.value;
@@ -239,7 +249,7 @@ var UIManager = {
         if (window.navigator.onLine) {
           Basket.send(emailValue, function emailSent(err, data) {
             if (err) {
-              if (err.desc && err.desc.indexOf('email address') > -1) {
+              if (err.code && err.code === Basket.errors.INVALID_EMAIL) {
                 ConfirmDialog.show(_('invalid-email-dialog-title'),
                                    _('invalid-email-dialog-text'),
                                    {
@@ -420,11 +430,15 @@ var UIManager = {
   },
 
   setTimeZone: function ui_stz(timezone) {
-    var utc = 'UTC' + timezone.utcOffset;
+    var utcOffset = timezone.utcOffset;
     document.getElementById('time_zone_overlay').className =
-      utc.replace(/[+:]/g, '');
-    document.getElementById('time-zone-title').textContent =
-      utc + ' ' + timezone.id;
+      utcOffset.replace(/[+:]/g, '');
+    var timezoneTitle = document.getElementById('time-zone-title');
+    navigator.mozL10n.localize(timezoneTitle, 'timezoneTitle', {
+      utcOffset: utcOffset,
+      region: timezone.region,
+      city: timezone.city
+    });
     document.getElementById('tz-region-label').textContent = timezone.region;
     document.getElementById('tz-city-label').textContent = timezone.city;
 

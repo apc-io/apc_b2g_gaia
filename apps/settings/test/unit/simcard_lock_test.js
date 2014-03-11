@@ -27,6 +27,17 @@ suite('SimPinLock > ', function() {
 
   suiteSetup(function(done) {
     MockL10n.ready = function() {};
+    MockL10n._cachedParams = {};
+    MockL10n.get = function(key, params) {
+      if (!MockL10n._cachedParams[key]) {
+        MockL10n._cachedParams[key] = [];
+      }
+      if (params) {
+        MockL10n._cachedParams[key].push(params);
+      }
+      return key;
+    };
+
     window.navigator.mozL10n = MockL10n;
 
     realSimPinDialog = window.SimPinDialog;
@@ -60,7 +71,8 @@ suite('SimPinLock > ', function() {
 
   // we use dsds for testing by default for each test
   setup(function() {
-    stubById = this.sinon.stub(document, 'getElementById', function() {
+    this.sinon.stub(window.navigator.mozL10n, 'localize');
+    this.sinon.stub(document, 'getElementById', function() {
       return document.createElement('div');
     });
   });
@@ -146,13 +158,34 @@ suite('SimPinLock > ', function() {
       SimPinLock.simPinTemplate = oldTemplate;
     });
 
-    setup(function() {
-      initConns(2);
-      SimPinLock.initSimPinsUI();
+    suite('in single sim structure', function() {
+      setup(function() {
+        initConns(1);
+        SimPinLock.initSimPinsUI();
+      });
+
+      suiteTeardown(function() {
+        navigator.mozL10n._cachedParams = {};
+      });
+
+      test('init SimPinsUI successfully, we won\'t put SIM [n] PIN on UI',
+        function() {
+          assert.equal(
+            navigator.mozL10n._cachedParams.simPinWithIndex[0].index,
+            ''
+          );
+      });
     });
 
-    test('init SimPinsUI successfully', function() {
-      assert.isDefined(SimPinLock.simPinContainer.innerHTML);
+    suite('in dsds structure', function() {
+      suiteSetup(function() {
+        initConns(2);
+        SimPinLock.initSimPinsUI();
+      });
+
+      test('init SimPinsUI successfully', function() {
+        assert.isDefined(SimPinLock.simPinContainer.innerHTML);
+      });
     });
   });
 
@@ -327,6 +360,8 @@ suite('SimPinLock > ', function() {
     });
 
     setup(function() {
+      this.sinon.stub(SimPinLock, 'updateSimSecurityDescUI');
+      this.sinon.stub(SimPinLock, 'updateSimPinUI');
       this.sinon.stub(SimPinLock.simPinDialog, 'show');
 
       fakeCheckbox = document.createElement('input');
@@ -348,6 +383,12 @@ suite('SimPinLock > ', function() {
       test('show unlock_puk action', function() {
         assert.equal(SimPinLock.simPinDialog.show.lastCall.args[0],
           'unlock_puk');
+
+        var onSuccessFunction =
+          SimPinLock.simPinDialog.show.lastCall.args[1].onsuccess;
+
+        onSuccessFunction();
+        assert.isTrue(SimPinLock.updateSimSecurityDescUI.lastCall.args[0]);
       });
     });
 
@@ -365,6 +406,12 @@ suite('SimPinLock > ', function() {
         test('checkbox is not checked, call disable_lock', function() {
           assert.equal(SimPinLock.simPinDialog.show.lastCall.args[0],
             'disable_lock');
+
+          var onSuccessFunction =
+            SimPinLock.simPinDialog.show.lastCall.args[1].onsuccess;
+
+          onSuccessFunction();
+          assert.isFalse(SimPinLock.updateSimSecurityDescUI.lastCall.args[0]);
         });
       });
 
@@ -376,10 +423,15 @@ suite('SimPinLock > ', function() {
         test('checkbox is not checked, call enable_lock', function() {
           assert.equal(SimPinLock.simPinDialog.show.lastCall.args[0],
             'enable_lock');
+
+          var onSuccessFunction =
+            SimPinLock.simPinDialog.show.lastCall.args[1].onsuccess;
+
+          onSuccessFunction();
+          assert.isTrue(SimPinLock.updateSimSecurityDescUI.lastCall.args[0]);
         });
       });
     });
-
   });
 
   suite('addChangeEventOnIccs > ', function() {
@@ -496,6 +548,46 @@ suite('SimPinLock > ', function() {
       });
       test('right iccId will return right cardIndex', function() {
         assert.equal(cardIndex, 0);
+      });
+    });
+  });
+
+  suite('isSingleSim > ', function() {
+    suite('in single sim structure', function() {
+      suiteSetup(function() {
+        initConns(1);
+      });
+      test('is single sim', function() {
+         assert.ok(SimPinLock.isSingleSim());
+      });
+    });
+    suite('in dsds structure', function() {
+      suiteSetup(function() {
+        initConns(2);
+      });
+      test('is not single sim', function() {
+        assert.ok(!SimPinLock.isSingleSim());
+      });
+    });
+  });
+
+  suite('updateSimSecurityDescUI > ', function() {
+    suite('enabled >', function() {
+      setup(function() {
+        SimPinLock.updateSimSecurityDescUI(true);
+      });
+      test('is description with enabled wording', function() {
+        assert.equal(window.navigator.mozL10n.localize.args[0][1],
+          'enabled');
+      });
+    });
+    suite('disabled >', function() {
+      setup(function() {
+        SimPinLock.updateSimSecurityDescUI(false);
+      });
+      test('is description with disabled wording', function() {
+        assert.equal(window.navigator.mozL10n.localize.args[0][1],
+          'disabled');
       });
     });
   });

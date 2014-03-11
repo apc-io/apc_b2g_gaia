@@ -1,6 +1,7 @@
+'use strict';
+
 var Search = require('./lib/search');
 var Calendar = require('../../../calendar/test/marionette/calendar');
-var assert = require('assert');
 
 marionette('app search', function() {
   var client = marionette.client(Search.ClientOptions);
@@ -11,7 +12,7 @@ marionette('app search', function() {
     search = new Search(client);
   });
 
-  test.skip('able to search apps from rocketbar', function() {
+  test('able to search apps from rocketbar', function() {
     search.doSearch('calendar');
 
     search.goToResults();
@@ -21,7 +22,7 @@ marionette('app search', function() {
     search.goToApp(Calendar.ORIGIN);
   });
 
-  test.skip('search app with entry point', function() {
+  test('search app with entry point', function() {
     search.doSearch('phone');
 
     search.goToResults();

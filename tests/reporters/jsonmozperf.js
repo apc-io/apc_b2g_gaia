@@ -18,20 +18,29 @@ function JSONMozPerfReporter(runner) {
   var failures = [];
   var passes = [];
   var mozPerfDurations;
+  var mozPerfMemory = [];
 
   runner.on('test', function(test) {
-    mozPerfDurations = [];
+    mozPerfDurations = {};
   });
 
   runner.on('mozPerfDuration', function(content) {
-    mozPerfDurations = content;
+    mozPerfDurations[content.title] = content.values;
+  });
+
+  runner.on('mozPerfMemory', function(content) {
+    mozPerfMemory = content;
   });
 
   runner.on('pass', function(test) {
 
-    if (mozPerfDurations === null) {
-      test.err = new Error('No perf data was reported');
-      failures.push(test);
+    if (mozPerfDurations === null || Object.keys(mozPerfDurations).length == 0) {
+      // this stuff is specific to mocha implementation. It might break.
+      --self.stats.passes;
+
+      var err = new Error('No perf data was reported');
+
+      this.emit('fail', test, err);
       return;
     }
 
@@ -43,7 +52,9 @@ function JSONMozPerfReporter(runner) {
         fullTitle: test.fullTitle() + ' ' + title,
         duration: test.duration,
         mozPerfDurations: mozPerfDurations[title],
-        mozPerfDurationsAverage: average(mozPerfDurations[title])
+        mozPerfDurationsAverage: average(mozPerfDurations[title]),
+        mozPerfMemory: mozPerfMemory[title],
+        mozPerfMemoryAverage: averageObjects(mozPerfMemory[title])
       });
     }
   });
@@ -95,6 +106,46 @@ function average(arr) {
   });
 
   return sum / arr.length;
+}
+
+function averageObjects(arr) {
+  if (!arr) {
+    return undefined;
+  }
+  if (arr.length === 0) {
+    return null;
+  }
+  var total = arr.reduce(function(cur, nxt) {
+    for (var part in nxt) {
+      for (var type in nxt[part]) {
+        if (typeof nxt[part][type] === 'number') {
+          cur[part][type] += nxt[part][type];
+        }
+      }
+    }
+    return cur;
+  }, {
+    app: {
+      uss: 0,
+      pss: 0,
+      rss: 0,
+      vsize: 0
+    },
+    system: {
+      uss: 0,
+      pss: 0,
+      rss: 0,
+      vsize: 0
+    }
+  });
+
+  for (var part in total) {
+    for (var type in total[part]) {
+      total[part][type] = (total[part][type] / arr.length).toFixed(3);
+    }
+  }
+
+  return total;
 }
 
 JSONMozPerfReporter.prototype.__proto__ = Mocha.reporters.Base.prototype;

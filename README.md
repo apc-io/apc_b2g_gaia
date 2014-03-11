@@ -77,20 +77,35 @@ Gaia uses
 to run the tests with a custom builder for gaia. Tests should live with the rest of your apps code (in apps/my_app/test/marionette) and
 test files should end in _test.js.
 
-All integration tests run under a node environment. You need node >= 0.8
+All integration tests run under a node environment. You need node >= 0.10
 for this to work predictably.
 
 Shared code for tests lives under shared/test/integration.
 
-#### Invoking a test
+#### Running integration tests
+
+NOTE: unless your tests end in _test.js they will not be
+automatically picked up by `make test-integration`.
 
 ```sh
-./bin/gaia-marionette <test> [test...]
+make test-integration
 ```
 
-All options are passed to `./node_modules/.bin/marionette-mocha` so
-you can also use mocha commands like `--grep`, `--timeout` see `--help`
-for more options.
+#### Invoking a test file
+
+```sh
+make test-integration TEST_FILES=<test>
+```
+
+For example, we could run the `day_view_test.js` test in calendar app with the below command.
+```
+make test-integration TEST_FILES=./apps/calendar/test/marionette/day_view_test.js
+```
+
+If you would like to run more than one test, we could do the below command.
+```
+make test-integration TEST_FILES="./apps/calendar/test/marionette/day_view_test.js ./apps/calendar/test/marionette/today_test.js"
+```
 
 #### Invoking tests for a specific app
 
@@ -100,14 +115,6 @@ make test-integration APP=<APP>
 
 For example, we could run all tests for the calendar app with `make test-integration APP=calendar`.
 
-#### Invoking all the tests
-
-NOTE: unless you tests end in _test.js they will not be
-automatically picked up by `make test-integration`.
-
-```sh
-make test-integration
-```
 #### Running tests while working
 
 If you wish to run many tests in background you might not want to be disturbed
@@ -129,6 +136,22 @@ You can of course combine both:
 
 ```sh
 PULSE_SERVER=":" xvfb-run make test-integration
+```
+
+#### Running tests without building profile
+
+if you would like to run tests without building profile, use `make test-integration-test`:
+```sh
+PROFILE_FOLDER=profile-test make # generate profile directory in first time
+make test-integration-test
+```
+
+#### Debugging Tests
+
+To view log out from a test
+
+```sh
+make test-integration VERBOSE=1
 ```
 
 #### Where to find documentation
@@ -155,7 +178,7 @@ PULSE_SERVER=":" xvfb-run make test-integration
 - To get debug information from the b2g desktop client, run this:
 `DEBUG=b2g-desktop ./bin/gaia-marionette name/of/test.js`
 
-- To get debug information from b2g desktop and all of the marionette 
+- To get debug information from b2g desktop and all of the marionette
 plugins, run this:
 `DEBUG=* ./bin/gaia-marionette name/of/test.js`
 
@@ -171,7 +194,9 @@ See [how to run the Gaia endurance tests](https://developer.mozilla.org/en-US/do
 
 ## Generate jsdoc
 
-To generate API reference locally:
+To generate API reference locally, you have to install grunt with following command:
 
-1. run `npm install` first to install required libraries (may need sudo privilege)
-2. run `grunt docs` command to generate docs in `docs` folder
+    $ npm -g grunt-cli
+
+then run `make docs` command to generate docs.
+The generated API docs will be located in `docs` folder.

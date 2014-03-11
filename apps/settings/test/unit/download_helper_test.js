@@ -2,6 +2,7 @@
 
 requireApp('settings/test/unit/mock_l10n.js');
 require('/shared/test/unit/mocks/mock_download.js');
+require('/shared/test/unit/mocks/mock_navigator_moz_downloads.js');
 
 require('/shared/js/download/download_ui.js');
 require('/shared/js/mime_mapper.js');
@@ -28,9 +29,12 @@ suite('DownloadHelper', function() {
   var mocksHelperForDownloadHelper = new MocksHelper([
     'DownloadStore',
     'LazyLoader',
-    'DownloadFormatter'
+    'DownloadFormatter',
+    'MozActivity'
   ]);
-  var realL10n, realDeviceStorage, realActivity, download;
+  var realL10n, realDeviceStorage, realMozDownloads, download;
+
+  mocksHelperForDownloadHelper.attachTestHelpers();
 
   suiteSetup(function() {
     realL10n = navigator.mozL10n;
@@ -39,10 +43,8 @@ suite('DownloadHelper', function() {
     realDeviceStorage = navigator.getDeviceStorage;
     navigator.getDeviceStorage = MockGetDeviceStorage;
 
-    realActivity = window.MozActivity;
-    window.MozActivity = MockMozActivity;
-
-    mocksHelperForDownloadHelper.suiteSetup();
+    realMozDownloads = navigator.mozDownloadManager;
+    navigator.mozDownloadManager = MockMozDownloads;
   });
 
   suiteTeardown(function() {
@@ -52,22 +54,17 @@ suite('DownloadHelper', function() {
     navigator.getDeviceStorage = realDeviceStorage;
     realDeviceStorage = null;
 
-    window.MozActivity = realActivity;
-    realActivity = null;
+    navigator.mozDownloadManager = realMozDownloads;
+    realMozDownloads = null;
 
     download = null;
-
-    mocksHelperForDownloadHelper.suiteTeardown();
   });
 
   setup(function() {
-    mocksHelperForDownloadHelper.setup();
-
     download = new MockDownload();
   });
 
   teardown(function() {
-    mocksHelperForDownloadHelper.teardown();
     download = null;
   });
 
@@ -80,7 +77,55 @@ suite('DownloadHelper', function() {
       download = null;
     });
 
-    function checkError(storage, code, done) {
+    function getStorage(state) {
+      return {
+        'get' : function(path) {
+          return {
+            set onsuccess(cb) {},
+            set onerror(cb) {setTimeout(cb, 100)},
+            error: { 'name': 'custom error' }
+          };
+        },
+        'available': function() {
+          return {
+            set onsuccess(cb) {
+              setTimeout(cb);
+            },
+            get result() {
+              return state;
+            }
+          };
+        }
+      };
+    }
+
+    function assertSuccess(req, done) {
+      req.onsuccess = function() {
+        assert.ok(true);
+        done();
+      };
+
+      req.onerror = function() {
+        assert.ok(false);
+        done();
+      };
+    }
+
+    function assertIncompleteDownloadRemoved(state, done) {
+      var stubGetDeviceStorage = sinon.stub(navigator, 'getDeviceStorage',
+        function() {
+          return getStorage(state);
+        }
+      );
+      download.state = 'stopped';
+      var req = DownloadHelper.remove(download);
+      assertSuccess(req, function() {
+        stubGetDeviceStorage.restore();
+        done();
+      });
+    }
+
+    function checkError(storage, code, done, type) {
       download.state = 'succeeded';
 
       var stubGetDeviceStorage = sinon.stub(navigator, 'getDeviceStorage',
@@ -89,7 +134,7 @@ suite('DownloadHelper', function() {
         }
       );
 
-      var req = DownloadHelper.launch(download);
+      var req = DownloadHelper[type || 'open'](download);
 
       req.onsuccess = function() {
         assert.ok(false);
@@ -104,7 +149,7 @@ suite('DownloadHelper', function() {
     }
 
     test('Invalid state download', function(done) {
-      var req = DownloadHelper.launch(download);
+      var req = DownloadHelper.open(download);
 
       req.onsuccess = function() {
         assert.ok(false);
@@ -125,7 +170,7 @@ suite('DownloadHelper', function() {
         return 'xxxxx.xxx';
       });
 
-      var req = DownloadHelper.launch(download);
+      var req = DownloadHelper.open(download);
 
       req.onsuccess = function() {
         assert.ok(false);
@@ -141,75 +186,38 @@ suite('DownloadHelper', function() {
     });
 
     test('Missing file', function(done) {
-      var storage = {
-        'get' : function(path) {
-          return {
-            set onsuccess(cb) {},
-            set onerror(cb) {setTimeout(cb, 100)},
-            error: { 'name': 'custom error' }
-          };
-        },
-        'available': function() {
-          return {
-            set onsuccess(cb) {
-              setTimeout(cb);
-            },
-            get result() {
-              return 'available';
-            }
-          };
-        }
-      };
-
+      var storage = getStorage('available');
       checkError(storage, DownloadHelper.CODE.FILE_NOT_FOUND, done);
     });
 
     test('Success', function(done) {
       download.state = 'succeeded';
-      var req = DownloadHelper.launch(download);
-      req.onsuccess = function() {
-        assert.ok(true);
-        done();
-      };
-
-      req.onerror = function() {
-        assert.ok(false);
-        done();
-      };
+      var req = DownloadHelper.open(download);
+      assertSuccess(req, done);
     });
 
-    test('Unmounted sdcard', function(done) {
-      var storage = {
-        'available': function() {
-          return {
-            set onsuccess(cb) {
-              setTimeout(cb);
-            },
-            get result() {
-              return 'shared';
-            }
-          };
-        }
-      };
-
-      checkError(storage, DownloadHelper.CODE.UNMOUNTED_SDCARD, done);
+    test('Unmounted sdcard -> try to open and remove ', function(done) {
+      var storage = getStorage('shared');
+      var code = DownloadHelper.CODE.UNMOUNTED_SDCARD;
+      checkError(storage, code, function() {
+        checkError(storage, code, done, 'remove');
+      }, 'open');
     });
 
-    test('No sdcard', function(done) {
-      var storage = {
-        'available': function() {
-          return {
-            set onsuccess(cb) {
-              setTimeout(cb);
-            },
-            get result() {
-              return 'unavailable';
-            }
-          };
-        }
-      };
+    test('No sdcard -> try to open and remove ', function(done) {
+      var storage = getStorage('unavailable');
+      var code = DownloadHelper.CODE.NO_SDCARD;
+      checkError(storage, code, function() {
+        checkError(storage, code, done, 'remove');
+      }, 'open');
+    });
 
-      checkError(storage, DownloadHelper.CODE.NO_SDCARD, done);
+    test('Unmounted sdcard -> removing incomplete download ', function(done) {
+      assertIncompleteDownloadRemoved('shared', done);
+    });
+
+    test('No sdcard -> removing incomplete download ', function(done) {
+      assertIncompleteDownloadRemoved('unavailable', done);
     });
   });
 });

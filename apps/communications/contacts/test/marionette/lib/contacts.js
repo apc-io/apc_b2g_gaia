@@ -47,7 +47,10 @@ Contacts.Selectors = {
   formSave: '#save-button',
   formTel: '#contacts-form-phones input[type="tel"]',
   formTelLabelFirst: '#tel_type_0',
+  formTelNumberSecond: '#number_1',
+  formEmailFirst: '#email_0',
 
+  groupList: ' #groups-list',
   list: '#view-contacts-list',
   listContactFirst: '.contact-item',
   listContactFirstText: '.contact-item .contact-text',
@@ -93,15 +96,13 @@ Contacts.prototype = {
       var data;
       xhr.open('GET', file, false); // Intentional sync
       xhr.onload = function(o) {
-        data = xhr.response;
+        data = JSON.parse(xhr.response);
       };
       xhr.send(null);
       return data;
     }, [file, key]);
 
-    var re = new RegExp(key + '\\s*=\\s*(.*)');
-    var result = re.exec(string)[1];
-    return result;
+    return string[key]['_'];
   },
 
   waitSlideLeft: function(elementKey) {

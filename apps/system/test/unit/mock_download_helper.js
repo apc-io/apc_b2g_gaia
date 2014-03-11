@@ -2,8 +2,8 @@
 'use strict';
 
 var MockDownloadHelper = {
-  launch: function() {
-    this.methodCalled = 'launch';
+  open: function() {
+    this.methodCalled = 'open';
     return {};
   },
 
@@ -12,7 +12,15 @@ var MockDownloadHelper = {
     return {};
   },
 
+  bytes: 1000,
+
+  getFreeSpace: function(cb) {
+    this.methodCalled = 'getFreeSpace';
+    cb(this.bytes);
+  },
+
   mTeardown: function() {
+    this.bytes = 1000;
     this.methodCalled = null;
   }
 };

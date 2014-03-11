@@ -14,6 +14,7 @@ var MockMessages = {
     // default sms message
     var message = {
       id: 1,
+      iccId: null,
       threadId: 1,
       sender: 'sender',
       receiver: 'receiver',
@@ -24,6 +25,7 @@ var MockMessages = {
       type: 'sms',
       messageClass: 'normal',
       timestamp: Date.now(),
+      sentTimestamp: Date.now(),
       read: true
     };
 
@@ -44,6 +46,7 @@ var MockMessages = {
     // default mms message
     var message = {
       id: 1,
+      iccId: null,
       threadId: 1,
       sender: 'sender',
       receivers: ['receiver'],
@@ -55,6 +58,7 @@ var MockMessages = {
       }],
       type: 'mms',
       timestamp: +now,
+      sentTimestamp: +now,
       read: true,
       subject: '',
       smil: this.smilMockup,

@@ -180,7 +180,10 @@ ContactRenderer.prototype = {
         // only considers left aligned exact matches on words
         return new RegExp('^' + k, 'gi');
       }),
-      number: [new RegExp(escaped, 'ig')]
+      number: escsubs.map(function(k) {
+        // Match any of the search terms with the number
+        return new RegExp(k, 'ig');
+      })
     };
 
     var include = renderPhoto ? { photoURL: true } : null;
@@ -219,10 +222,14 @@ ContactRenderer.prototype = {
       });
 
       // Render contact photo only for specific flavor
-      data.photoHTML = renderPhoto && details.photoURL ?
-        this.templates.photo.interpolate({
-          photoURL: details.photoURL || ''
-        }) : '';
+      if (renderPhoto && details.photoURL) {
+        data.photoHTML = this.templates.photo.interpolate({
+          photoURL: details.photoURL
+        });
+        Utils.asyncLoadRevokeURL(details.photoURL);
+      } else {
+        data.photoHTML = '';
+      }
 
       // Interpolate HTML template with data and inject.
       // Known "safe" HTML values will not be re-sanitized.
@@ -242,14 +249,6 @@ ContactRenderer.prototype = {
 
       target.appendChild(element);
 
-      // Revoke contact photo after image onload.
-      var photo = element.querySelector('img');
-      if (photo) {
-        photo.onload = photo.onerror = function revokePhotoURL() {
-          this.onload = this.onerror = null;
-          window.URL.revokeObjectURL(this.src);
-        };
-      }
       tempDiv.textContent = '';
     }, this);
 

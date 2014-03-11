@@ -9,6 +9,8 @@
  // Import global objects from parent window
  var ConfigManager = window.parent.ConfigManager;
  var CostControl = window.parent.CostControl;
+ var Common = window.parent.Common;
+ var NetworkUsageAlarm = window.parent.NetworkUsageAlarm;
  var Formatting = window.parent.Formatting;
 
  // Import global functions from parent window
@@ -17,7 +19,9 @@
  var formatData = window.parent.formatData;
  var roundData = window.parent.roundData;
  var resetData = window.parent.resetData;
+ var addNetworkUsageAlarm = window.parent.addNetworkUsageAlarm;
  var resetTelephony = window.parent.resetTelephony;
+ var getDataLimit = window.parent.getDataLimit;
  var localizeWeekdaySelector = window.parent.localizeWeekdaySelector;
  var computeTelephonyMinutes = window.parent.computeTelephonyMinutes;
  var _ = window.parent._;
@@ -70,6 +74,20 @@ var Settings = (function() {
       configureDataResets();
       addDoneConstrains();
 
+      // Add an observer on dataLimit switch to active o deactivate alarms
+      ConfigManager.observe(
+        'dataLimit',
+        function _onDataLimitChange(value, old, key, settings) {
+          var currentDataInterface = Common.getDataSIMInterface();
+          if (!value) {
+            NetworkUsageAlarm.clearAlarms(currentDataInterface);
+          } else {
+            addNetworkUsageAlarm(currentDataInterface, getDataLimit(settings));
+          }
+        },
+        true
+      );
+
       // Update layout when changing plantype
       ConfigManager.observe('plantype', updateUI, true);
 
@@ -83,7 +101,7 @@ var Settings = (function() {
 
       ConfigManager.observe('lastDataUsage',
         function _updateDataUsage(stats, old, key, settings) {
-          updateDataUsage(stats, settings.lastDataReset);
+          updateDataUsage(stats, settings.lastCompleteDataReset);
         },
         true
       );
@@ -102,11 +120,24 @@ var Settings = (function() {
         closeSettings();
       });
 
+      function _setResetTimeToDefault(value, old, key, settings) {
+        var firstWeekDay = parseInt(_('weekStartsOnMonday'), 10);
+        var defaultResetTime = (settings.trackingPeriod === 'weekly') ?
+                                                                  firstWeekDay :
+                                                                  1;
+        if (settings.resetTime !== defaultResetTime) {
+          ConfigManager.setOption({ resetTime: defaultResetTime });
+        } else {
+          updateNextReset(settings.trackingPeriod, settings.resetTime);
+        }
+      }
+
       function _updateNextReset(value, old, key, settings) {
         updateNextReset(settings.trackingPeriod, settings.resetTime);
       }
+
       ConfigManager.observe('resetTime', _updateNextReset, true);
-      ConfigManager.observe('trackingPeriod', _updateNextReset, true);
+      ConfigManager.observe('trackingPeriod', _setResetTimeToDefault, true);
 
       initialized = true;
 
@@ -258,7 +289,7 @@ var Settings = (function() {
       };
       costcontrol.request(requestObj, function _onDataStats(result) {
         var stats = result.data;
-        updateDataUsage(stats, settings.lastDataReset);
+        updateDataUsage(stats, settings.lastCompleteDataReset);
       });
 
       switch (mode) {
@@ -274,7 +305,7 @@ var Settings = (function() {
   }
 
   // Update data usage view on settings
-  function updateDataUsage(datausage, lastDataReset) {
+  function updateDataUsage(datausage, lastCompleteDataReset) {
     var mobileUsage = document.querySelector('#mobile-data-usage > span');
     var data = roundData(datausage.mobile.total);
     mobileUsage.textContent = formatData(data);
@@ -285,7 +316,8 @@ var Settings = (function() {
 
     var timestamp = document.querySelector('#wifi-data-usage + .meta');
     timestamp.innerHTML = '';
-    timestamp.appendChild(formatTimeHTML(lastDataReset, datausage.timestamp));
+    timestamp.appendChild(formatTimeHTML(lastCompleteDataReset,
+                                         datausage.timestamp));
   }
 
   // Update balance view on settings

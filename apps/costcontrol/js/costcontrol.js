@@ -368,11 +368,12 @@ var CostControl = (function() {
     var minimumStart = new Date(Date.now() - maxAge);
     debug('The max age for samples is ' + minimumStart);
 
-    // If settings.lastDataReset is not set let's use the past week. This is
-    // only for not breaking dogfooders build and this can be remove at some
-    // point in the future (and since this sentence has been said multiple times
-    // this code will probably stay here for a while).
-    var start = new Date(settings.lastDataReset || Date.now() - 7 * DAY);
+    // If settings.lastCompleteDataReset is not set let's use the past week.
+    // This is only for not breaking dogfooders build and this can be remove at
+    // some point in the future (and since this sentence has been said multiple
+    // times this code will probably stay here for a while).
+    var start = new Date(settings.lastCompleteDataReset ||
+                         Date.now() - 7 * DAY);
     if (start < minimumStart) {
       console.warn('Start date is surpassing the maximum age for the ' +
                    'samples. Setting to ' + minimumStart);
@@ -492,12 +493,6 @@ var CostControl = (function() {
     }
     return [output, accum];
   }
-  // XXX: See bug 944342 - [Cost control] move all the process related to the
-  // network and data interfaces loading to the start-up process of CostControl
-  function getInterfacesInformation() {
-    Common.loadNetworkInterfaces();
-    Common.loadDataSIMIccId();
-  }
 
   var airplaneMode = false;
   function init() {
@@ -506,7 +501,6 @@ var CostControl = (function() {
         airplaneMode = value;
       }
     );
-    getInterfacesInformation();
   }
 
   return {

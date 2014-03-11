@@ -1,3 +1,4 @@
+/* global SIMSlotManager */
 /* -*- Mode: Java; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- /
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
 
@@ -14,6 +15,9 @@ var SimLock = {
 
     this.onClose = this.onClose.bind(this);
 
+    // for bootup special case
+    this.showIfLocked();
+
     // Watch for apps that need a mobile connection
     window.addEventListener('appopened', this);
 
@@ -23,8 +27,18 @@ var SimLock = {
     window.addEventListener('will-unlock', this);
 
     // always monitor card state change
-    window.addEventListener('simslot-cardstatechange',
-      this.showIfLocked.bind(this));
+    var self = this;
+    window.addEventListener('simslot-cardstatechange', function(evt) {
+      self.showIfLocked(evt.detail.index);
+    });
+
+    // In some case, we can have 'iccdetected' and then 'iccinfochange'
+    // happening after 'cardstatechange'. We add a listener on
+    // 'simslot-iccinfochange' and if the SIM is locked, we will display the SIM
+    // PIN UI.
+    window.addEventListener('simslot-iccinfochange', function(evt) {
+      self.showIfLocked(evt.detail.index);
+    });
 
     // Listen to callscreenwillopen and callscreenwillclose event
     // to discard the cardstatechange event.
@@ -55,12 +69,12 @@ var SimLock = {
         }
         break;
       case 'simpinrequestclose':
-        var index = evt.detail._currentSlot.index;
+        var index = evt.detail.dialog._currentSlot.index;
         if (index + 1 >= this.length - 1) {
-          evt.detail.close('done');
+          evt.detail.dialog.close(evt.detail.reason);
         } else {
           if (!this.showIfLocked(index + 1, true)) {
-            evt.detail.close('done');
+            evt.detail.dialog.close(evt.detail.reason);
           }
         }
         break;
@@ -135,7 +149,7 @@ var SimLock = {
   },
 
   showIfLocked: function sl_showIfLocked(currentSlotIndex, skipped) {
-    if (LockScreen.locked)
+    if (lockScreen && lockScreen.locked)
       return false;
 
     // FTU has its specific SIM PIN UI
@@ -184,4 +198,11 @@ var SimLock = {
   }
 };
 
-SimLock.init();
+if (SIMSlotManager.ready) {
+  SimLock.init();
+} else {
+  window.addEventListener('simslotready', function ready() {
+    window.removeEventListener('simslotready', ready);
+    SimLock.init();
+  });
+}

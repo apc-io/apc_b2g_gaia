@@ -50,11 +50,16 @@ var CallHandler = (function callHandler() {
     };
   }
 
-  function handleNotificationRequest(number) {
+  function handleNotificationRequest(number, serviceId) {
     LazyLoader.load('/dialer/js/utils.js', function() {
       Contacts.findByNumber(number, function lookup(contact, matchingTel) {
         LazyL10n.get(function localized(_) {
-          var title = _('missedCall');
+          var title;
+          if (navigator.mozIccManager.iccIds.length > 1) {
+            title = _('missedCallMultiSims', {n: serviceId + 1});
+          } else {
+            title = _('missedCall');
+          }
 
           var body;
           if (!number) {
@@ -79,13 +84,13 @@ var CallHandler = (function callHandler() {
             var app = evt.target.result;
 
             var iconURL = NotificationHelper.getIconURI(app, 'dialer');
-
             var clickCB = function() {
               app.launch('dialer');
               window.location.hash = '#call-log-view';
             };
-
-            NotificationHelper.send(title, body, iconURL, clickCB);
+            var notification =
+              new Notification(title, {body: body, icon: iconURL});
+            notification.addEventListener('click', clickCB);
           };
         });
       });
@@ -219,7 +224,7 @@ var CallHandler = (function callHandler() {
     } else if (data.type === 'notification') {
       // We're being asked to send a missed call notification
       NavbarManager.ensureResources(function() {
-        handleNotificationRequest(data.number);
+        handleNotificationRequest(data.number, data.serviceId);
       });
     } else if (data.type === 'recent') {
       NavbarManager.ensureResources(function() {
@@ -255,6 +260,7 @@ var CallHandler = (function callHandler() {
 
     var error = function() {
       shouldCloseCallScreen = true;
+      KeypadManager.updatePhoneNumber(number, 'begin', true);
     };
 
     var oncall = function() {
@@ -351,7 +357,7 @@ var CallHandler = (function callHandler() {
                      '/dialer/js/mmi_ui.js',
                      '/shared/style/headers.css',
                      '/shared/style/input_areas.css',
-                     '/shared/style_unstable/progress_activity.css',
+                     '/shared/style/progress_activity.css',
                      '/dialer/style/mmi.css'], function() {
 
       if (window.navigator.mozSetMessageHandler) {
@@ -402,6 +408,9 @@ var NavbarManager = {
       // https://github.com/jcarpenter/Gaia-UI-Building-Blocks/blob/master/inprogress/tabs.html
       self.update();
     });
+
+    var contacts = document.getElementById('option-contacts');
+    contacts.addEventListener('click', this.contactsTabTap);
   },
   resourcesLoaded: false,
   /*
@@ -456,8 +465,10 @@ var NavbarManager = {
       case '#call-log-view':
         checkContactsTab();
         this.ensureResources(function() {
-          recent.classList.add('toolbar-option-selected');
-          CallLog.init();
+          LazyLoader.load(['/shared/js/contact_photo_helper.js'], function() {
+            recent.classList.add('toolbar-option-selected');
+            CallLog.init();
+          });
         });
         break;
       case '#contacts-view':
@@ -490,6 +501,22 @@ var NavbarManager = {
   show: function() {
     var views = document.getElementById('views');
     views.classList.remove('hide-toolbar');
+  },
+
+  contactsTabTap: function() {
+    // If we are not in the contacts-view, it's a first tap, do nothing
+    if (window.location.hash != '#contacts-view') {
+      return;
+    }
+    var contactsIframe = document.getElementById('iframe-contacts');
+    if (!contactsIframe) {
+      return;
+    }
+
+    var forceHashChange = new Date().getTime();
+    // Go back to contacts home
+    contactsIframe.src = '/contacts/index.html#home?forceHashChange=' +
+                         forceHashChange;
   }
 };
 

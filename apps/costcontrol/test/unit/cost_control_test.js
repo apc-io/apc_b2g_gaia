@@ -3,7 +3,6 @@
 requireApp('costcontrol/test/unit/mock_debug.js');
 requireApp('costcontrol/test/unit/mock_common.js');
 requireApp('costcontrol/test/unit/mock_moz_mobile_connection.js');
-requireApp('costcontrol/test/unit/mock_icc_helper.js');
 requireApp('costcontrol/test/unit/mock_config_manager.js');
 requireApp('costcontrol/test/unit/mock_settings_listener.js');
 requireApp('costcontrol/test/unit/mock_moz_network_stats.js');
@@ -14,9 +13,7 @@ var realCommon,
     realMozNetworkStats,
     realSettingsListener,
     realConfigManager,
-    realIccHelper,
-    realMozMobileConnection,
-    realNetworkstats;
+    realMozMobileConnection;
 
 if (!this.SettingsListener) {
   this.SettingsListener = null;
@@ -26,16 +23,8 @@ if (!this.ConfigManager) {
   this.ConfigManager = null;
 }
 
-if (!this.IccHelper) {
-  this.IccHelper = null;
-}
-
 if (!this.navigator.mozMobileConnection) {
   this.navigator.mozMobileConnection = null;
-}
-
-if (!this.Networkstats) {
-  this.Networkstats = null;
 }
 
 if (!this.navigator.mozNetworkStats) {
@@ -58,14 +47,8 @@ suite('Cost Control Service Hub Suite >', function() {
     realCommon = window.Common;
     window.Common = new MockCommon({ isValidICCID: true });
 
-    realIccHelper = window.IccHelper;
-    window.IccHelper = new MockIccHelper();
-
     realMozMobileConnection = window.navigator.mozMobileConnection;
     window.navigator.mozMobileConnection = new MockMozMobileConnection();
-
-    realNetworkstats = window.Networkstats;
-    window.Networkstats = MockMozNetworkStats;
 
     realMozNetworkStats = window.navigator.mozNetworkStats;
     navigator.mozNetworkStats = MockMozNetworkStats;
@@ -76,11 +59,9 @@ suite('Cost Control Service Hub Suite >', function() {
     window.SettingsListener.mTeardown();
     window.SettingsListener = realSettingsListener;
     window.ConfigManager = realConfigManager;
-    window.IccHelper = realIccHelper;
     window.navigator.mozMobileConnection = realMozMobileConnection;
     window.navigator.mozNetworkStats = realMozNetworkStats;
     window.Common = realCommon;
-    window.Networkstats = realNetworkstats;
   });
 
   function setupDelaySinceLastBalance(lastBalanceRequest, delay) {

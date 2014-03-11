@@ -18,9 +18,7 @@
    * When the size state of one of them is changed, LayoutManager
    * would send <code>system-resize</code> event.
    *
-   * <a href="http://i.imgur.com/bUMm4VM.png" target="_blank">
-   *   <img src="http://i.imgur.com/bUMm4VM.png"></img>
-   * </a>
+   * ![resize layout flow](http://i.imgur.com/bUMm4VM.png)
    *
    * @module LayoutManager
    */
@@ -40,7 +38,8 @@
      */
     get fullscreenHeight() {
       return window.innerHeight -
-        (this.keyboardEnabled ? KeyboardManager.getHeight() : 0);
+        (this.keyboardEnabled ? KeyboardManager.getHeight() : 0) -
+        SoftwareButtonManager.height;
     },
 
     /**
@@ -60,10 +59,10 @@
 
     /**
      * Match the given size with current layout.
-     * @param  {Number}  width        The matched width
-     * @param  {Number}  height       The matched height
-     * @param  {Boolean} isFullScreen To match fullscreen case or not
-     * @return {Boolean}              Matches current layout or not
+     * @param  {Number}  width        The matched width.
+     * @param  {Number}  height       The matched height.
+     * @param  {Boolean} isFullScreen To match fullscreen case or not.
+     * @return {Boolean}              Matches current layout or not.
      *
      * @memberOf module:LayoutManager
      */

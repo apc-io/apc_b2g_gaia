@@ -2,8 +2,9 @@ require('/shared/js/lazy_loader.js');
 require('/shared/test/unit/mocks/mock_navigator_moz_settings.js');
 require('/shared/test/unit/mocks/mock_navigator_moz_mobile_connections.js');
 require('/shared/test/unit/mocks/mock_navigator_moz_mobile_connection.js');
+require('/shared/test/unit/mocks/mock_iccmanager.js');
 requireApp('communications/contacts/test/unit/mock_contacts_index.html.js');
-requireApp('communications/contacts/test/unit/mock_iccmanager.js');
+requireApp('communications/contacts/test/unit/mock_navigation.js');
 requireApp('communications/contacts/test/unit/mock_contacts.js');
 requireApp('communications/contacts/test/unit/mock_asyncstorage.js');
 requireApp('communications/contacts/test/unit/mock_fb.js');
@@ -237,7 +238,7 @@ suite('Contacts settings', function() {
       function(done) {
         var observer = new MutationObserver(function(record) {
           observer.disconnect();
-          assert.isTrue(record[0].target.classList.contains('visible'));
+          assert.isTrue(record[0].target.classList.contains('opening'));
           done();
         });
         observer.observe(document.getElementById('statusMsg'), {

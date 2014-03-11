@@ -32,8 +32,14 @@
     }
     var isEmpty = (downloadsContainer.children.length === 0);
 
-    downloadsContainer.className = isEmpty ? 'hide' : '';
-    emptyDownloadsContainer.className = isEmpty ? '' : 'hide';
+    if (isEmpty) {
+      downloadsContainer.hidden = true;
+      emptyDownloadsContainer.hidden = false;
+    } else {
+      downloadsContainer.hidden = false;
+      emptyDownloadsContainer.hidden = true;
+    }
+
     editButton.className = isEmpty ? 'disabled' : '';
   }
 
@@ -153,7 +159,7 @@
         break;
       case 'succeeded':
         // launch an app to view the download
-        _launchDownload(download);
+        _showDownloadActions(download);
         break;
     }
   }
@@ -164,8 +170,8 @@
     request.onconfirm = function() {
       if (download.pause) {
         download.pause().then(function() {
-          // Remove listener
-          download.onstatechange = null;
+          // We don't remove the listener because the download could be
+          // restarted in notification tray
           _update(download);
         }, function() {
           console.error('Could not pause the download');
@@ -176,46 +182,53 @@
   }
 
   function _restartDownload(download) {
-    var request = DownloadUI.show(DownloadUI.TYPE.STOPPED, download);
-
-    function checkDownload() {
-      download.onstatechange = _onDownloadStateChange;
-      _update(download);
-    }
+    // DownloadUI knows which will be the correct confirm depending on state
+    // and error attributes
+    var request = DownloadUI.show(null, download);
 
     request.onconfirm = function() {
       if (download.resume) {
         download.resume().then(function() {
-          checkDownload();
+          // Nothing to do here -> this resolves only once the download has
+          // succeeded.
         }, function onError() {
-          alert(navigator.mozL10n.get('restart_download_error'));
+          // This error is fired when a download restarted is paused
+          console.error(navigator.mozL10n.get('restart_download_error'));
         });
       }
     };
   };
 
-  function _launchDownload(download) {
-    var req = DownloadHelper.launch(download);
+  function _showDownloadActions(download) {
 
-    req.onerror = function() {
-      DownloadHelper.handlerError(req.error, download, function removed(d) {
-        if (!d) {
-          return;
-        }
-        // If error when opening, we need to delete it!
-        var downloadId = DownloadItem.getDownloadId(d);
-        var elementToDelete = _getElementForId(downloadId);
-        DownloadApiManager.deleteDownloads(
-          [downloadId],
-          function onDeleted() {
-            _removeDownloadsFromUI([elementToDelete]);
-            _checkEmptyList();
-          },
-          function onError() {
-            console.warn('Download not removed during launching');
+    var actionReq = DownloadUI.showActions(download);
+
+    actionReq.onconfirm = function(evt) {
+      var req = DownloadHelper[actionReq.result.name](download);
+
+      req.onerror = function() {
+        DownloadHelper.handlerError(req.error, download, function removed(d) {
+          if (!d) {
+            return;
           }
-        );
-      });
+          // If error when opening, we need to delete it!
+          var downloadId = DownloadItem.getDownloadId(d);
+          var elementToDelete = _getElementForId(downloadId);
+          DownloadApiManager.deleteDownloads(
+            [{
+              id: downloadId,
+              force: true // deleting download without confirmation
+            }],
+            function onDeleted() {
+              _removeDownloadsFromUI([elementToDelete]);
+              _checkEmptyList();
+            },
+            function onError() {
+              console.warn('Download not removed during launching');
+            }
+          );
+        });
+      };
     };
   }
 
@@ -272,11 +285,20 @@
 
   function _deleteDownloads() {
     var downloadsChecked = _getAllChecked() || [];
-    var downloadIDs = [], downloadElements = {};
-    for (var i = 0; i < downloadsChecked.length; i++) {
-      downloadIDs.push(downloadsChecked[i].value);
+    var downloadItems = [], downloadElements = {};
+    var downloadList = [];
+    var total = downloadsChecked.length;
+    var multipleDelete = total > 1;
+    for (var i = 0; i < total; i++) {
+      downloadItems.push({
+        id: downloadsChecked[i].value,
+        force: multipleDelete
+      });
       downloadElements[downloadsChecked[i].value] =
         downloadsChecked[i].parentNode.parentNode;
+      if (multipleDelete) {
+        downloadList.push(downloadElements[downloadsChecked[i].value]);
+      }
     }
 
     function deletionDone() {
@@ -284,19 +306,29 @@
       _closeEditMode();
     }
 
-    DownloadApiManager.deleteDownloads(
-      downloadIDs,
-      function downloadsDeleted(downloadID) {
-        _removeDownloadsFromUI([downloadElements[downloadID]]);
-      },
-      function onError(downloadID, msg) {
-        console.warn('Could not delete ' + downloadID + ' : ' + msg);
-        deletionDone();
-      },
-      function onComplete() {
-        deletionDone();
-      }
-    );
+    function doDeleteDownloads() {
+      DownloadApiManager.deleteDownloads(
+        downloadItems,
+        function downloadsDeleted(downloadID) {
+          _removeDownloadsFromUI([downloadElements[downloadID]]);
+        },
+        function onError(downloadID, msg) {
+          console.warn('Could not delete ' + downloadID + ' : ' + msg);
+          deletionDone();
+        },
+        function onComplete() {
+          deletionDone();
+        }
+      );
+    }
+
+    if (multipleDelete) {
+      var req = DownloadUI.show(DownloadUI.TYPE.DELETE_ALL, downloadList);
+      req.onconfirm = doDeleteDownloads;
+      req.oncancel = deletionDone;
+    } else {
+      doDeleteDownloads();
+    }
   }
 
   function _removeDownloadsFromUI(elements) {

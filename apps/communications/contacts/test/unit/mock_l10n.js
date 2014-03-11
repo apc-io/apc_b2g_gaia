@@ -1,13 +1,21 @@
 window.realL10n = window.navigator.mozL10n;
 
 var MockMozL10n = window.navigator.mozL10n = {
+  language: {
+    code: 'en',
+    dir: 'ltr'
+  },
   get: function get(key, params) {
     var out = key;
 
     if (params) {
-      Object.keys(params).forEach(function(id) {
-        out += params[id];
-      });
+      if (key == 'itemWithLabel') {
+        out = params.label + ', ' + params.item;
+      } else {
+        Object.keys(params).forEach(function(id) {
+          out += params[id];
+        });
+      }
     }
 
     return out;

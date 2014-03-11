@@ -61,8 +61,18 @@ define(function(require) {
     **/
     folder: null,
 
+    /**
+     * emits an event based on a property value. Since the
+     * event is based on a property value that is on this
+     * object, *do not* use emitWhenListener, since, due to
+     * the possibility of queuing old values with that
+     * method, it could cause bad results (bug 971617), and
+     * it is not needed since the latest* methods will get
+     * the latest value on this object.
+     * @param  {String} id event ID/property name
+     */
     _callEmit: function(id) {
-      this.emitWhenListener(id, this[id]);
+      this.emit(id, this[id]);
     },
 
     inited: false,
@@ -199,12 +209,16 @@ define(function(require) {
     /**
      * Just changes the folder property tracked by the model.
      * Assumes the folder still belongs to the currently tracked
-     * account.
+     * account. It also does not result in any state changes or
+     * event emitting if the new folder is the same as the
+     * currently tracked folder.
      * @param  {Object} folder the folder object to use.
      */
     changeFolder: function(folder) {
-      this.folder = folder;
-      this._callEmit('folder');
+      if (folder && (!this.folder || folder.id !== this.folder.id)) {
+        this.folder = folder;
+        this._callEmit('folder');
+      }
     },
 
     /**

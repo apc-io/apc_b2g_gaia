@@ -1,5 +1,8 @@
 'use strict';
 
+/* global _, TonePlayer, LazyLoader, IccHelper, ConfirmDialog, LazyL10n */
+/* exported TelephonyHelper */
+
 var TelephonyHelper = (function() {
   var confirmLoaded = false;
 
@@ -11,39 +14,36 @@ var TelephonyHelper = (function() {
       return;
     }
 
-    // XXX: check bug-926169
-    // this is used to keep all tests passing while introducing multi-sim APIs
-    var conn = window.navigator.mozMobileConnection ||
-               window.navigator.mozMobileConnections &&
-               window.navigator.mozMobileConnections[0];
+    getConnection(function gotConnection(conn) {
+      if (!conn || !conn.voice) {
+        // No voice connection, the call won't make it
+        displayMessage('NoNetwork');
+        return;
+      }
 
-    if (!conn || !conn.voice) {
-      // No voice connection, the call won't make it
-      displayMessage('NoNetwork');
-      return;
-    }
+      var telephony = navigator.mozTelephony;
+      var openLines = telephony.calls.length +
+          (telephony.conferenceGroup.calls.length ? 1 : 0);
+      // User can make call only when there are less than 2 calls by spec.
+      // If the limit reached, return early to prevent holding active call.
+      if (openLines >= 2) {
+        displayMessage('UnableToCall');
+        return;
+      }
 
-    var telephony = navigator.mozTelephony;
-    var openLines = telephony.calls.length +
-        (telephony.conferenceGroup.calls.length ? 1 : 0);
-    // User can make call only when there are less than 2 calls by spec.
-    // If the limit reached, return early to prevent holding active call.
-    if (openLines >= 2) {
-      displayMessage('UnableToCall');
-      return;
-    }
-
-    var activeCall = telephony.active;
-    if (!activeCall) {
-      startDial(sanitizedNumber, oncall, onconnected, ondisconnected, onerror);
-      return;
-    }
-    activeCall.onheld = function activeCallHeld() {
-      delete activeCall.onheld;
-      startDial(
-        sanitizedNumber, oncall, onconnected, ondisconnected, onerror);
-    };
-    activeCall.hold();
+      var activeCall = telephony.active;
+      if (!activeCall) {
+        startDial(
+          conn, sanitizedNumber, oncall, onconnected, ondisconnected, onerror);
+        return;
+      }
+      activeCall.onheld = function activeCallHeld() {
+        activeCall.onheld = null;
+        startDial(
+          conn, sanitizedNumber, oncall, onconnected, ondisconnected, onerror);
+      };
+      activeCall.hold();
+    });
   };
 
   function notifyBusyLine() {
@@ -55,9 +55,11 @@ var TelephonyHelper = (function() {
                     [480, 620, 500], [0, 0, 500],
                     [480, 620, 500], [0, 0, 500]];
     TonePlayer.playSequence(sequence);
-  };
+  }
 
-  function startDial(sanitizedNumber, oncall, connected, disconnected, error) {
+  function startDial(
+    conn, sanitizedNumber, oncall, onconnected, ondisconnected, onerror) {
+
     var telephony = navigator.mozTelephony;
     if (!telephony) {
       return;
@@ -72,69 +74,121 @@ var TelephonyHelper = (function() {
     }
 
     LazyLoader.load('/shared/js/icc_helper.js', function() {
-      // XXX: check bug-926169
-      // this is used to keep all tests passing while introducing multi-sim APIs
-      var conn = window.navigator.mozMobileConnection ||
-                 window.navigator.mozMobileConnections &&
-                 window.navigator.mozMobileConnections[0];
-
       var cardState = IccHelper.cardState;
       var emergencyOnly = conn.voice.emergencyCallsOnly;
-      var call;
+      var hasCard = (conn.iccId !== null);
+      var promiseOrCall;
 
       // Note: no need to check for cardState null. While airplane mode is on
       // cardState is null and we handle that situation in call() above.
       if (((cardState === 'unknown') || (cardState === 'illegal')) &&
            (emergencyOnly === false)) {
-        error();
+        onerror();
         return;
       } else if (emergencyOnly) {
-        call = telephony.dialEmergency(sanitizedNumber);
+        // If the mobileConnection has a sim card we let gecko take the
+        // default service, otherwise we force the first slot.
+        var serviceId = hasCard ? undefined : 0;
+        promiseOrCall = telephony.dialEmergency(sanitizedNumber, serviceId);
       } else {
-        call = telephony.dial(sanitizedNumber);
+        promiseOrCall = telephony.dial(sanitizedNumber);
       }
 
-      if (call) {
-        if (oncall) {
-          oncall();
-        }
-        call.onconnected = connected;
-        call.ondisconnected = disconnected;
-        call.onerror = function errorCB(evt) {
-          if (error) {
-            error();
-          }
-
-          var errorName = evt.call.error.name;
-          if (errorName === 'BadNumberError') {
-            // If the call is rejected for a bad number and we're in emergency
-            // only mode, then just tell the user that they're not connected
-            // to a network. Otherwise, tell them the number is bad.
-            displayMessage(emergencyOnly ? 'NoNetwork' : 'BadNumber');
-          } else if (errorName === 'DeviceNotAcceptedError') {
-            displayMessage('DeviceNotAccepted');
-          } else if (errorName === 'RadioNotAvailable') {
-            displayMessage('FlightMode');
-          } else if (errorName === 'BusyError') {
-            notifyBusyLine();
-            displayMessage('NumberIsBusy');
-          } else if (errorName === 'FDNBlockedError') {
-            displayMessage('FixedDialingNumbers');
-          } else {
-            // If the call failed for some other reason we should still
-            // display something to the user. See bug 846403.
-            console.error('Unexpected error: ', errorName);
-          }
-        };
+      /* XXX: Temporary fix to handle old and new telephony API
+         To remove when bug 969218 lands */
+      if (promiseOrCall && promiseOrCall.then) {
+        promiseOrCall.then(function(call) {
+          installHandlers(call, emergencyOnly, oncall, onconnected,
+                          ondisconnected, onerror);
+        }).catch(function(errorName) {
+          handleError(errorName, emergencyOnly, onerror);
+        });
       } else {
-        displayMessage('UnableToCall');
+        installHandlers(promiseOrCall, emergencyOnly, oncall, onconnected,
+                        ondisconnected, onerror);
       }
     });
+  }
+
+  function installHandlers(call, emergencyOnly, oncall, onconnected,
+                           ondisconnected, onerror) {
+    if (call) {
+      if (oncall) {
+        oncall();
+      }
+      call.onconnected = onconnected;
+      call.ondisconnected = ondisconnected;
+      call.onerror = function errorCB(evt) {
+        var errorName = evt.call.error.name;
+        handleError(errorName, emergencyOnly, onerror);
+      };
+    } else {
+      displayMessage('UnableToCall');
+    }
+  }
+
+  function handleError(errorName, emergencyOnly, onerror) {
+    if (onerror) {
+      onerror();
+    }
+
+    if (errorName === 'BadNumberError') {
+      // If the call is rejected for a bad number and we're in emergency
+      // only mode, then just tell the user that they're not connected
+      // to a network. Otherwise, tell them the number is bad.
+      displayMessage(emergencyOnly ? 'NoNetwork' : 'BadNumber');
+    } else if (errorName === 'DeviceNotAcceptedError') {
+      displayMessage('DeviceNotAccepted');
+    } else if (errorName === 'RadioNotAvailable') {
+      displayMessage('FlightMode');
+    } else if (errorName === 'BusyError') {
+      notifyBusyLine();
+      displayMessage('NumberIsBusy');
+    } else if (errorName === 'FDNBlockedError' ||
+               errorName === 'FdnCheckFailure') {
+      displayMessage('FixedDialingNumbers');
+    } else {
+      // If the call failed for some other reason we should still
+      // display something to the user. See bug 846403.
+      console.error('Unexpected error: ', errorName);
+      displayMessage('UnableToCall');
+    }
   }
 
   var isValid = function t_isValid(sanitizedNumber) {
     var validExp = /^[0-9#+*]{1,50}$/;
     return validExp.test(sanitizedNumber);
+  };
+
+  var getConnection = function t_getConnection(callback) {
+    var conn = window.navigator.mozMobileConnection;
+    if (conn) {
+      callback(conn);
+      return;
+    }
+
+    var connections = navigator.mozMobileConnections;
+    var settings = navigator.mozSettings;
+    if (!settings || !connections) {
+      callback(null);
+      return;
+    }
+
+    if (connections.length === 1) {
+      callback(connections[0]);
+      return;
+    }
+
+    var req = settings.createLock().get('ril.telephony.defaultServiceId');
+
+    req.onsuccess = function getDefaultServiceId() {
+      var id = req.result['ril.telephony.defaultServiceId'] || 0;
+      callback(connections[id]);
+    };
+
+    req.onerror = function getDefaultServiceIdError() {
+      callback(null);
+    };
   };
 
   var loadConfirm = function t_loadConfirm(cb) {

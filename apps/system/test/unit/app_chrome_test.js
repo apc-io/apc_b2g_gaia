@@ -211,5 +211,4 @@ suite('system/AppChrome', function() {
     chrome1.handleOpened();
     assert.isTrue(stubToggleButtonBar.called);
   });
-
 });

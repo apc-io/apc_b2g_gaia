@@ -7,8 +7,12 @@ fb.PROPAGATED_PREFIX = 'fb_propagated_';
 // Types of URLs for FB Information
 fb.PROFILE_PHOTO_URI = 'fb_profile_photo';
 fb.FRIEND_URI = 'fb_friend';
+fb.DEFAULT_PHONE_TYPE = 'other';
+fb.DEFAULT_EMAIL_TYPE = 'other';
+ // This year indicates that the year can be ignored (yearless date)
+fb.FLAG_YEAR_IGNORED = 9996;
 
-fb.CONTACTS_APP_ORIGIN = 'app://communications.gaiamobile.org';
+fb.CONTACTS_APP_ORIGIN = location.origin;
 
 fb.isPropagated = function fcu_isPropagated(field, devContact) {
   return (devContact.category && devContact.category.
@@ -86,12 +90,10 @@ fb.friend2mozContact = function(f) {
   delete f.middle_name;
   delete f.first_name;
 
-  var privateType = 'personal';
-
   if (f.email) {
     f.email1 = f.email;
     f.email = [{
-                  type: [privateType],
+                  type: [fb.DEFAULT_EMAIL_TYPE],
                   value: f.email
     }];
   }
@@ -104,7 +106,7 @@ fb.friend2mozContact = function(f) {
     f.shortTelephone = [];
     f.phones.forEach(function(aphone) {
       f.tel.push({
-        type: [privateType],
+        type: [fb.DEFAULT_PHONE_TYPE],
         value: normalizeFbPhoneNumber(aphone)
       });
       // Enabling to find FB phones by short number
@@ -141,7 +143,7 @@ fb.getWorksAt = function(fbdata) {
   *
   */
 fb.getBirthDate = function getBirthDate(sbday) {
-  var out = new Date();
+  var out = new Date(0);
 
   var imonth = sbday.indexOf('/');
   var smonth = sbday.substring(0, imonth);
@@ -160,6 +162,15 @@ fb.getBirthDate = function getBirthDate(sbday) {
   if (syear && syear.length > 0) {
     out.setUTCFullYear(parseInt(syear, 10));
   }
+  else {
+    // 9996 is the year that flags a not known year
+    out.setUTCFullYear(fb.FLAG_YEAR_IGNORED);
+  }
+
+  out.setUTCHours(0);
+  out.setUTCMinutes(0);
+  out.setUTCSeconds(0);
+  out.setUTCMilliseconds(0);
 
   return out;
 };

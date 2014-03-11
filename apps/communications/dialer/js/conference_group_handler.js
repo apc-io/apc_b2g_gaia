@@ -18,10 +18,11 @@ var ConferenceGroupHandler = (function() {
   var telephony = window.navigator.mozTelephony;
   telephony.conferenceGroup.oncallschanged = onCallsChanged;
   telephony.conferenceGroup.onstatechange = onStateChange;
+  telephony.conferenceGroup.onerror = onConferenceError;
 
   function onCallsChanged() {
     var calls = telephony.conferenceGroup.calls;
-    CallScreen.updateSingleLine();
+    CallScreen.updateCallsDisplay();
     if (!calls.length) {
       CallScreen.hideGroupDetails();
     }
@@ -79,5 +80,17 @@ var ConferenceGroupHandler = (function() {
         CallsHandler.checkCalls();
         break;
     }
+  }
+
+  function onConferenceError(evt) {
+    LazyL10n.get(function localized(_) {
+      var errorMsg;
+      if (evt.name == 'addError') {
+        errorMsg = _('conferenceAddError');
+      } else {
+        errorMsg = _('conferenceRemoveError');
+      }
+      CallScreen.showStatusMessage(errorMsg);
+    });
   }
 })();

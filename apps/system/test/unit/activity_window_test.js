@@ -15,8 +15,7 @@ requireApp('system/shared/test/unit/mocks/mock_screen_layout.js');
 
 var mocksForActivityWindow = new MocksHelper([
   'OrientationManager', 'Applications', 'SettingsListener',
-  'ManifestHelper', 'LayoutManager', 'AttentionScreen',
-  'ScreenLayout'
+  'ManifestHelper', 'LayoutManager', 'AttentionScreen'
 ]).init();
 
 suite('system/ActivityWindow', function() {
@@ -31,6 +30,18 @@ suite('system/ActivityWindow', function() {
     'origin': 'app://fakeact.gaiamobile.org',
     'manifest': {
       'name': 'Fake Activity'
+    }
+  };
+
+  var fakeConfigWithOrientation = {
+    'url': 'app://fakeact.gaiamobile.org/pick.html',
+    'oop': true,
+    'name': 'Fake Activity',
+    'manifestURL': 'app://fakeact.gaiamobile.org/manifest.webapp',
+    'origin': 'app://fakeact.gaiamobile.org',
+    'manifest': {
+      'name': 'Fake Activity',
+      'orientation': 'landscape'
     }
   };
 
@@ -50,7 +61,7 @@ suite('system/ActivityWindow', function() {
   });
 
   suite('activity window instance.', function() {
-    var app, appF;
+    var app, appF, appOrientationUndefined;
     setup(function() {
       app = new AppWindow({
         iframe: document.createElement('iframe'),
@@ -75,16 +86,34 @@ suite('system/ActivityWindow', function() {
           fullscreen: true
         }
       });
+      appOrientationUndefined = new AppWindow({
+        iframe: document.createElement('iframe'),
+        frame: document.createElement('div'),
+        origin: 'http://fake',
+        url: 'http://fakeurl/index.html',
+        manifestURL: 'http://fakemanifesturl',
+        name: 'fake',
+        manifest: {
+        }
+      });
     });
     teardown(function() {
+    });
+
+    test('Render activity inside its caller', function() {
+      var activity = new ActivityWindow(fakeConfig, app);
+      assert.deepEqual(activity.containerElement, app.element);
     });
 
     test('handleEvent: closing activity', function() {
       var activity = new ActivityWindow(fakeConfig, app);
       var stubRestoreCaller = this.sinon.stub(activity, 'restoreCaller');
+      var spy = this.sinon.spy();
       activity.handleEvent({
-        type: '_closing'
+        type: '_closing',
+        stopPropagation: spy
       });
+      assert.isTrue(spy.called);
       assert.isTrue(stubRestoreCaller.called);
     });
 
@@ -92,11 +121,32 @@ suite('system/ActivityWindow', function() {
       var activity = new ActivityWindow(fakeConfig, app);
       var stubIsOOP = this.sinon.stub(app, 'isOOP');
       var stubSetVisible = this.sinon.stub(app, 'setVisible');
+      var spy = this.sinon.spy();
       stubIsOOP.returns(false);
       activity.handleEvent({
-        type: '_opened'
+        type: '_opened',
+        stopPropagation: spy
       });
+      assert.isTrue(spy.called);
       assert.isTrue(stubSetVisible.calledWith(false, true));
+    });
+
+    test('requestOpen', function() {
+      var activity = new ActivityWindow(fakeConfig, app);
+      var fakeAppConfig = {
+        url: 'app://www.fake/index.html',
+        manifest: {},
+        manifestURL: 'app://wwww.fake/ManifestURL',
+        origin: 'app://www.fake'
+      };
+      var app = new AppWindow(fakeAppConfig);
+      activity.activityCaller = app;
+      app.activityCallee = activity;
+      var stubRequestOpen = this.sinon.stub(app, 'requestOpen');
+
+      activity.requestOpen();
+
+      assert.isTrue(stubRequestOpen.calledOnce);
     });
 
     test('copy fullscreen from caller', function() {
@@ -189,6 +239,60 @@ suite('system/ActivityWindow', function() {
       var stubSetOrientation2 = this.sinon.stub(activity2, 'setOrientation');
       app.setOrientation();
       assert.isTrue(stubSetOrientation2.called);
+    });
+
+    test('Activity set orientation use config', function() {
+      var activity = new ActivityWindow(fakeConfigWithOrientation,
+                                        appOrientationUndefined);
+      var stubIsActive = this.sinon.stub(activity, 'isActive');
+      stubIsActive.returns(true);
+      var stubLockOrientation;
+      if ('lockOrientation' in screen) {
+        stubLockOrientation = this.sinon.stub(screen, 'lockOrientation');
+      } else if ('mozLockOrientation' in screen) {
+        stubLockOrientation = this.sinon.stub(screen, 'mozLockOrientation');
+      }
+      activity.setOrientation();
+      assert.isTrue(stubLockOrientation.calledWith('landscape'));
+    });
+
+    test('Activity set orientation use callee', function() {
+      var activity = new ActivityWindow(fakeConfig, app);
+      var stubIsActive = this.sinon.stub(activity, 'isActive');
+      stubIsActive.returns(true);
+      var stubLockOrientation;
+      if ('lockOrientation' in screen) {
+        stubLockOrientation = this.sinon.stub(screen, 'lockOrientation');
+      } else if ('mozLockOrientation' in screen) {
+        stubLockOrientation = this.sinon.stub(screen, 'mozLockOrientation');
+      }
+      activity.setOrientation();
+      assert.isTrue(stubLockOrientation.calledWith('default'));
+    });
+
+    test('Activity setOrientation use global orientation', function() {
+      var activity = new ActivityWindow(fakeConfig, appOrientationUndefined);
+      var stubIsActive = this.sinon.stub(activity, 'isActive');
+      stubIsActive.returns(true);
+      var stubLockOrientation;
+      if ('lockOrientation' in screen) {
+        stubLockOrientation = this.sinon.stub(screen, 'lockOrientation');
+      } else if ('mozLockOrientation' in screen) {
+        stubLockOrientation = this.sinon.stub(screen, 'mozLockOrientation');
+      }
+      activity.setOrientation();
+      assert.isTrue(stubLockOrientation.calledWith('portrait-primary'));
+    });
+
+    test('Activity should stop event propagation', function() {
+      var activity = new ActivityWindow(fakeConfig, appOrientationUndefined);
+      var spy = this.sinon.spy();
+      activity.handleEvent({
+        type: 'mozbrowserloadend',
+        stopPropagation: spy,
+        detail: {}
+      });
+      assert.isTrue(spy.called);
     });
   });
 });

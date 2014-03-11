@@ -2,17 +2,19 @@
   display: none;
 }
 
-#screen.utility-tray > #utility-tray {
-  visibility: visible;
-}
-
 #utility-tray {
   position: absolute;
   top: calc(-100% + 4rem);
   width: calc(100%);
   height: calc(100% - 2rem);
   background-color: rgba(0, 0, 0, 0.7);
+
+  transform: translateY(-4rem);
   visibility: hidden;
+}
+
+.utility-tray #utility-tray {
+  visibility: visible;
 }
 
 #utility-tray-grippy {

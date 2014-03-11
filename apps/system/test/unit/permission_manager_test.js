@@ -7,7 +7,6 @@ require('/shared/test/unit/mocks/mock_lazy_loader.js');
 requireApp('system/test/unit/mock_l10n.js');
 requireApp('system/js/permission_manager.js');
 
-
 function sendChromeEvent(evt_type, evt_permission) {
   var permissions = {};
   permissions[evt_permission] = [''];
@@ -63,6 +62,7 @@ suite('system/permission manager', function() {
       PermissionManager.overlay = document.createElement('div');
       PermissionManager.rememberSection = document.createElement('div');
       PermissionManager.devices = document.createElement('div');
+      PermissionManager.moreInfoBox = document.createElement('div');
       stubPrompt = this.sinon.stub(PermissionManager, 'handlePermissionPrompt');
 
       sendChromeEvent('permission-prompt', 'test');
@@ -286,6 +286,41 @@ suite('system/permission manager', function() {
     test('permission id matched', function() {
       assert.isTrue(spyReq.calledWithMatch('test', 'geolocation',
         sinon.match.string, 'perm-geolocation-more-info'));
+    });
+  });
+
+// bug 952244 compatibility with old audio permission
+  suite('compatibility with old audio detail.permission', function() {
+    var spyReq;
+    setup(function() {
+      PermissionManager.overlay = document.createElement('div');
+      PermissionManager.devices = document.createElement('div');
+      PermissionManager.remember = document.createElement('div');
+      PermissionManager.rememberSection = document.createElement('div');
+      spyReq = this.sinon.spy(PermissionManager, 'requestPermission');
+
+      var detail = {'type': 'permission-prompt',
+                'permission': 'audio-capture',
+                'origin': 'test', 'isApp': false };
+      var evt = new CustomEvent('mozChromeEvent', { detail: detail });
+      window.dispatchEvent(evt);
+    });
+
+    teardown(function() {
+      spyReq.restore();
+      PermissionManager.overlay = null;
+      PermissionManager.devices = null;
+      PermissionManager.remember = null;
+      PermissionManager.rememberSection = null;
+    });
+
+    test('permission id matched', function() {
+      assert.isTrue(spyReq.calledWithMatch('test', 'audio-capture',
+        sinon.match.string, 'perm-audio-capture-more-info'));
+    });
+
+    test('not show remember my choice option', function() {
+      assert.equal(PermissionManager.rememberSection.style.display, 'none');
     });
   });
 

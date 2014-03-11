@@ -8,16 +8,28 @@ module.exports = function(grunt) {
       docs: ['docs/']
     },
     jsdoc: {
-      system : {
-        src: ['README.md', 'apps/system/js/**.js',
+      system: {
+        src: ['apps/system/js/**/*.js',
               '!apps/system/js/airplane_mode.js',
-              '!apps/system/js/sound_manager.js'],
+              '!apps/system/js/sound_manager.js',
+              '!apps/system/js/title.js',
+              '!apps/system/js/value_selector/date_picker.js',
+              '!apps/system/js/value_selector/spin_date_picker.js',
+              '!apps/system/js/lockscreen.js'],
         options: {
           destination: 'docs/system'
         }
       },
+      keyboard: {
+        src: ['apps/keyboard/js/**/*.js',
+              '!apps/keyboard/js/render.js'],
+        options: {
+          destination: 'docs/keyboard'
+        }
+      },
       options: {
-        configure: '.jsdocrc'
+        configure: '.jsdocrc',
+        lenient: true
       }
     }
   });

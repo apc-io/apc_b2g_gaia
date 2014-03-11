@@ -2,9 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+from marionette import Wait
 from marionette.by import By
-from marionette.keys import Keys
-from marionette.marionette import Actions
+from marionette.errors import StaleElementException
+from marionette.errors import NoSuchElementException
 
 from gaiatest.apps.base import Base
 from gaiatest.apps.base import PageRegion
@@ -23,21 +24,21 @@ class SearchPanel(Base):
     def type_into_search_box(self, search_term):
         self.keyboard.send(search_term)
         self.keyboard.tap_enter()
-
-        self.wait_for_condition(lambda m: self.marionette.find_element(*self._search_title_query_locator).text.lower() ==
-                                search_term.lower())
-
+        Wait(self.marionette, ignored_exceptions=StaleElementException).until(
+            lambda m: m.find_element(*self._search_title_query_locator).text.lower() == search_term.lower())
         self.wait_for_element_displayed(*self._search_title_first_word_locator)
 
     def wait_for_everything_me_loaded(self):
         self.wait_for_condition(
-            lambda m: 'evme-loading' not in self.marionette.find_element(*self._body).get_attribute('class'))
+            lambda m: 'evme-loading' not in m.find_element(
+                *self._body).get_attribute('class'))
 
     def wait_for_everything_me_results_to_load(self):
         self.wait_for_element_displayed(*self._search_results_from_everything_me_locator)
 
     def wait_for_type(self, type):
-        self.wait_for_condition(lambda m: type.lower() in self.marionette.find_element(*self._search_title_type_locator).text.lower())
+        Wait(self.marionette, ignored_exceptions=[StaleElementException, NoSuchElementException]).until(
+            lambda m: type.lower() in m.find_element(*self._search_title_type_locator).text.lower())
 
     def wait_for_app_icons_displayed(self):
         self.wait_for_element_displayed(*self._app_icon_locator)
@@ -67,10 +68,10 @@ class SearchPanel(Base):
             self.root_element.tap()
             # Wait for the displayed app to be that we have tapped
             self.wait_for_condition(lambda m: self.apps.displayed_app.name == app_name)
-            self.marionette.switch_to_frame(self.apps.displayed_app.frame)
+            self.apps.switch_to_displayed_app()
 
             # Wait for title to load (we cannot be more specific because the aut may change)
-            self.wait_for_condition(lambda m: m.title)
+            self.wait_for_condition(lambda m: bool(m.title))
 
     class InstalledApp(PageRegion):
 
@@ -81,6 +82,6 @@ class SearchPanel(Base):
         def tap(self):
             expected_name = self.name
             self.root_element.tap()
-            self.wait_for_condition(
+            Wait(self.marionette, ignored_exceptions=StaleElementException).until(
                 lambda m: self.apps.displayed_app.name.lower() == expected_name.lower())
-            self.marionette.switch_to_frame(self.apps.displayed_app.frame)
+            self.apps.switch_to_displayed_app()

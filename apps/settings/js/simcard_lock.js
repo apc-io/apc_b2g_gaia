@@ -1,6 +1,6 @@
 /* -*- Mode: js; js-indent-level: 2; indent-tabs-mode: nil -*- */
 /* vim: set shiftwidth=2 tabstop=2 autoindent cindent expandtab: */
-/* global Template, SimPinDialog, SimPinLock, SettingsListener */
+/* global Template, SimPinDialog, SimPinLock, Toaster */
 
 'use strict';
 
@@ -46,7 +46,7 @@
       //
       // In this way, we have to make sure users can go back to the
       // right panel.
-      if (this.conns.length == 1) {
+      if (this.isSingleSim()) {
         this.simPinBackButton.setAttribute('href', '#root');
       } else {
         this.simPinBackButton.setAttribute('href', '#sim-manager');
@@ -56,10 +56,17 @@
       var simPinHTMLs = [];
 
       Array.prototype.forEach.call(this.conns, function(conn, index) {
+        var simPinIndex = index + 1;
+
+        if (this.isSingleSim()) {
+          simPinIndex = '';
+        }
+
         simPinHTMLs.push(
           this.simPinTemplate.interpolate({
             'sim-index': index.toString(),
-            'sim-name': _('simPinWithIndex', { 'index': index + 1 })
+            'sim-name': _('simPinWithIndex', { 'index': simPinIndex }),
+            'change-sim-label': _('changeSimPin')
           })
         );
       }.bind(this));
@@ -105,10 +112,19 @@
         this.updateSimPinUI(cardIndex);
       }.bind(this));
     },
+    updateSimSecurityDescUI: function(enabled) {
+      window.navigator.mozL10n.localize(this.simSecurityDesc, enabled ?
+        'enabled' : 'disabled');
+      this.simSecurityDesc.dataset.l10nId = enabled ? 'enabled' : 'disabled';
+    },
     handleEvent: function(evt) {
       var target = evt.target;
       var cardIndex = target.dataset && target.dataset.simIndex;
       var type = target.dataset && target.dataset.type;
+      var self = this;
+
+      // We need number type
+      cardIndex = parseInt(cardIndex, 10);
 
       switch (type) {
         case 'checkSimPin':
@@ -119,7 +135,26 @@
           // TODO:
           // remember to update SimPinDialog for DSDS structure
           this.simPinDialog.show('change_pin', {
-            cardIndex: cardIndex
+            cardIndex: cardIndex,
+            // show toast after user successfully change pin
+            onsuccess: function toastOnSuccess() {
+              var toast;
+              if (self.isSingleSim()) {
+                toast = {
+                  messageL10nId: 'simPinChangedSuccessfully',
+                  latency: 3000,
+                  useTransition: true
+                };
+              } else {
+                toast = {
+                  messageL10nId: 'simPinChangedSuccessfullyWithIndex',
+                  messageL10nArgs: {'index': cardIndex + 1},
+                  latency: 3000,
+                  useTransition: true
+                };
+              }
+              Toaster.showToast(toast);
+            }
           });
           break;
       }
@@ -139,6 +174,7 @@
               // successful unlock puk will be in simcard lock enabled state
               checkbox.checked = true;
               self.updateSimPinUI(cardIndex);
+              self.updateSimSecurityDescUI(true);
             },
             oncancel: function() {
               checkbox.checked = !enabled;
@@ -151,6 +187,7 @@
           this.simPinDialog.show(action, {
             cardIndex: cardIndex,
             onsuccess: function() {
+              self.updateSimSecurityDescUI(enabled);
               self.updateSimPinUI(cardIndex);
             },
             oncancel: function() {
@@ -169,6 +206,7 @@
       this.simSecurityDesc = document.getElementById('simCardLock-desc');
     },
     addIccDetectedEvent: function() {
+      var self = this;
       // if there is a change that icc instance is available
       // we can update its cardstatus to make it reflect the
       // real world.
@@ -187,6 +225,7 @@
       });
     },
     addIccUndetectedEvent: function() {
+      var self = this;
       // if there is a change that icc instance is not available
       // we have to update all cards' status
       this.iccManager.addEventListener('iccundetected', function(evt) {
@@ -227,6 +266,9 @@
         }
       }
       return cardIndex;
+    },
+    isSingleSim: function() {
+      return this.conns.length == 1;
     }
   };
 

@@ -1336,16 +1336,16 @@ ActiveSyncFolderConn.prototype = {
       }
     }
 
-    body.bodyReps = [mailRep.makeBodyPart({
-      type: bodyType,
-      sizeEstimate: bodySize,
-      amountDownloaded: 0,
-      isDownloaded: false
-    })];
-
     // If this is an add, then these are new structures so we need to normalize
     // them.
     if (isAdded) {
+      body.bodyReps = [mailRep.makeBodyPart({
+        type: bodyType,
+        sizeEstimate: bodySize,
+        amountDownloaded: 0,
+        isDownloaded: false
+      })];
+
       return {
         header: mailRep.makeHeaderInfo(header),
         body: mailRep.makeBodyInfo(body)
@@ -1910,7 +1910,7 @@ ActiveSyncFolderSyncer.prototype = {
 
   initialSync: function(slice, initialDays, syncCallback,
                         doneCallback, progressCallback) {
-    syncCallback('sync', false, true);
+    syncCallback('sync', true /* Ignore Headers */);
     this.folderConn.sync(
       $date.NOW(),
       this.onSyncCompleted.bind(this, doneCallback, true),

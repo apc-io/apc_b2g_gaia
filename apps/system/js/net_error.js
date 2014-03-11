@@ -1,7 +1,55 @@
-'use strict';
-(function(window) {
+(function(exports) {
+  'use strict';
+
+  /**
+   * Return the current application object
+   */
+  var _app;
+  function getAppObject(cb) {
+    if (_app) {
+      cb(_app);
+      return;
+    }
+
+    var request = navigator.mozApps.getSelf();
+    request.onsuccess = function() {
+      cb(request.result);
+    };
+    request.onerror = function() {
+      console.warn('about:netError error fetching app: ' + request.error.name);
+      cb();
+    };
+  }
+
+  /**
+   * Check if net_error is coming from within an iframe
+   */
   function isFramed() {
-    return window !== window.parent;
+    var error = getErrorFromURI();
+    var manifestURL = error.m;
+
+    // frame type values (regular, browser, app)
+    var frameType = error.f;
+    switch (frameType) {
+
+      // if we are in a "regular" frame, we are indeed framed
+      case 'regular':
+        return true;
+
+      // if we are an "app" frame, we are not framed
+      case 'app':
+        return false;
+
+      // If we are in a "browser" frame, we are either in a browser tab
+      // or a mozbrowser iframe within in app. Since browser tabs are
+      // considered unframed, we must perform a check here to distinguish
+      // between the two cases.
+      case 'browser':
+        return manifestURL !== window.BROWSER_MANIFEST;
+
+      default:
+        throw new Error('about:netError: invalid frame type - ' + frameType);
+    }
   }
 
   /**
@@ -10,7 +58,7 @@
   function addFrameHandlers() {
     document.body.onclick = function bodyClick() {
       document.getElementById('retry-icon').classList.remove('still');
-      window.location.reload(true);
+      NetError.reload(true);
     };
   }
 
@@ -29,9 +77,23 @@
     if (retryBtn) {
       retryBtn.onclick = function retryClick(evt) {
         evt.preventDefault();
-        window.location.reload(true);
+        NetError.reload(true);
       };
     }
+  }
+
+  /**
+   * Retrieve the application name, if we are not in the context
+   * of an app simply return the URI
+   */
+  function getAppName(cb) {
+    getAppObject(function(app) {
+      if (app && app.manifest.name) {
+        cb(app.manifest.name);
+      } else {
+        cb(location.protocol + '//' + location.host);
+      }
+    });
   }
 
   /**
@@ -65,8 +127,12 @@
       break;
 
       default: {
+        // When we're a browser iframe used for generic content we'll use
+        // the default error message from gecko for all errors that are
+        // not directly dealt with.
         localizeElement(title, 'unable-to-connect');
-        localizeElement(message, 'tap-to-retry');
+        // The error message is already localized. Set it directly.
+        message.textContent = error.d;
       }
     }
   }
@@ -89,17 +155,21 @@
       break;
 
       case 'netOffline': {
-        localizeElement(title, 'network-connection-unavailable');
-        localizeElement(message, 'network-error', {
-          name: location.protocol + '//' + location.host
+        getAppName(function(appName) {
+          localizeElement(title, 'network-connection-unavailable');
+          localizeElement(message, 'network-error', {
+            name: appName
+          });
         });
       }
       break;
 
       default: {
-        localizeElement(title, 'network-connection-unavailable');
-        localizeElement(message, 'network-error', {
-          name: location.protocol + '//' + location.host
+        getAppName(function(appName) {
+          // Same thing when we're an iframe for an application.
+          localizeElement(title, 'unable-to-connect');
+          // The error message is already localized. Set it directly.
+          message.textContent = error.d;
         });
       }
     }
@@ -110,6 +180,13 @@
    */
   function applyFrameStyle() {
     document.body.classList.add('framed');
+  }
+
+  /**
+   * Sets the error type for this page
+   */
+  function applyCommonStyles() {
+    document.body.classList.add(getErrorFromURI().e);
   }
 
   /**
@@ -129,28 +206,57 @@
    * m - Manifest URI of the application that generated the error.
    * c - Character set for default gecko error message (eg. 'UTF-8').
    * d - Default gecko error message.
+   * f - The frame type ("regular", "browser", "app")
    */
+  var _error;
   function getErrorFromURI() {
-    var error = {};
+    if (_error) {
+      return _error;
+    }
+    _error = {};
     var uri = document.documentURI;
 
     // Quick check to ensure it's the URI format we're expecting.
     if (!uri.startsWith('about:neterror?')) {
       // A blank error will generate the default error message (no network).
-      return error;
+      return _error;
     }
 
     // Small hack to get the URL object to parse the URI correctly.
     var url = new URL(uri.replace('about:', 'http://'));
 
     // Set the error attributes.
-    ['e', 'u', 'm', 'c', 'd'].forEach(
+    ['e', 'u', 'm', 'c', 'd', 'f'].forEach(
       function(v) {
-        error[v] = url.searchParams.get(v);
+        _error[v] = url.searchParams.get(v);
       }
     );
 
-    return error;
+    return _error;
+  }
+
+  /*
+   * This method reloads the window if the device is online and in the
+   * foreground
+   */
+  function checkConnection() {
+    if (navigator.onLine && !document.hidden &&
+        !document.body.classList.contains('hidden')) {
+      document.body.classList.add('hidden');
+      NetError.reload(true);
+      window.addEventListener('offline', function onOffline() {
+        window.removeEventListener('offline', onOffline);
+        document.body.classList.remove('hidden');
+      });
+    }
+  }
+
+  function addConnectionHandlers() {
+    var error = getErrorFromURI();
+    if (error.e === 'netOffline') {
+      document.addEventListener('visibilitychange', checkConnection);
+      window.addEventListener('online', checkConnection);
+    }
   }
 
   /**
@@ -161,6 +267,8 @@
     // in a top level app (hosted/bookmarked), or an iFrame.
     // We need to display different information/user flows
     // based on these states.
+    applyCommonStyles();
+
     if (isFramed()) {
       applyFrameStyle();
       populateFrameMessages();
@@ -170,7 +278,19 @@
       populateAppMessages();
       addAppHandlers();
     }
+
+    addConnectionHandlers();
   }
 
   navigator.mozL10n.ready(initPage);
+
+  var NetError = {
+    init: initPage,
+
+    reload: function reload(forcedReload) {
+      window.location.reload(forcedReload);
+    }
+  };
+
+  exports.NetError = NetError;
 }(this));

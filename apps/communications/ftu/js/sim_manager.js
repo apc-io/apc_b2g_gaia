@@ -1,3 +1,6 @@
+/* global UIManager, MobileOperator, Navigation, utils,
+          ConfirmDialog, SimContactsImporter */
+
 'use strict';
 
 var SimManager = (function() {
@@ -18,6 +21,24 @@ var SimManager = (function() {
     }
   };
 
+  /*
+   * Update ui element with a retry count message for the given sim
+   */
+  function showRetryCount(icc, lockType, uiElement) {
+    var request = icc.mozIcc.getCardLockRetryCount(lockType);
+    request.onsuccess = function() {
+      var retryCount = request.result.retryCount;
+      if (retryCount) {
+        var l10nArgs = {n: retryCount};
+        uiElement.textContent = _('inputCodeRetriesLeft', l10nArgs);
+        uiElement.classList.remove('hidden');
+      }
+    };
+    request.onerror = function() {
+      console.error('Could not fetch CardLockRetryCount', request.error.name);
+    };
+  }
+
   var _;
 
   // mozIcc.cardState values for a locked SIM
@@ -27,6 +48,8 @@ var SimManager = (function() {
   return {
   icc0: null,
   icc1: null,
+  simSlots: window.navigator.mozMobileConnections ?
+    window.navigator.mozMobileConnections.length : 0,
 
   // track the SIM that is currently being unlocked
   _unlockingIcc: null,
@@ -65,6 +88,10 @@ var SimManager = (function() {
     var l10nArgs = {n: data.retryCount};
     switch (data.lockType) {
       case 'pin':
+        if (data.retryCount === 0) {
+          this.showPukScreen(this._unlockingIcc);
+          break;
+        }
         UIManager.pinInput.value = '';
         UIManager.pinInput.classList.add('onerror');
         UIManager.pinError.textContent = _('pinError');
@@ -132,7 +159,7 @@ var SimManager = (function() {
     } else if (this.mobConn[1] && iccId === this.mobConn[1].iccId) {
       this.icc1 = new Icc(iccInfo);
     } else {
-      console.warn('ICC detected in unsupported slot', iccID);
+      console.warn('ICC detected in unsupported slot', iccId);
     }
   },
 
@@ -147,7 +174,7 @@ var SimManager = (function() {
   *   'serviceProviderLocked',
   *   'ready'.
   */
-  handleCardState: function sm_handleCardState(callback) {
+  handleCardState: function sm_handleCardState(callback, skipUnlockScreen) {
     // used to track which SIM's PIN unlock
     // screen we are currently displaying
     this._unlockingIcc = null;
@@ -157,9 +184,9 @@ var SimManager = (function() {
       this.finishCallback = callback;
     }
 
-    if (this.shouldShowUnlockScreen(this.icc0)) {
+    if (this.shouldShowUnlockScreen(this.icc0) && !skipUnlockScreen) {
       this.showUnlockScreen(this.icc0);
-    } else if (this.shouldShowUnlockScreen(this.icc1)) {
+    } else if (this.shouldShowUnlockScreen(this.icc1) && !skipUnlockScreen) {
       this.showUnlockScreen(this.icc1);
     } else if (this.shouldShowSIMInfoScreen()) {
       // reset skipped states so if we navigate back
@@ -167,6 +194,7 @@ var SimManager = (function() {
       this.resetSkipped();
       this.showSIMInfoScreen();
     } else {
+      this.resetSkipped();
       this.finish();
     }
   },
@@ -212,7 +240,6 @@ var SimManager = (function() {
       default:
         throw new Error('Cannot show SIM unlock screen, unknown cardState ' +
                         icc.mozIcc.cardState);
-        break;
     }
   },
 
@@ -271,14 +298,7 @@ var SimManager = (function() {
   },
 
   showPinScreen: function sm_showPinScreen(icc) {
-    icc.mozIcc.getCardLockRetryCount('pin', function(retryCount) {
-      if (retryCount) {
-        var l10nArgs = {n: retryCount};
-        UIManager.pinRetriesLeft.textContent = _('inputCodeRetriesLeft',
-                                                 l10nArgs);
-        UIManager.pinRetriesLeft.classList.remove('hidden');
-      }
-    });
+    showRetryCount(icc, 'pin', UIManager.pinRetriesLeft);
     // Button management
     UIManager.unlockSimButton.disabled = true;
     UIManager.pinInput.addEventListener('input', function sm_checkInput(event) {
@@ -289,34 +309,34 @@ var SimManager = (function() {
     UIManager.unlockSimScreen.classList.add('show');
     UIManager.pincodeScreen.classList.add('show');
     UIManager.xckcodeScreen.classList.remove('show');
-    var simNumber = icc === this.icc0 ? 1 : 2;
-    UIManager.unlockSimHeader.textContent = _('pincodeTitle',
-                                              {n: simNumber});
-    UIManager.pinLabel.textContent = _('pincodeLabel',
-                                       {n: simNumber});
+
+    UIManager.unlockSimHeader.textContent = _('pincode2');
+    var pincodeLabel = _('type_pin');
+    if (this.simSlots > 1) {
+      var simNumber = icc === this.icc0 ? 1 : 2;
+      pincodeLabel = _('pincodeLabel', {n: simNumber});
+    }
+    UIManager.pinLabel.textContent = pincodeLabel;
     UIManager.pinInput.focus();
   },
 
   showPukScreen: function sm_showPukScreen(icc) {
-    icc.mozIcc.getCardLockRetryCount('puk', function(retryCount) {
-      if (retryCount) {
-        var l10nArgs = {n: retryCount};
-        UIManager.pukRetriesLeft.textContent = _('inputCodeRetriesLeft',
-                                                 l10nArgs);
-        UIManager.pukRetriesLeft.classList.remove('hidden');
-      }
-    });
+    showRetryCount(icc, 'puk', UIManager.pukRetriesLeft);
 
     UIManager.unlockSimScreen.classList.add('show');
     UIManager.activationScreen.classList.remove('show');
     UIManager.pincodeScreen.classList.remove('show');
     UIManager.pukcodeScreen.classList.add('show');
     UIManager.xckcodeScreen.classList.remove('show');
-    var simNumber = icc === this.icc0 ? 1 : 2;
-    UIManager.unlockSimHeader.textContent = _('pukcodeTitle',
-                                              {n: simNumber});
-    UIManager.pukLabel.textContent = _('pukcodeLabel',
-                                       {n: simNumber});
+
+    UIManager.unlockSimHeader.textContent = _('pukcode');
+    var pukcodeLabel = _('type_puk');
+    if (this.simSlots > 1) {
+      var simNumber = icc === this.icc0 ? 1 : 2;
+      pukcodeLabel = _('pukcodeLabel', {n: simNumber});
+    }
+    UIManager.pukLabel.textContent = pukcodeLabel;
+
     UIManager.pukInput.focus();
   },
 
@@ -337,14 +357,7 @@ var SimManager = (function() {
         return; // We shouldn't be here.
     }
 
-    icc.mozIcc.getCardLockRetryCount(lockType, function(retryCount) {
-      if (retryCount) {
-        var l10nArgs = {n: retryCount};
-        UIManager.xckRetriesLeft.textContent = _('inputCodeRetriesLeft',
-                                                 l10nArgs);
-        UIManager.xckRetriesLeft.classList.remove('hidden');
-      }
-    });
+    showRetryCount(icc, lockType, UIManager.xckRetriesLeft);
 
     UIManager.unlockSimScreen.classList.add('show');
     UIManager.activationScreen.classList.remove('show');
@@ -363,13 +376,13 @@ var SimManager = (function() {
       case 'corporateLocked':
         UIManager.unlockSimHeader.textContent = _('cckcodeTitle',
                                                   {n: simNumber});
-        UIManager.xckLabel.textContent = _('cckcodeTitle',
+        UIManager.xckLabel.textContent = _('cckcodeLabel',
                                            {n: simNumber});
         break;
       case 'serviceProviderLocked':
         UIManager.unlockSimHeader.textContent = _('spckcodeTitle',
                                                   {n: simNumber});
-        UIManager.xckLabel.textContent = _('spckcodeTitle',
+        UIManager.xckLabel.textContent = _('spckcodeLabel',
                                            {n: simNumber});
         break;
     }
@@ -478,6 +491,13 @@ var SimManager = (function() {
 
     UIManager.confirmNewpinInput.classList.remove('onerror');
     UIManager.confirmNewpinError.classList.add('hidden');
+
+    UIManager.pinError.classList.add('hidden');
+    UIManager.pinRetriesLeft.classList.add('hidden');
+    UIManager.pukError.classList.add('hidden');
+    UIManager.pukRetriesLeft.classList.add('hidden');
+    UIManager.xckError.classList.add('hidden');
+    UIManager.xckRetriesLeft.classList.add('hidden');
   },
 
   unlockPuk: function sm_unlockPuk(icc) {
