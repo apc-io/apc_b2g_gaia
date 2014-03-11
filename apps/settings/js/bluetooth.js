@@ -283,8 +283,7 @@ navigator.mozL10n.ready(function bluetoothSettings() {
       disconnectOpt: document.getElementById('disconnect-option'),
       unpairOpt: document.getElementById('unpair-option'),
       confirmDlg: document.getElementById('unpair-device'),
-      confirmOpt: document.getElementById('unpair-confirm-option'),
-      cancelOpt: document.getElementById('cancel-option'),
+      confirmOpt: document.getElementById('confirm-option'),
 
       showActions: function showActions() {
         var self = this;
@@ -312,13 +311,12 @@ navigator.mozL10n.ready(function bluetoothSettings() {
 
       showConfirm: function showConfirm() {
         var self = this;
-        this.cancelOpt.onclick = function() {
+        this.confirmDlg.onclick = function() {
           return self.close();
         };
         this.confirmOpt.onclick = function() {
           setDeviceUnpair(self.device);
-          return self.close();
-        }
+        };
         this.confirmDlg.hidden = false;
       },
 
@@ -681,9 +679,6 @@ navigator.mozL10n.ready(function bluetoothSettings() {
       req.onerror = function bt_pairError() {
         showDevicePaired(true, null);
       };
-      req.onsuccess = function bt_unpairSuccess() {
-        showDevicePaired(true, null);
-      }
     }
 
     function setDeviceDisconnect(device, callback) {
