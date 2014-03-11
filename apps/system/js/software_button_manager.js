@@ -24,7 +24,7 @@ var SoftwareButtonManager = {
       document.getElementById('fullscreen-software-home-button');
     this.screenElement = document.getElementById('screen');
 
-    if (/*isMobile && */isOnRealDevice) {
+    if (isMobile && isOnRealDevice) {
       if (!this.hasHardwareHomeButton) {
         this.OverrideFlag = true;
         var lock = SettingsListener.getSettingsLock();
