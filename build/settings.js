@@ -250,7 +250,7 @@ function execute(options) {
    'rocketbar.enabled': false,
    'screen.automatic-brightness': false,
    'screen.brightness': 1,
-   'screen.timeout': 0,
+   'screen.timeout': 60,
    'software-button.enabled': false,
    'homegesture.enabled': false,
    'edgesgesture.enabled': false,
