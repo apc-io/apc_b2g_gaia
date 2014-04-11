@@ -837,6 +837,10 @@ var CardsView = (function() {
         }
         break;
       case 'wheel':
+        if (!cardsViewShown) {
+          // we should not process the wheel event if the cards view is not shown
+          break;
+        }
         console.log("=====Receive wheel event====" + evt.deltaY);
         if (evt.deltaX || evt.deltaY) {
           if (((evt.deltaX > 0) || (evt.deltaY > 0)) &&
