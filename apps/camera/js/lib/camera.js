@@ -267,16 +267,18 @@ Camera.prototype.pickThumbnailSize = function(thumbnailSizes, pictureSize) {
   }
 
   // Removes the sizes with the wrong aspect ratio
+  let oldThumbmailSizes = thumbnailSizes;
   thumbnailSizes = thumbnailSizes.filter(function(thumbnailSize) {
     var thumbnailAspectRatio = thumbnailSize.width / thumbnailSize.height;
     return Math.abs(thumbnailAspectRatio - pictureAspectRatio) < 0.05;
   });
 
   if (thumbnailSizes.length === 0) {
-    console.error('Error while selecting thumbnail size. ' +
-      'There are no thumbnail sizes that match the ratio of ' +
-      'the selected picture size: ' + JSON.stringify(pictureSize));
-    return;
+    // console.error('Error while selecting thumbnail size. ' +
+    //   'There are no thumbnail sizes that match the ratio of ' +
+    //   'the selected picture size: ' + JSON.stringify(pictureSize));
+    // return;
+    thumbnailSizes = oldThumbmailSizes;
   }
 
   // Sorting the array from smaller to larger sizes

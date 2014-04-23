@@ -37,18 +37,18 @@ module.exports = {
     title: 'Camera Resolution',
     icon: 'icon-picture-size',
     options: [
-      {
-        key: '5mp',
-        title: '5MP'
-      },
-      {
-        key: '3mp',
-        title: '3MP'
-      },
-      {
-        key: '1mp',
-        title: '1MP'
-      },
+      // {
+      //   key: '5mp',
+      //   title: '5MP'
+      // },
+      // {
+      //   key: '3mp',
+      //   title: '3MP'
+      // },
+      // {
+      //   key: '1mp',
+      //   title: '1MP'
+      // },
       {
         key: 'vga',
         title: 'VGA'
@@ -78,14 +78,26 @@ module.exports = {
       //   key: '480p',
       //   title: '480p 720X480'
       // },
+      // {
+      //   key: 'cif',
+      //   title: 'CIF 352X288'
+      // },
+      // {
+      //   key: 'qcif',
+      //   title: 'QCIF 176X144'
+      // }
       {
-        key: 'cif',
-        title: 'CIF 352X288'
+        key: '480p',
+        title: '480p 640x480'
       },
       {
-        key: 'qcif',
-        title: 'QCIF 176X144'
-      }
+        key: 'high',
+        title: 'high 320x240'
+      },
+      {
+        key: 'low',
+        title: 'low 176x144'
+      },
     ],
     persistent: true,
     menu: 4
