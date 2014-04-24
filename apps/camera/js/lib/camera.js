@@ -267,7 +267,7 @@ Camera.prototype.pickThumbnailSize = function(thumbnailSizes, pictureSize) {
   }
 
   // Removes the sizes with the wrong aspect ratio
-  let oldThumbmailSizes = thumbnailSizes;
+  var oldThumbmailSizes = thumbnailSizes;
   thumbnailSizes = thumbnailSizes.filter(function(thumbnailSize) {
     var thumbnailAspectRatio = thumbnailSize.width / thumbnailSize.height;
     return Math.abs(thumbnailAspectRatio - pictureAspectRatio) < 0.05;
