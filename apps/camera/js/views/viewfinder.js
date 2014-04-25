@@ -142,10 +142,18 @@ return View.extend({
     debug('update preview, mirrored: %s', mirrored);
     // Use the device-independent viewport size for transforming the
     // preview using CSS
+    var orientation = screen.mozOrientation;
+    var isLandscape = (orientation === "landscape-primary") || (orientation === "landscape-secondary");
+
     var deviceIndependentViewportSize = {
       width: document.body.clientHeight,
       height: document.body.clientWidth
     };
+
+    if (isLandscape) {
+      deviceIndependentViewportSize.width = document.body.clientWidth;
+      deviceIndependentViewportSize.height = document.body.clientHeight;
+    }
 
     // Scale the optimal preview size to fill the viewport (will
     // overflow if necessary)
@@ -158,6 +166,9 @@ return View.extend({
 
     // Rotate the preview image 90 degrees
     var transform = 'rotate(90deg)';
+    if (isLandscape) {
+      transform = '';
+    }
 
     if (mirrored) {
       // backwards-facing camera
@@ -170,6 +181,13 @@ return View.extend({
                    scaledPreviewSize.width) / 2;
     var offsetY = (deviceIndependentViewportSize.width -
                    scaledPreviewSize.height) / 2;
+
+    if (isLandscape) {
+      offsetX = (deviceIndependentViewportSize.width -
+                   scaledPreviewSize.width) / 2;
+      offsetY = (deviceIndependentViewportSize.height -
+                   scaledPreviewSize.height) / 2;
+    }
 
     this.el.style.left = offsetX + 'px';
     this.el.style.top = offsetY + 'px';
