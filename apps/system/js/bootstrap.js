@@ -18,16 +18,16 @@
 /* For hardware key handling that doesn't belong to anywhere */
 var Shortcuts = {
   init: function rm_init() {
-    window.addEventListener('keyup', this);
+    // window.addEventListener('keyup', this);
   },
 
-  handleEvent: function rm_handleEvent(evt) {
-    if (!ScreenManager.screenEnabled || evt.keyCode !== evt.DOM_VK_F6) {
-      return;
-    }
+  // handleEvent: function rm_handleEvent(evt) {
+  //   if (!ScreenManager.screenEnabled || evt.keyCode !== evt.DOM_VK_F6) {
+  //     return;
+  //   }
 
-    document.location.reload();
-  }
+  //   document.location.reload();
+  // }
 };
 
 window.addEventListener('load', function startup() {
