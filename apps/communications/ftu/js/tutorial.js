@@ -2,6 +2,7 @@
 
 var Tutorial = {
   tutorialSteps: {},
+  numTutorialSteps: null,
   currentStep: 1,
   imagesLoaded: [],
   layout: 'tiny',
@@ -10,6 +11,7 @@ var Tutorial = {
         ScreenLayout.getCurrentLayout() : 'tiny';
 
     this.tutorialSteps = TutorialSteps.get();
+    this.numTutorialSteps = Object.keys(this.tutorialSteps).length;
 
     // register elements after dynamic properties got set
     this.initElements();
