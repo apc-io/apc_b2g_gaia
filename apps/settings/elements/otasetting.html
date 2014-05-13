@@ -1,0 +1,50 @@
+<element name="otasetting" extends="section">
+    <template>
+
+        <header>
+            <a href="#root"><span class="icon icon-back">back</span></a>
+            <h1 data-l10n-id="deviceInfo-header"> OTA Setting </h1>
+        </header>
+
+        <div>
+            <ul>
+                <li class="description">
+                    <p data-l10n-id="ota-setting-desc">
+                        Hello there,
+                        This Software Update contains improvements and bug fixes. You will be unable to use your tablet in the duaration of the install, which is expected to take a few minutes but could take longer.
+                    </p>
+                </li>
+
+                <li>
+                    <label class="pack-checkbox">
+                        <input type="checkbox" name="debug.paint-flashing.enabled">
+                        <span data-l10n-id="paint-flashing">Click "Check" button to check update available</span>
+                    </label>
+                </li>
+
+                <li>
+                    <label>
+                        <button class="icon icon-view" data-href="#ota-check"
+                                data-l10n-id="your-rights"> Check </button>
+                    </label>
+                </li>
+                <li>
+
+                    <label>
+                        <button class="icon icon-view" data-href="#ota-download"
+                                data-l10n-id="your-privacy"> Download </button>
+                    </label>
+                </li>
+                <li>
+                    <label>
+                        <button class="icon icon-view" data-href="#ota-later"
+                                data-l10n-id="about-legal-info+"> Later </button>
+                    </label>
+                </li>
+            </ul>
+        </div>
+
+        <script src="js/otasetting"></script>
+
+    </template>
+</element>
