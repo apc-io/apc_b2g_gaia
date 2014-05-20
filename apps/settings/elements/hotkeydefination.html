@@ -1,0 +1,70 @@
+<element name="hotkeydefinition" extends="section" >
+    <template>
+        <header>
+            <a href="#keyboard"><span class="icon icon-back">back</span></a>
+            <h1 data-l10n-id="hotkeydefinition"> Hot Key Definition </h1>
+        </header>
+
+        <div>
+            <header>
+                <h2 data-l10n-id="keytitle" >Configure keyboard binding</h2>
+            </header>
+
+            <h3 data-l10n-id="keydescription">
+                To edit a Key, click one row and hold down the new keys. Double click to Cancel set Hot Key.
+            </h3>
+
+            <ul id="hotkey-setup" class="menuKey">
+
+                <li >
+                    <label class="pack-radio">
+                        <input id="key-home-check"  type="radio" name="app.keyHot" value="homekey">
+                        <small id="key-home" class="menu-item-desc">Windown</small>
+                        <span class="menu-item" data-l10n-id="homekey">Home</span>
+                    </label>
+                </li>
+
+                <li >
+                    <label  class="pack-radio">
+                        <input id="key-mute-check"  type="radio" name="app.keyHot" value="mutekey">
+                        <small id="key-mute" class="menu-item-desc">ESC</small>
+                        <span  class="menu-item" data-l10n-id="mutekey">Mute</span>
+                    </label>
+                </li>
+
+                <li >
+                    <label  class="pack-radio" >
+                        <input id="key-volume-up-check"  type="radio" name="app.keyHot" value="volumeupkey">
+                        <small id="key-volume-up" class="menu-item-desc">Up</small>
+                        <span  class="menu-item" data-l10n-id="volumeupkey">Volume Up</span>
+                    </label>
+                </li>
+
+                <li  >
+                    <label class="pack-radio">
+                        <input id="key-volume-down-check"  type="radio" name="app.keyHot" value="volumedownkey">
+                        <small id="key-volume-down" class="menu-item-desc">Down</small>
+                        <span  class="menu-item" data-l10n-id="volumedownkey">Volume Down </span>
+                    </label>
+                </li>
+
+            </ul>
+        </div>
+
+
+        <style>
+            #div-dialog {
+                display:none;
+            }
+            .menuKey li.active {
+                background-color: #b2f2ff;
+            }
+        </style>
+
+        <script src="js/hotkeydefination.js"></script>
+        <script src="js/key/keys.js"></script>
+
+
+    </template>
+</element>
+
