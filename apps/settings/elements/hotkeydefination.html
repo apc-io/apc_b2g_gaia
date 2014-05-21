@@ -1,59 +1,42 @@
-<element name="hotkeydefination" extends="section">
+<element name="hotkeydefinition" extends="section">
     <template>
 
         <header>
-            <h1 > Hot Key Defination </h1>
+            <h1 data-l10n-id="hotkeydefinition"> Hot Key Definition </h1>
         </header>
 
         <div>
             <header>
-                <h2 >Key</h2>
+                <h2 data-l10n-id="keytitle" >Key</h2>
             </header>
-            <ul id="timezone">
-                <li>
-                    <p >Home Key</p>
-          <span class="button icon icon-dialog">
-            <select id="home-key"></select>
-          </span>
-                </li>
-                <li>
-                    <p >Back Key</p>
-          <span class="button icon icon-dialog">
-            <select id="back-key"></select>
-          </span>
-                </li>
-                <li>
-                    <p >Menu Key</p>
-          <span class="button icon icon-dialog">
-            <select id="menu-key"></select>
-          </span>
-                </li>
-                <li>
-                    <p >Volume Up Key</p>
-          <span class="button icon icon-dialog">
-            <select id="volume-up-key">
-                <option value="ESC">ESC Key</option>
-                <option value="ESC">Up Key</option>
-                <option value="ESC">Down Key</option>
-                <option value="ESC">Left Key</option>
-                <option value="ESC">Right Key</option>
-            </select>
-          </span>
-                </li>
-                </li>
-                <li>
-                    <p >Volume Down Key</p>
-          <span class="button icon icon-dialog">
-            <select id="volume-down-key">
-                <option value="ESC">ESC Key</option>
-                <option value="ESC">Up Key</option>
-                <option value="ESC">Down Key</option>
-                <option value="ESC">Left Key</option>
-                <option value="ESC">Right Key</option>
-            </select>
-          </span>
-                </li>
-            </ul>
+
+      <ul id="hotkey-setup">
+        <li id="home-key">
+          <a data-l10n-id="homekey">Home Key</a>
+            <span id="home-hot-key">Windown</span>
+        </li>
+
+          <li id="back-key">
+
+              <a data-l10n-id="backkey">Back Key</a>
+              <span id="back-hot-key">ESC</span>
+          </li>
+
+          <li id="menu-key">
+              <a data-l10n-id="menukey">Menu Key</a>
+              <span id="menu-hot-key"></span>
+          </li>
+
+          <li id="volume-up-key">
+              <a data-l10n-id="volumeupkey">Volume Up Key</a>
+              <span id="volume-up-hot-key">Up</span>
+          </li>
+
+          <li id="volume-down-key">
+              <a data-l10n-id="volumedownkey">Volume Down Key</a>
+              <span id="volume-down-hot-key">Down</span>
+          </li>
+      </ul>
         </div>
 
 
