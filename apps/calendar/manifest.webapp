@@ -35,6 +35,10 @@
     "zh-TW": {
       "name": "Calendar",
       "description": "Gaia Calendar"
+    },
+    "vi": {
+      "name": "Lịch",
+      "description": "Lịch Gaia"
     }
   },
   "default_locale": "en-US",

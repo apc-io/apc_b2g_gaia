@@ -22,7 +22,11 @@
         "en-US": {
           "name": "Number",
           "description": "Numeric layout"
-        }
+        },
+    "vi": {
+      "name": "Phím số",
+      "description": "Bàn phím số"
+    }
       }
     }
   },
@@ -34,6 +38,10 @@
     "zh-TW": {
       "name": "預設鍵盤",
       "description": "預設鍵盤"
+    },
+    "vi": {
+      "name": "Bàn phím có sẵn",
+      "description": "Bàn phím có sẵn"
     }
   },
   "default_locale": "en-US"

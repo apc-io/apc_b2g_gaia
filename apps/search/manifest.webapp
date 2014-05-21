@@ -12,6 +12,10 @@
     "en-US": {
       "name": "Search Results",
       "description": "Search Results"
+    },
+"vi": {
+      "name": "Kết quả tìm kiếm",
+      "description": "Kết quả tìm kiếm"
     }
   },
   "default_locale": "en-US",

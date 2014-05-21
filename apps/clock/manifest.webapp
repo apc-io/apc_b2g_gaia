@@ -30,6 +30,10 @@
     "zh-TW": {
       "name": "時鐘",
       "description": "Gaia 時鐘"
+    },
+    "vi": {
+      "name": "Đồng hồ",
+      "description": "Đồng hồ Gaia"
     }
   },
   "default_locale": "en-US",

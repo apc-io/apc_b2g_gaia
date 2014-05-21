@@ -46,6 +46,10 @@
     "en-US": {
       "name": "Set Ringtone",
       "description": "Gaia Ringtone Setter"
+    },
+ "vi": {
+      "name": "Đặt nhạc chuông",
+      "description": "Trình nhạc chuông Gaia"
     }
   },
   "default_locale": "en-US"

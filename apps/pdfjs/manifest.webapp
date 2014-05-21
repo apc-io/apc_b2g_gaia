@@ -11,6 +11,10 @@
     "en-US": {
       "name": "PDF Viewer",
       "description": "Portable Document Format (PDF) Viewer"
+    },
+ "vi": {
+      "name": "Trình hiển thị PDF",
+      "description": "Trình đọc tập tin định dạng Portable Document Format (PDF)"
     }
   },
   "default_locale": "en-US",

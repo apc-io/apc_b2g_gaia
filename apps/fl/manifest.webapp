@@ -11,6 +11,10 @@
     "en-US": {
       "name": "Purchased Media",
       "description": "Download and manage forward locked music, ringtones and wallpaper"
+    },
+    "vi": {
+      "name": "Tập tin đa phương tiện đã mua",
+      "description": "Tải và quản lý các tập tin nhạc, nhạc chuông và hình nền bị khóa"
     }
   },
   "default_locale": "en-US",

@@ -38,6 +38,10 @@
     "zh-TW": {
       "name": "E-Mail",
       "description": "Gaia E-Mail"
+    },
+    "vi": {
+      "name": "Thư điện tử",
+      "description": "Hộp thư Gaia"
     }
   },
   "default_locale": "en-US",

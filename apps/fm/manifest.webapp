@@ -29,6 +29,10 @@
     "zh-TW": {
       "name": "收音机",
       "description": "收音机"
+    },
+    "vi": {
+      "name": "Đài FM",
+      "description": "Đài FM của Gaia"
     }
   },
   "default_locale": "en-US",

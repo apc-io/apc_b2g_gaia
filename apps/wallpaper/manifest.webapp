@@ -46,6 +46,10 @@
     "en-US": {
       "name": "Wallpaper",
       "description": "Gaia Wallpaper Picker"
+    },
+    "vi": {
+      "name": "Hình nền",
+      "description": "Trình chọn hình nền Gaia"
     }
   },
   "default_locale": "en-US"

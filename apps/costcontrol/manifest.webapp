@@ -38,7 +38,12 @@
     "en-US": {
       "name": "Usage",
       "description": "Usage application to see credit and data usage statistics"
+    },
+    "vi": {
+      "name": "Lưu lượng",
+      "description": "Ứng dụng theo dõi mức sử dụng dữ liệu và chi phí phát sinh"
     }
+
   },
   "default_locale": "en-US",
   "icons": {

@@ -36,6 +36,10 @@
     "zh-TW": {
       "name": "主畫面",
       "description": "Gaia 主畫面"
+    },
+    "vi": {
+      "name": "Màn hình chính",
+      "description": "Màn hình chính Gaia"
     }
   },
   "default_locale": "en-US",

@@ -50,6 +50,10 @@
     "zh-TW": {
       "name": "音樂",
       "description": "Gaia 音樂"
+    },
+    "vi": {
+      "name": "Âm nhạc",
+      "description": "Âm nhạc Gaia"
     }
   },
   "default_locale": "en-US",

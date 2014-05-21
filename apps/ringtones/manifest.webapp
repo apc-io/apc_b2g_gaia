@@ -28,6 +28,10 @@
     "en-US": {
       "name": "System Ringtones",
       "description": "Gaia Ringtone Picker"
+    },
+    "vi": {
+      "name": "Nhạc chuông hệ thống",
+      "description": "Trình chọn nhạc chuông Gaia"
     }
   },
   "icons": {

@@ -50,6 +50,10 @@
     "zh-TW": {
       "name": "相機",
       "description": "Gaia 相機"
+    },
+    "vi": {
+      "name": "Máy ảnh",
+      "description": "Máy ảnh Gaia"
     }
   },
   "default_locale": "en-US",

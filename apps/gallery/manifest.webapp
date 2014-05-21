@@ -57,6 +57,10 @@
     "zh-TW": {
       "name": "相簿",
       "description": "Gaia 相簿"
+    },
+    "vi": {
+      "name": "Kho ảnh",
+      "description": "Kho ảnh Gaia"
     }
   },
   "default_locale": "en-US",

@@ -63,6 +63,10 @@
     "zh-TW": {
       "name": "設定",
       "description": "Gaia 設定"
+    },
+    "vi": {
+      "name": "Thiết lập",
+      "description": "Thiết lập Gaia"
     }
   },
   "datastores-access": {

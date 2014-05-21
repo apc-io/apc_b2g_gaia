@@ -12,6 +12,10 @@
     "en-US": {
       "name": "Bluetooth Transfer",
       "description": "Gaia Bluetooth Transfer"
+    },
+"vi": {
+      "name": "Truyền qua Bluetooth",
+      "description": "Truyền qua bluetooth Gaia"
     }
   },
   "icons": {

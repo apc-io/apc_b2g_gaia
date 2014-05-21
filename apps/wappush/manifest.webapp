@@ -12,6 +12,10 @@
     "en-US": {
       "name": "WAP Push manager",
       "description": "Receives, filters and displays WAP Push messages"
+    },
+    "vi": {
+      "name": "Trình quản ly WAP Push",
+      "description": "Nhận, lọc và hiện thị các tin WAP Push"
     }
   },
   "default_locale": "en-US",
