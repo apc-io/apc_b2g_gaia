@@ -16,32 +16,54 @@
                 </li>
 
                 <li>
-                    <label class="pack-checkbox">
-                        <input type="checkbox" name="debug.paint-flashing.enabled">
+                    <label >
                         <span data-l10n-id="checkboxota">Click "Check" button to check update available</span>
                     </label>
                 </li>
 
                 <li>
                     <label>
-                        <button data-l10n-id="checkota"> Check </button>
+                        <button id="check-for-update" data-l10n-id="checkota"> Check for Update now</button>
                     </label>
                 </li>
                 <li>
 
-                    <label>
-                        <button data-l10n-id="downloadota"> Download </button>
-                    </label>
-                </li>
-                <li>
-                    <label>
-                        <button data-l10n-id="laterota"> Later </button>
-                    </label>
-                </li>
             </ul>
         </div>
 
-        
+        <form
+              id="updates-download-dialog" data-type="confirm" role="dialog"
+              data-z-index-level="updates-download-dialog" data-nowifi="false"
+              data-data-connection-inline-warning="false" class="generic-dialog" >
+            <section>
+                <h1>
+                    1 update available
+                </h1>
+                <ul>
+                </ul>
+            </section>
+            <p id="updates-data-connection-warning" data-l10n-id="downloadDataConnectionWarning">
+                Updates are downloaded via data connection when Wi-Fi is not available. Additional data charges may apply.
+            </p>
+            <p id="updates-offline-warning" data-l10n-id="downloadOfflineWarning">
+                Connection unavailable. Connect to a network to download updates.
+            </p>
+            <menu data-items="2">
+                <button id="updates-later-button" type="reset"
+                        data-l10n-id="laterota">Later</button>
+                <button id="updates-download-button" type="submit"
+                        data-l10n-id="downloadota">Download</button>
+            </menu>
+        </form>
+
+
+        <style>
+            #updates-download-dialog {
+                display:none;
+            }
+        </style>
+
+        <script src="js/otasetting.js"></script>
 
     </template>
 </element>
