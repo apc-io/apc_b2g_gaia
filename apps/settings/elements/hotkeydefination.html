@@ -1,4 +1,4 @@
-<element name="hotkeydefinition" extends="section">
+<element name="hotkeydefinition" extends="section" >
     <template>
 
         <header>
@@ -10,39 +10,67 @@
                 <h2 data-l10n-id="keytitle" >Key</h2>
             </header>
 
-      <ul id="hotkey-setup">
-        <li id="home-key">
-          <a data-l10n-id="homekey">Home Key
-            <span id="home-hot-key">Windown</span>
-          </a>
-        </li>
+            <ul id="hotkey-setup" >
+                <li class="description">
+                    <p data-l10n-id="keydescription">
+                        Choose Key and Input key press
+                    </p>
+                </li>
+                <li>
+                    <label class="pack-radio">
+                        <input id="key-home-check"  type="radio" name="app.keyHot" value="homekey" checked>
+                        <small id="key-home" class="menu-item-desc">Windown</small>
+                        <span class="menu-item" data-l10n-id="homekey">Home Key</span>
+                    </label>
+                </li>
+                <li>
+                    <label class="pack-radio">
+                        <input id="key-back-check"  type="radio" name="app.keyHot" value="backkey">
+                        <small id="key-back" class="menu-item-desc">ESC</small>
+                        <span  class="menu-item" data-l10n-id="backkey">Back Key</span>
+                    </label>
+                </li>
+                <li>
+                    <label class="pack-radio">
+                        <input id="key-menu-check"  type="radio" name="app.keyHot" value="menukey">
+                        <small id="key-menu" class="menu-item-desc">Alt</small>
+                        <span  class="menu-item" data-l10n-id="menukey">Menu Key</span>
+                    </label>
+                </li>
+                <li>
+                    <label class="pack-radio">
+                        <input id="key-volume-up-check"  type="radio" name="app.keyHot" value="volumeupkey">
+                        <small id="key-volume-up" class="menu-item-desc">Up</small>
+                        <span  class="menu-item" data-l10n-id="volumeupkey">Volume Up Key</span>
+                    </label>
+                </li>
+                <li>
+                    <label class="pack-radio">
+                        <input id="key-volume-down-check"  type="radio" name="app.keyHot" value="volumedownkey">
+                        <small id="key-volume-down" class="menu-item-desc">Down</small>
+                        <span  class="menu-item" data-l10n-id="volumedownkey">Volume Down Key</span>
+                    </label>
+                </li>
 
-          <li id="back-key">
+                <li>
+                    <label class="pack-radio">
+                        <input id="key-down-check"  type="radio" name="app.keyHot" value="scrolldownkey">
+                        <small id="key-down" class="menu-item-desc">Page Down</small>
+                        <span  class="menu-item" data-l10n-id="downkey">Scroll Down Key</span>
+                    </label>
+                </li>
 
-              <a data-l10n-id="backkey">Back Key
-              <span id="back-hot-key">ESC</span>
-              </a>
-          </li>
+                <li>
+                    <label class="pack-radio">
+                        <input id="key-up-check"  type="radio" name="app.keyHot" value="scrollupkey">
+                        <small id="key-up" class="menu-item-desc">Page Up</small>
+                        <span  class="menu-item" data-l10n-id="upkey">Scroll Up Key</span>
+                    </label>
+                </li>
 
-          <li id="menu-key">
-              <a data-l10n-id="menukey">Menu Key
-              <span id="menu-hot-key"></span>
-              </a>
-          </li>
-
-          <li id="volume-up-key">
-              <a data-l10n-id="volumeupkey">Volume Up Key</a>
-              <span id="volume-up-hot-key">Up</span>
-          </li>
-
-          <li id="volume-down-key">
-              <a data-l10n-id="volumedownkey">Volume Down Key</a>
-              <span id="volume-down-hot-key">Down</span>
-          </li>
-      </ul>
+            </ul>
         </div>
 
-
+        <script src="js/hotkeydefination.js"></script>
     </template>
 </element>
-
