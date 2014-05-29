@@ -17,16 +17,40 @@
 
                 <li>
                     <label >
-                        <span data-l10n-id="checkboxota">Click "Check for Update now" button to check update available</span>
+                        <span data-l10n-id="textconfigota">Click "Config update" button to config your update</span>
                     </label>
                 </li>
 
+
+
+                <li>
+                    <label>
+                        <button id="config-for-update" data-l10n-id="configota"> Config OTA</button>
+                    </label>
+                    <div id="config-update-form">
+                    <label>
+                        <p data-l10n-id="otaurl">OTA Url</p>
+                        <input id="update-url" type="url" data-l10n-id="updateurlota" value="abc.com"> </input>
+                    </label>
+                    <label>
+                        <p data-l10n-id="otacheckinterval">Check Interval</p>
+                        <input id="check-interval" type="number" data-l10n-id="checkintervalota" value="10"> </input>
+                    </label>
+                    </div>
+                </li>
+
+                <li>
+                    <label >
+                        <span data-l10n-id="checkboxota">Click "Check for Update now" button to check update available</span>
+                    </label>
+                </li>
                 <li>
                     <label>
                         <button id="check-for-update" data-l10n-id="checkota"> Check for Update now</button>
                     </label>
                 </li>
-                <li>
+
+
 
             </ul>
         </div>
@@ -35,6 +59,7 @@
               id="updates-download-dialog" data-type="confirm" role="dialog"
               data-z-index-level="updates-download-dialog" data-nowifi="false"
               data-data-connection-inline-warning="false" class="generic-dialog" >
+
             <section>
                 <h1>
                     1 update available
@@ -60,6 +85,9 @@
         <style>
             #updates-download-dialog {
                 display:none;
+            }
+            #config-update-form{
+            display:none;
             }
         </style>
 
