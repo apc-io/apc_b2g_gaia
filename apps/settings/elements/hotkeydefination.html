@@ -25,18 +25,12 @@
                 </li>
                 <li>
                     <label class="pack-radio">
-                        <input id="key-back-check"  type="radio" name="app.keyHot" value="backkey">
-                        <small id="key-back" class="menu-item-desc">ESC</small>
-                        <span  class="menu-item" data-l10n-id="backkey">Back Key</span>
+                        <input id="key-mute-check"  type="radio" name="app.keyHot" value="mutekey">
+                        <small id="key-mute" class="menu-item-desc">ESC</small>
+                        <span  class="menu-item" data-l10n-id="mutekey">Mute Key</span>
                     </label>
                 </li>
-                <li>
-                    <label class="pack-radio">
-                        <input id="key-menu-check"  type="radio" name="app.keyHot" value="menukey">
-                        <small id="key-menu" class="menu-item-desc">Alt</small>
-                        <span  class="menu-item" data-l10n-id="menukey">Menu Key</span>
-                    </label>
-                </li>
+
                 <li>
                     <label class="pack-radio">
                         <input id="key-volume-up-check"  type="radio" name="app.keyHot" value="volumeupkey">
@@ -52,25 +46,30 @@
                     </label>
                 </li>
 
-                <li>
-                    <label class="pack-radio">
-                        <input id="key-down-check"  type="radio" name="app.keyHot" value="scrolldownkey">
-                        <small id="key-down" class="menu-item-desc">Page Down</small>
-                        <span  class="menu-item" data-l10n-id="downkey">Scroll Down Key</span>
-                    </label>
-                </li>
-
-                <li>
-                    <label class="pack-radio">
-                        <input id="key-up-check"  type="radio" name="app.keyHot" value="scrollupkey">
-                        <small id="key-up" class="menu-item-desc">Page Up</small>
-                        <span  class="menu-item" data-l10n-id="upkey">Scroll Up Key</span>
-                    </label>
-                </li>
-
             </ul>
         </div>
 
+        <div id = "div-dialog">
+        <form   id="change-key-dialog" role="dialog" data-z-index-level="change-key-dialog"
+                class="generic-dialog" data-type="confirm" data-data-connection-inline-warning="true" data-nowifi="true">
+
+            <section id="section-dialog-id">
+                <h1 id="text-dialog">
+                   Type key from input keyboard
+                </h1>
+                <p id="key-chosse"></p>
+            </section>
+        </form>
+        </div>
+
+        <style>
+            #div-dialog {
+                display:none;
+            }
+        </style>
+
         <script src="js/hotkeydefination.js"></script>
+        <script src="js/key/keys.js"></script>
     </template>
 </element>
+
