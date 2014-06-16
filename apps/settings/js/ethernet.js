@@ -34,12 +34,19 @@ navigator.mozL10n.ready(function ethernetSettings() {
   var gEthernetSmallLabelDNS2 = document.querySelector('#ethernet-dns2-small-label');
   
   var gIsEthernetDynamic = true;
-  var gEthernetIpAddressValue = "192.168.0.13";
-  var gEthernetGatewayValue = "22.11.2.2";
-  var gEthernetNetmarkValue = "33.34.3";
-  var gEthernetDNS1Value = "545";
-  var gEthernetDNS2Value = "3543";
+  var gEthernetIpAddressValue = "192.168.0.115";
+  var gEthernetGatewayValue = "192.168.0.1";
+  var gEthernetNetmarkValue = "255.255.255.0";
+  var gEthernetDNS1Value = "8.8.8.8";
+  var gEthernetDNS2Value = "8.8.4.4";
   
+
+  dump("================= getting connection");
+  var connection = gEthernetManager.connection;
+  for (var k in connection) {
+    dump("connection[" + k + "] = " + connection[k]);
+  }
+
   //Currently, only DHCP is supported
   gEthernetDynamicCheckBox.disabled = false;
   gEthernetManualCheckBox.disabled = true;
@@ -54,7 +61,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
   function updateVisibilityStatus() {
     if (gEthernetManager.enabled) {
       gEthernetDynamic.hidden = false;
-      gEthernetManual.hidden = false;
+      // gEthernetManual.hidden = false;
       
       gEthernetIpAddress.hidden = false;
       gEthernetGateway.hidden = false;
@@ -63,7 +70,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
       gEthernetDNS2.hidden = false;
     } else {
       gEthernetDynamic.hidden = true;
-      gEthernetManual.hidden = true;
+      // gEthernetManual.hidden = true;
       gEthernetIpAddress.hidden = true;
       gEthernetGateway.hidden = true;
       gEthernetNetmark.hidden = true;
@@ -73,9 +80,14 @@ navigator.mozL10n.ready(function ethernetSettings() {
   };
   
   function showConnectionInfo() {
+      var connection = gEthernetManager.connection;
+      for (var k in connection) {
+        dump("connection[" + k + "] = " + connection[k]);
+      }
     if (gEthernetCheckBox.checked != gEthernetManager.enabled) {
       gEthernetCheckBox.checked = gEthernetManager.enabled;
     }
+    // gIsEthernetDynamic = gEthernetManager.dhcp;
     if (gEthernetDynamicCheckBox.checked != gIsEthernetDynamic) {
       gEthernetDynamicCheckBox.checked = gIsEthernetDynamic;
     }
@@ -157,19 +169,20 @@ navigator.mozL10n.ready(function ethernetSettings() {
     gIsEthernetDynamic = this.checked;
     gEthernetManualCheckBox.checked = !gIsEthernetDynamic;
     updateVisibilityStatus();
-    if (gIsEthernetDynamic) {
-      showConnectionInfo();
-    }
+    gEthernetManager.setdhcp(gIsEthernetDynamic);
+    // if (gIsEthernetDynamic) {
+    //   showConnectionInfo();
+    // }
   };
   
-  gEthernetManualCheckBox.onchange = function e_toggleManual() {
-    gIsEthernetDynamic = !this.checked;
-    gEthernetDynamicCheckBox.checked = gIsEthernetDynamic;
-    updateVisibilityStatus();
-    if (gIsEthernetDynamic) {
-      showConnectionInfo();
-    }
-  };
+  // gEthernetManualCheckBox.onchange = function e_toggleManual() {
+  //   gIsEthernetDynamic = !this.checked;
+  //   gEthernetDynamicCheckBox.checked = gIsEthernetDynamic;
+  //   updateVisibilityStatus();
+  //   if (gIsEthernetDynamic) {
+  //     showConnectionInfo();
+  //   }
+  // };
   
   gEthernetIpAddress.onclick = function e_updateIpAddress() {
     if (!gIsEthernetDynamic) {
@@ -205,18 +218,23 @@ navigator.mozL10n.ready(function ethernetSettings() {
     switch (gUpdateManualTitle.textContent) {
       case 'IP-Address':
         gEthernetIpAddressValue = gUpdateManualInput.value;
+        gEthernetManager.setaddr(gEthernetIpAddressValue);
         break;
       case 'Gateway':
         gEthernetGatewayValue = gUpdateManualInput.value;
+        gEthernetManager.setgateway(gEthernetGatewayValue);
         break;
       case 'Netmark':
         gEthernetNetmarkValue = gUpdateManualInput.value;
+        gEthernetManager.setnetmask(gEthernetNetmarkValue);
         break;
       case 'DNS1':
         gEthernetDNS1Value = gUpdateManualInput.value;
+        gEthernetManager.setdns1(gEthernetDNS1Value);
         break;
       case 'DNS2':
         gEthernetDNS2Value = gUpdateManualInput.value;
+        gEthernetManager.setdns2(gEthernetDNS2Value);
         break;
       default:
     }
