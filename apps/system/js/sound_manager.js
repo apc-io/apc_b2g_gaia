@@ -26,6 +26,20 @@
     }
   });
 
+  window.addEventListener('mute/unmute', function() {
+    if (vibrationEnabled) {
+      // mute
+      setVibrationEnabled(false);
+      enterSilentMode('notification');
+      enterSilentMode('content');
+    } else {
+      // unmute
+      setVibrationEnabled(true);
+      leaveSilentMode('notification');
+      leaveSilentMode('content');
+    }
+  });
+
   /**
    * The mute event is dispatched from sleep menu.
    * But if we have a mute hardware button or virtual button,

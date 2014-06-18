@@ -192,6 +192,8 @@
       case 'volume-up-button-release':
       case 'volume-down-button-press':
       case 'volume-down-button-release':
+      case 'mute-button-press':
+      case 'mute-button-release':
         this.state.process(type);
         break;
     }
@@ -252,6 +254,12 @@
       case 'volume-down-button-release':
         // Ignore button releases that occur in this state.
         // These can happen after home+sleep and home+volume.
+        return;
+      case 'mute-button-press':
+        // Ignore mute-button-press event
+        return;
+      case 'mute-button-release':
+        this.hardwareButtons.publish("mute/unmute");
         return;
     }
     console.error('Unexpected hardware key: ', type);
