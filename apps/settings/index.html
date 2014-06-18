@@ -156,8 +156,11 @@
     <link rel="import" href="/elements/help.html">
     <link rel="import" href="/elements/icc.html">
     <link rel="import" href="/elements/downloads.html">
+
+    <link rel="import" href="/elements/hotkeydefination.html">
+   <link rel="import" href="/elements/ethernet_infor_settings.html">
   </head>
-  <body class="skin-organic uninit">
+  <body class="skin-organic uninit" >
     <!--
       - Lazy-Loading: to avoid parsing all settings panels before necessary, the
       - HTML markup is included in a comment node and applied with `.innerHTML'
@@ -202,6 +205,8 @@
     <section is="wifi" role="region" id="wifi" data-require-sub-panels="true"></section>
     <!-- Connectivity :: Ethernet -->
     <section is="ethernet" role="region" id="ethernet" data-require-sub-panels="true"></section>
+    <!-- Connectivity :: Ethernet Information Settings -->
+    <section is="ethernet_InforSettings" role="region" id="ethernet_InforSettings"></section>
     <!-- Connectivity :: Call :: Call Forwarding Not Reachable -->
     <section is="call-cf-notReachableSettings" role="region" id="call-cf-notReachableSettings"></section>
     <!-- Connectivity :: Call :: Call Forwarding No Reply -->
@@ -276,6 +281,9 @@
     <!-- Personalization :: Keyboard -->
     <section is="keyboard" role="region" id="keyboard" data-require-sub-panels="true"></section>
     <section is="keyboard-enabled-default" role="region" id="keyboard-enabled-default"></section>
+
+    <!-- Personalization :: Hot Key -->
+    <section is="hotkeydefinition" role="region" id="hotkeydefinition"></section>
 
     <!-- Security :: Phone Lock :: PIN Input -->
     <section is="phoneLock-passcode" role="region" id="phoneLock-passcode"></section>
@@ -428,6 +436,10 @@
             <small id="keyboard-desc" class="menu-item-desc"></small>
             <a id="menuItem-keyboard" class="menu-item" href="#keyboard" data-l10n-id="keyboards">Keyboards</a>
           </li>
+
+            <li>
+                <a id="menuItem-hotkey" class="menu-item" href="#hotkeydefinition" data-l10n-id="hotkey" >Hot Key</a>
+            </li>
         </ul>
 
         <!-- Main :: Accounts -->

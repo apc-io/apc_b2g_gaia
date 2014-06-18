@@ -1,6 +1,5 @@
 <element name="ethernet" extends="section">
   <template>
-
     <header>
       <a href="#root"><span class="icon icon-back">back</span></a>
       <h1 data-l10n-id="ethernet-header"> Ethernet </h1>
@@ -22,7 +21,7 @@
             <span data-l10n-id="dynamic">DHCP</span>
           </label>
         </li>
-        
+
         <li hidden id="ethernet-manual" >
           <label class="pack-switch">
             <input type="checkbox" data-ignore>
@@ -37,28 +36,28 @@
             <span data-l10n-id="ethernet-ip-address">IP address</span>
           </label>
         </li>
-        
+
         <li hidden id="ethernet-gateway" >
           <label class="pack-switch">
             <small id="ethernet-gateway-small-label"></small>
             <span data-l10n-id="ethernet-gateway">Gateway</span>
           </label>
         </li>
-        
+
         <li hidden id="ethernet-netmark" >
           <label class="pack-switch">
             <small id="ethernet-netmark-small-label"></small>
             <span data-l10n-id="ethernet-netmark">Netmark</span>
           </label>
         </li>
-        
+
         <li hidden id="ethernet-dns1" >
           <label class="pack-switch">
             <small id="ethernet-dns1-small-label"></small>
             <span data-l10n-id="ethernet-dns1">DNS1</span>
           </label>
         </li>
-        
+
         <li id="ethernet-dns2" hidden>
           <label class="pack-switch">
             <small id="ethernet-dns2-small-label"></small>
@@ -68,13 +67,13 @@
 
           <li id="button-show-infor" hidden>
               <label>
-                  <button id="show-information">Information Setting</button>
+                  <button data-href="#ethernet_InforSettings" id="show-information">Connection Information</button>
               </label>
           </li>
 
       </ul>
     </div>
-    
+
     <form role="dialog" data-type="action" id="update-manual-dialog" hidden>
       <header>
         <button id="update-manual-cancel"><span class="icon icon-close" data-l10n-id="cancel">close</span></button>
@@ -88,56 +87,7 @@
       </section>
     </form>
 
-    <form
-              role="dialog" data-type="action" id="show-information-dialog" hidden >
-          <section>
-              <h1>
-                  Setting Information
-              </h1>
-              <ul>
-                  <li id="ethernet-ip-address_infor" >
-                      <label class="pack-switch">
-                          <small id="ethernet-ip-address-infor-small-label"></small>
-                          <span data-l10n-id="ethernet-ip-address">IP address</span>
-                      </label>
-                  </li>
-
-                  <li id="ethernet-gateway_infor" >
-                      <label class="pack-switch">
-                          <small id="ethernet-gateway-infor-small-label"></small>
-                          <span data-l10n-id="ethernet-gateway">Gateway</span>
-                      </label>
-                  </li>
-
-                  <li id="ethernet-netmark_infor" >
-                      <label class="pack-switch">
-                          <small id="ethernet-netmark-infor-small-label"></small>
-                          <span data-l10n-id="ethernet-netmark">Netmark</span>
-                      </label>
-                  </li>
-
-                  <li id="ethernet-dns1_infor" >
-                      <label class="pack-switch">
-                          <small id="ethernet-dns1-infor-small-label"></small>
-                          <span data-l10n-id="ethernet-dns1">DNS1</span>
-                      </label>
-                  </li>
-                  <li id="ethernet-dns2_infor">
-                      <label class="pack-switch">
-                          <small id="ethernet-dns2-infor-small-label"></small>
-                          <span data-l10n-id="ethernet-dns2">DNS2</span>
-                      </label>
-                  </li>
-              </ul>
-          </section>
-          <menu data-items="2">
-              <button id="ok-button" type="reset">OK</button>
-          </menu>
-      </form>
-
     <script src="js/ethernet.js"></script>
-
-
 
   </template>
 </element>

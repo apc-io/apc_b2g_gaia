@@ -3,39 +3,44 @@
 // handle Ethernet settings
 navigator.mozL10n.ready(function ethernetSettings() {
   var _ = navigator.mozL10n.get;
-  
+
   var settings = window.navigator.mozSettings;
   if (!settings)
     return;
 
   var gEthernetManager = navigator.mozEthernetManager;
 
+//    var gMoreSettings = document.querySelector("#show-information")
+
   var gEthernet = document.querySelector('#ethernet');
   var gEthernetCheckBox = document.querySelector('#ethernet-enabled input');
   var gEthernetInfoBlock = document.querySelector('#ethernet-desc');
   var gEthernetDynamic = document.querySelector('#ethernet-dynamic');
   var gEthernetDynamicCheckBox = document.querySelector('#ethernet-dynamic input');
+
+  var gEthernetSmallLabelDynamics = document.querySelector('#ethernet-dynamic-small-label');
 //  var gEthernetManual = document.querySelector('#ethernet-manual');
 //  var gEthernetManualCheckBox = document.querySelector('#ethernet-manual input');
-  
+
   var gEthernetIpAddress = document.querySelector('#ethernet-ip-address');
   var gEthernetSmallLabelIpAddress = document.querySelector('#ethernet-ip-address-small-label');
-  
+
   var gEthernetGateway = document.querySelector('#ethernet-gateway');
   var gEthernetSmallLabelGateway = document.querySelector('#ethernet-gateway-small-label');
-  
+
   var gEthernetNetmark = document.querySelector('#ethernet-netmark');
   var gEthernetSmallLabelNetmark = document.querySelector('#ethernet-netmark-small-label');
-  
+
   var gEthernetDNS1 = document.querySelector('#ethernet-dns1');
   var gEthernetSmallLabelDNS1 = document.querySelector('#ethernet-dns1-small-label');
-  
+
   var gEthernetDNS2 = document.querySelector('#ethernet-dns2');
   var gEthernetSmallLabelDNS2 = document.querySelector('#ethernet-dns2-small-label');
 
  var gEthernetShowInfor = document.querySelector('#button-show-infor');
-  
-  var gIsEthernetDynamic = true;
+
+  var gIsEthernetDynamic = gEthernetManager.dhcp;
+
   var gEthernetIpAddressValue = "192.168.0.13";
   var gEthernetGatewayValue = "22.11.2.2";
   var gEthernetNetmarkValue = "33.34.3";
@@ -45,10 +50,8 @@ navigator.mozL10n.ready(function ethernetSettings() {
   //Currently, only DHCP is supported
   gEthernetDynamicCheckBox.disabled = false;
 //  gEthernetManualCheckBox.disabled = true;
-  
-  //manual settings elements
 
-//  var gEthernetStaticSetting = document.getElementById('static-setting');
+  //manual settings elements
 
   var gUpdateManualDialog = document.getElementById('update-manual-dialog');
   var gUpdateManualInput = document.getElementById('update-manual-input');
@@ -58,29 +61,22 @@ navigator.mozL10n.ready(function ethernetSettings() {
 
 
 
-  var gInformationDialog = document.getElementById('show-information-dialog');
   var gShowInformationOKButton = document.getElementById('ok-button');
-
-  var gEthernetInformationSmallLabelIpAddress = document.querySelector('#ethernet-ip-address-infor-small-label');
-
-  var gEthernetInformationSmallLabelGateway = document.querySelector('#ethernet-gateway-infor-small-label');
-
-  var gEthernetInformationSmallLabelNetmark = document.querySelector('#ethernet-netmark-infor-small-label');
-
-  var gEthernetInformationSmallLabelDNS1 = document.querySelector('#ethernet-dns1-infor-small-label');
-
-  var gEthernetInformationSmallLabelDNS2 = document.querySelector('#ethernet-dns2-infor-small-label');
 
 
 
   function updateVisibilityStatus() {
 
+      console.log(gEthernetManager.enabled);
     if (gEthernetManager.enabled) {
+
       gEthernetDynamic.hidden = false;
+      gEthernetShowInfor.hidden = true;
 
       displayEthernetSetting()
 
     } else {
+
         gEthernetDynamic.hidden = true;
 //        gEthernetManual.hidden = true;
         gEthernetShowInfor.hidden = true;
@@ -96,6 +92,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
 
     function displayEthernetSetting(){
           if (gEthernetDynamicCheckBox.checked) {
+              gEthernetSmallLabelDynamics.textContent = "Get the dynamic IP address";
 
               gEthernetShowInfor.hidden = false;
 
@@ -107,6 +104,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
           }
           else {
               gEthernetShowInfor.hidden = true;
+              gEthernetSmallLabelDynamics.textContent = "";
 
               gEthernetIpAddress.hidden = false;
               gEthernetGateway.hidden = false;
@@ -124,11 +122,11 @@ navigator.mozL10n.ready(function ethernetSettings() {
     if (gEthernetDynamicCheckBox.checked != gIsEthernetDynamic) {
       gEthernetDynamicCheckBox.checked = gIsEthernetDynamic;
     }
-    
+
 //    if (gEthernetManualCheckBox.checked == gIsEthernetDynamic) {
 //      gEthernetManualCheckBox.checked = !gIsEthernetDynamic;
 //    }
-    
+
     if (gEthernetManager.enabled) {
       gEthernetSmallLabelIpAddress.textContent = gEthernetIpAddressValue;
       gEthernetSmallLabelGateway.textContent = gEthernetGatewayValue;
@@ -137,7 +135,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
       gEthernetSmallLabelDNS2.textContent = gEthernetDNS2Value;
     }
   };
-  
+
   function updateConnectionInfo() {
     console.log("updateConnectionInfo");
     gEthernetIpAddressValue = gEthernetManager.ipAddress;
@@ -146,27 +144,19 @@ navigator.mozL10n.ready(function ethernetSettings() {
     gEthernetDNS1Value = gEthernetManager.dns1;
     gEthernetDNS2Value = gEthernetManager.dns2;
   }
-  
+
   function showUpdateManualDialog(aDialogTitle, aCurrentValue) {
     gUpdateManualTitle.textContent = aDialogTitle;
     gUpdateManualInput.value = aCurrentValue;
     gUpdateManualDialog.hidden = false;
-    
+
     // Focus the input field to trigger showing the keyboard
     gUpdateManualInput.focus();
     var cursorPos = gUpdateManualInput.value.length;
     gUpdateManualInput.setSelectionRange(0, cursorPos);
   };
 
-    function showInformationDialog() {
-        gInformationDialog.hidden = false;
-        gEthernetInformationSmallLabelIpAddress.textContent = gEthernetIpAddressValue;
-        gEthernetInformationSmallLabelGateway.textContent = gEthernetGatewayValue;
-        gEthernetInformationSmallLabelNetmark.textContent = gEthernetNetmarkValue;
-        gEthernetInformationSmallLabelDNS1.textContent = gEthernetDNS1Value;
-        gEthernetInformationSmallLabelDNS2.textContent = gEthernetDNS2Value;
-    };
-  
+
   var self = this;
   document.addEventListener('visibilitychange', updateVisibilityStatus);
   document.addEventListener('visibilitychange', showConnectionInfo);
@@ -176,7 +166,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
       showConnectionInfo();
     }
   });
-  
+
   gEthernetCheckBox.onchange = function e_toggleEthernet() {
     if (gEthernetCheckBox.checked) {
       Connectivity.enableEthernet();
@@ -185,7 +175,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
     }
     gEthernetCheckBox.disabled = true;
   };
-  
+
   Connectivity.ethernetEnabledChanged = function() {
     updateVisibilityStatus();
     if (gEthernetManager.enabled) {
@@ -197,7 +187,7 @@ navigator.mozL10n.ready(function ethernetSettings() {
     }
     gEthernetCheckBox.disabled = false;
   };
-  
+
   Connectivity.ethernetConnectedChanged = function() {
     if (gEthernetManager.connected) {
       gEthernetCheckBox.disabled = false;
@@ -206,25 +196,19 @@ navigator.mozL10n.ready(function ethernetSettings() {
     } else {
     }
   };
-  
+
   gEthernetDynamicCheckBox.onchange = function e_toggleDynamic() {
     gIsEthernetDynamic = this.checked;
+      gEthernetManager.setdhcp(gIsEthernetDynamic);
 //    gEthernetManualCheckBox.checked = !gIsEthernetDynamic;
       displayEthernetSetting();
+
     if (gIsEthernetDynamic) {
       showConnectionInfo();
     }
   };
-  
-//  gEthernetManualCheckBox.onchange = function e_toggleManual() {
-//    gIsEthernetDynamic = !this.checked;
-//    gEthernetDynamicCheckBox.checked = gIsEthernetDynamic;
-//    updateVisibilityStatus();
-//    if (gIsEthernetDynamic) {
-//      showConnectionInfo();
-//    }
-//  };
-  
+
+
   gEthernetIpAddress.onclick = function e_updateIpAddress() {
     if (!gIsEthernetDynamic) {
       showUpdateManualDialog("IP-Address", gEthernetIpAddressValue);
@@ -255,40 +239,41 @@ navigator.mozL10n.ready(function ethernetSettings() {
   };
   gUpdateManualConfirmButton.onclick = function e_updateConfirmed() {
     gUpdateManualDialog.hidden = true;
-    
+
     switch (gUpdateManualTitle.textContent) {
       case 'IP-Address':
         gEthernetIpAddressValue = gUpdateManualInput.value;
+        gEthernetManager.setaddr(gEthernetIpAddressValue.toString());
         break;
       case 'Gateway':
         gEthernetGatewayValue = gUpdateManualInput.value;
+        gEthernetManager.setnetmask(gEthernetGatewayValue.toString());
         break;
       case 'Netmark':
         gEthernetNetmarkValue = gUpdateManualInput.value;
+        gEthernetManager.setgateway(gEthernetNetmarkValue.toString());
         break;
       case 'DNS1':
         gEthernetDNS1Value = gUpdateManualInput.value;
+        gEthernetManager.setdns1(gEthernetDNS1Value.toString());
         break;
       case 'DNS2':
         gEthernetDNS2Value = gUpdateManualInput.value;
+        gEthernetManager.setdns2(gEthernetDNS2Value.toString());
         break;
       default:
     }
+
     showConnectionInfo();
   };
 
-    gShowInformationOKButton.onclick= function e_hideInformationDialog(){
-        gInformationDialog.hidden = true;
-    }
-    gEthernetShowInfor.onclick = function e_showEthernetInfor() {
-        showInformationDialog();
-    };
-  
   //Update at start-up
   updateVisibilityStatus();
   updateConnectionInfo();
   showConnectionInfo();
   displayEthernetSetting();
+
+
 
   if (gEthernetManager.enabled) {
     gEthernetInfoBlock.textContent = _('enabled');
