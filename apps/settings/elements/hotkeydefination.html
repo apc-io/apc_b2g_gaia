@@ -11,7 +11,7 @@
             </header>
 
             <h3 data-l10n-id="keydescription">
-                To edit a Key, click one row and hold down the new keys. Double click to Cancel set Hot Key.
+                To edit a Key, click its row and press a new key. Click again to cancel the action.
             </h3>
 
             <ul id="hotkey-setup" class="menuKey">
@@ -19,7 +19,7 @@
                 <li >
                     <label class="pack-radio">
                         <input id="key-home-check"  type="radio" name="app.keyHot" value="homekey">
-                        <small id="key-home" class="menu-item-desc">Windown</small>
+                        <small id="key-home" class="menu-item-desc"></small>
                         <span class="menu-item" data-l10n-id="homekey">Home</span>
                     </label>
                 </li>
@@ -27,7 +27,7 @@
                 <li >
                     <label  class="pack-radio">
                         <input id="key-mute-check"  type="radio" name="app.keyHot" value="mutekey">
-                        <small id="key-mute" class="menu-item-desc">ESC</small>
+                        <small id="key-mute" class="menu-item-desc"></small>
                         <span  class="menu-item" data-l10n-id="mutekey">Mute</span>
                     </label>
                 </li>
@@ -35,7 +35,7 @@
                 <li >
                     <label  class="pack-radio" >
                         <input id="key-volume-up-check"  type="radio" name="app.keyHot" value="volumeupkey">
-                        <small id="key-volume-up" class="menu-item-desc">Up</small>
+                        <small id="key-volume-up" class="menu-item-desc"></small>
                         <span  class="menu-item" data-l10n-id="volumeupkey">Volume Up</span>
                     </label>
                 </li>
@@ -43,14 +43,23 @@
                 <li  >
                     <label class="pack-radio">
                         <input id="key-volume-down-check"  type="radio" name="app.keyHot" value="volumedownkey">
-                        <small id="key-volume-down" class="menu-item-desc">Down</small>
+                        <small id="key-volume-down" class="menu-item-desc"></small>
                         <span  class="menu-item" data-l10n-id="volumedownkey">Volume Down </span>
+                    </label>
+                </li>
+            </ul>
+
+            <ul id="message-area">
+                <li>
+                    <label class="pack-radio" id="hotkey-settings-error" style="display:none">
+                        <small data-l10n-id="hotkeyinusederr">
+                            Error when settings hotkey: Key is already used by another function!
+                        </small>
                     </label>
                 </li>
 
             </ul>
         </div>
-
 
         <style>
             #div-dialog {
@@ -59,10 +68,13 @@
             .menuKey li.active {
                 background-color: #b2f2ff;
             }
+            input[type=radio] {
+                display: none;
+            }
         </style>
 
-        <script src="js/hotkeydefination.js"></script>
         <script src="js/key/keys.js"></script>
+        <script src="js/hotkeydefination.js"></script>
 
 
     </template>

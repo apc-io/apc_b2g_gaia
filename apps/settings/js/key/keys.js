@@ -3,6 +3,7 @@
 
 const HotKey = {
   key : [
+  	 {value : "Win/Command", keyCode: KeyEvent.DOM_VK_META},
   	 {value : '⌫' , keyCode: KeyEvent.DOM_VK_BACK_SPACE},
   	 {value : 'Tab' , keyCode: KeyEvent.DOM_VK_TAB},
   	 {value : 'Enter' , keyCode: KeyEvent.DOM_VK_RETURN},
