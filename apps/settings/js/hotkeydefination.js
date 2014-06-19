@@ -154,7 +154,7 @@ function clickKey(value) {
 }
 
 function removeClassList() {
-    if (position != -1 && valueKeyArr[position] != undefined) {
+    if (position != -1 && valueKeyArr.length != 0) {
         // ul[position].getElementsByTagName('small')[0].innerHTML = valueKeyArr[position].toString();
         keyElementArr[position].innerHTML = valueKeyArr[position].toString();
     }
@@ -162,7 +162,7 @@ function removeClassList() {
     var numKeySettings = ul.length; // the last element is the error message
     for (var i = 0; i < numKeySettings; i++) {
         // valueKeyArr.push(ul[i].getElementsByTagName('small')[0].innerHTML);
-        valueKeyArr.push(keyElementArr.innerHTML);
+        valueKeyArr.push(keyElementArr[i].innerHTML);
         ul[i].classList.remove("active");
         checkElementArr[i].checked = false;
     }
