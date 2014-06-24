@@ -1,52 +1,47 @@
 <element name="hotkeydefinition" extends="section" >
     <template>
         <header>
-            <a href="#keyboard"><span class="icon icon-back">back</span></a>
+            <button type="reset">
+                <span data-l10n-id="back" class="icon icon-back">Back</span>
+            </button>
             <h1 data-l10n-id="hotkeydefinition"> Hot Key Definition </h1>
         </header>
 
         <div>
-            <header>
-                <h2 data-l10n-id="keytitle" >Configure keyboard binding</h2>
-            </header>
-
             <h3 data-l10n-id="keydescription">
                 To edit a Key, click its row and press a new key. Click again to cancel the action.
             </h3>
 
             <ul id="hotkey-setup" class="menuKey">
 
-                <li >
-                    <label class="pack-radio">
-                        <input id="key-home-check"  type="radio" name="app.keyHot" value="homekey">
-                        <small id="key-home" class="menu-item-desc"></small>
-                        <span class="menu-item" data-l10n-id="homekey">Home</span>
-                    </label>
-                </li>
+            <li id="key-home-check" >
+                <label class="pack-switch">
+                    <small id="key-home" class="menu-item-desc">AAA</small>
+                    <span   data-l10n-id="homekey">Home</span>
+                </label>
+            </li>
 
-                <li >
-                    <label  class="pack-radio">
-                        <input id="key-mute-check"  type="radio" name="app.keyHot" value="mutekey">
-                        <small id="key-mute" class="menu-item-desc"></small>
-                        <span  class="menu-item" data-l10n-id="mutekey">Mute</span>
-                    </label>
-                </li>
+            <li id="key-mute-check" >
+                <label class="pack-switch">
+                    <small id="key-mute" class="menu-item-desc">SSS</small>
+                    <span data-l10n-id="mutekey">Mute</span>
+                </label>
+            </li>
 
-                <li >
-                    <label  class="pack-radio" >
-                        <input id="key-volume-up-check"  type="radio" name="app.keyHot" value="volumeupkey">
-                        <small id="key-volume-up" class="menu-item-desc"></small>
-                        <span  class="menu-item" data-l10n-id="volumeupkey">Volume Up</span>
-                    </label>
-                </li>
+            <li id="key-volume-up-check" >
+                <label class="pack-switch">
+                    <small id="key-volume-up" class="menu-item-desc">QQQ</small>
+                    <span  data-l10n-id="volumeupkey">Volume Up</span>
+                </label>
+            </li>
 
-                <li  >
-                    <label class="pack-radio">
-                        <input id="key-volume-down-check"  type="radio" name="app.keyHot" value="volumedownkey">
-                        <small id="key-volume-down" class="menu-item-desc"></small>
-                        <span  class="menu-item" data-l10n-id="volumedownkey">Volume Down </span>
-                    </label>
-                </li>
+            <li id="key-volume-down-check" >
+                <label class="pack-switch">
+                    <small id="key-volume-down" class="menu-item-desc">EEE</small>
+                    <span  data-l10n-id="volumedownkey">Volume Down</span>
+                </label>
+            </li>
+
             </ul>
 
             <ul id="message-area">
@@ -68,14 +63,10 @@
             .menuKey li.active {
                 background-color: #b2f2ff;
             }
-            input[type=radio] {
-                display: none;
-            }
         </style>
 
         <script src="js/key/keys.js"></script>
         <script src="js/hotkeydefination.js"></script>
-
 
     </template>
 </element>
