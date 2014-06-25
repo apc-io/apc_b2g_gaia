@@ -6,34 +6,23 @@ navigator.mozL10n.ready(function hotkeyDefination() {
 
     var _ = navigator.mozL10n.get;
 
-    var settings = window.navigator.mozSettings;
-    if (!settings)
+    var gHotkeyManager = navigator.mozHotkeyManager;
+    if (!gHotkeyManager) {
         return;
+    }
 
     var isChangeKey = false;
 
     const TIMEOUT = 3000;
 
-    var ul;
+    var ul = document.getElementById('hotkey-setup').getElementsByTagName('li');
 //Array save value key
     var valueKeyArr;
 
 //position focus change key
     var position = -1;
 
-    var gHotkeyManager = navigator.mozHotkeyManager;
-
-//    var homeKeyElement = document.getElementById("key-home");
-//    var homeKeyCheckElement = document.getElementById("key-home-check");
-//    var muteKeyElement = document.getElementById("key-mute");
-//    var muteKeyCheckElement = document.getElementById("key-mute-check");
-//    var volumeUpKeyElement = document.getElementById("key-volume-up");
-//    var volumeUpKeyCheckElement = document.getElementById("key-volume-up-check");
-//    var volumeDownKeyElement = document.getElementById("key-volume-down");
-//    var volumeDownKeyCheckElement = document.getElementById("key-volume-down-check");
-
     var errorElement = document.getElementById("hotkey-settings-error");
-
 
     var homeKeyCheckElement = document.querySelector('#key-home-check');
     var homeKeyElement = document.querySelector('#key-home');
@@ -50,27 +39,22 @@ navigator.mozL10n.ready(function hotkeyDefination() {
     var keyElementArr = [homeKeyElement, muteKeyElement, volumeUpKeyElement, volumeDownKeyElement];
     var checkElementArr = [homeKeyCheckElement, muteKeyCheckElement, volumeUpKeyCheckElement, volumeDownKeyCheckElement];
 
+    function getL10NText(l10n_id, defaultText, placeHoders) {
+        var text = "";
+        if (placeHoders) {
+            text = _(l10n_id, placeHoders);
+        } else {
+            text = _(l10n_id);
+        }
 
-
-    homeKeyCheckElement.onclick = function k_homekeyPress() {
-        clickKey(0);
+        return text ? text : defaultText;
     };
-    muteKeyCheckElement.onclick = function k_mutekeyPress() {
-        clickKey(1);
-    };
-    volumeUpKeyCheckElement.onclick = function k_volumeupkeyPress() {
-        clickKey(2);
-    };
-    volumeDownKeyCheckElement.onclick = function k_volumedownkeyPress() {
-        clickKey(3);
-    };
-
 
     function getKeyChar(charCode, event) {
         var keyChar = "";
-        dump("_________ this is getKeyChar and charCode is " + charCode);
+        var noKeyText = getL10NText("hotkey-noKey", "No key");
         if (charCode == -1) {
-            keyChar = "No key";
+            keyChar = noKeyText;
             return keyChar;
         }
 
@@ -78,7 +62,7 @@ navigator.mozL10n.ready(function hotkeyDefination() {
             if (event) {
                 keyChar = "" + event.key;
             } else {
-                keyChar = "No key";
+                keyChar = noKeyText;
             }
             return keyChar;
         }
@@ -99,7 +83,8 @@ navigator.mozL10n.ready(function hotkeyDefination() {
 
             var charCode = event.keyCode || event.which;
             var keychar = getKeyChar(charCode);
-            var displayString = "Changing key to: " + keychar;
+            var defaultDisplayString = "Changing key to: " + keychar;
+            var displayString = getL10NText("hotkey-changingMessage", { "key": keychar }, defaultDisplayString);
             var idx = -1;
 
             if (ul[0].className == "active") {
@@ -133,35 +118,14 @@ navigator.mozL10n.ready(function hotkeyDefination() {
         }
     }
 
-
-    function init() {
-        function doInit(element, charCode) {
-            element.textContent = getKeyChar(charCode);
-        }
-
-        doInit(homeKeyElement, gHotkeyManager.homeKey);
-        doInit(muteKeyElement, gHotkeyManager.muteKey);
-        doInit(volumeUpKeyElement, gHotkeyManager.volumeUpKey);
-        doInit(volumeDownKeyElement, gHotkeyManager.volumeDownKey);
-
-        ul = document.getElementById('hotkey-setup').getElementsByTagName('li');
-
-        console.log("Init");
-    }
-
-    init();
-
-
     function clickKey(value) {
 
         if(!isChangeKey || ul[value].classList != 'active') {
-            dump("-----------------We'll start editing hotkey! at " + value);
             gHotkeyManager.beginEditHotkey();
             removeClassList();
             ul[value].classList.add("active");
             position = value;
-            // document.getElementById(valueActive[value]).innerHTML = "Press a key...";
-            keyElementArr[value].textContent = "Press a key";
+            keyElementArr[value].textContent = getL10NText("hotkey-pressKey", "Press a key ...");
             changeKey();
         } else {
             isChangeKey = false;
@@ -172,13 +136,11 @@ navigator.mozL10n.ready(function hotkeyDefination() {
 
     function removeClassList() {
         if (position != -1 && valueKeyArr.length != 0) {
-            // ul[position].getElementsByTagName('small')[0].innerHTML = valueKeyArr[position].toString();
             keyElementArr[position].textContent = valueKeyArr[position].toString();
         }
         valueKeyArr = new Array();
         var numKeySettings = ul.length; // the last element is the error message
         for (var i = 0; i < numKeySettings; i++) {
-            // valueKeyArr.push(ul[i].getElementsByTagName('small')[0].innerHTML);
             valueKeyArr.push(keyElementArr[i].textContent);
             ul[i].classList.remove("active");
             checkElementArr[i].checked = false;
@@ -199,14 +161,12 @@ navigator.mozL10n.ready(function hotkeyDefination() {
     }
 
     function onHotkeySetResult(event) {
-        dump("This is the handler for hotkeySetResult: " + event["type"]);
-
         var type = event["type"];
         var data = type.split(":");
         if (data[1] == "0") {
-            dump("Set hotkey ok!");
+            // ok
         } else {
-            dump("Set hotkey error!");
+            // error
             // need to show some error!
             switch (position) {
                 case 0:
@@ -230,9 +190,35 @@ navigator.mozL10n.ready(function hotkeyDefination() {
         gHotkeyManager.endEditHotkey();
     }
 
-    gHotkeyManager.onHotkeySetResult = onHotkeySetResult;
+    function init() {
+        function doInit(element, charCode) {
+            element.textContent = getKeyChar(charCode);
+        }
 
+        doInit(homeKeyElement, gHotkeyManager.homeKey);
+        doInit(muteKeyElement, gHotkeyManager.muteKey);
+        doInit(volumeUpKeyElement, gHotkeyManager.volumeUpKey);
+        doInit(volumeDownKeyElement, gHotkeyManager.volumeDownKey);
 
-    document.body.addEventListener("keydown", keyEvent, false);
+        // event handling
+        homeKeyCheckElement.onclick = function k_homekeyPress() {
+            clickKey(0);
+        };
+        muteKeyCheckElement.onclick = function k_mutekeyPress() {
+            clickKey(1);
+        };
+        volumeUpKeyCheckElement.onclick = function k_volumeupkeyPress() {
+            clickKey(2);
+        };
+        volumeDownKeyCheckElement.onclick = function k_volumedownkeyPress() {
+            clickKey(3);
+        };
+
+        gHotkeyManager.onHotkeySetResult = onHotkeySetResult;
+
+        document.body.addEventListener("keydown", keyEvent, false);
+    }
+
+    init();
 
 });
