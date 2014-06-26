@@ -78,7 +78,7 @@
 
   .finish-screen-base .content {
     background: url(images/start_for_large.png) no-repeat center center,
-                url(images/bg_for_large.png) no-repeat;
+                url(images/bg_for_large.png) no-repeat center center;
   }
 
   .finish-screen-base .content .for-tiny {
